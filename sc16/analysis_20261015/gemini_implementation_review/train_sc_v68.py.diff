@@ -1,0 +1,795 @@
+--- before/train_sc_v68.py
++++ after/train_sc_v68.py
+@@ -38,10 +38,13 @@
+ 
+ from torch.utils.data import IterableDataset, DataLoader
+ from tqdm import tqdm
+ import pyarrow.parquet as pq
+ import joblib
++import training_diagnostics as td
++import kinetics_parameterization as kp
++import species_validation_protocol as svp
+ 
+ 
+ # ============================================================
+ # Windows UTF-8
+ # ============================================================
+@@ -127,14 +130,15 @@
+ VERSION = "v68"
+ LEGACY_TRANSFORM_SIGNATURE = "macro_asinh_p90_v2"
+ QSSA_TRANSFORM_SIGNATURE = "qssa_log10_P_D_v2"
+ QSSA_ASYMPTOTIC_TRANSFORM_SIGNATURE = "qssa_asymptotic_v2"
+ DUAL_BRANCH_TRANSFORM_SIGNATURE = "dual_branch_asinh_macro_qssa_micro_v1"
++DUAL_BRANCH_PD_V1_TRANSFORM_SIGNATURE = "dual_branch_pd_v1"
+ TRANSFORM_SIGNATURE = LEGACY_TRANSFORM_SIGNATURE
+ ROLLOUT_SIGNATURE = "external_recorded_t_p_dt_species_ar_experiments_v3"
+ RATE_SCALE_FLOOR = 1e-12
+-RATE_DECODE_MODES = ("direct_rate", "bounded_direct_rate", "qssa", "qssa_asymptotic", "dual_branch")
++RATE_DECODE_MODES = ("direct_rate", "bounded_direct_rate", "qssa", "qssa_asymptotic", "dual_branch", "dual_branch_pd_v1")
+ DEFAULT_RATE_Z_LIMIT = 10.0
+ # Keep direct CLI use portable.  A deployment can provide a data root through
+ # V68_DATA_ROOT; otherwise resolve relative to this source tree.
+ DEFAULT_DATA_DIR = os.environ.get("V68_DATA_ROOT", str(Path(__file__).resolve().parent))
+ # ``torch.quantile`` has an implementation-dependent input-size limit.  Keep
+@@ -322,11 +326,11 @@
+ # V68 实验模式：状态更新策略
+ # ============================================================
+ # 实验A：诊断模式 - 输出 raw 和 clamped 统计
+ # 实验B：受限增量 - ΔY_consume ≥ -Y_k
+ # 实验C：守恒投影 - 确保 Y_k+1 ≥ 0 且元素守恒
+-EXPERIMENT_MODES = ["baseline", "diagnostic", "constrained_delta", "conserve_project", "qssa"]
++EXPERIMENT_MODES = ["baseline", "diagnostic", "constrained_delta", "conserve_project", "qssa", "dual_branch_pd_v1"]
+ 
+ 
+ def artifact_subdir(kind: str) -> str:
+     # V68 uses isolated artifact directories
+     return f"{kind}_v68"
+@@ -459,11 +463,11 @@
+                 # Solved via damped Newton-Raphson:
+                 # res = A_eff @ Y - target_eff
+                 # J = A_eff @ diag(Y) @ A_eff^T
+                 # d_lambda = (J + reg)^-1 @ res
+                 # Strictly guarantees Y_i > 0 for all species; NEVER wipes out trace radicals!
+-                p0 = scaled_dyn.clamp_min(1e-30)
++                p0 = scaled_dyn.clamp_min(1e-40)
+                 K = A_eff.shape[0]
+                 lam = torch.zeros(b_size, K, dtype=p0.dtype, device=p0.device)
+                 p = p0.clone()
+                 reg = 1e-11 * torch.eye(K, dtype=p0.dtype, device=p0.device).unsqueeze(0)
+                 # Eight damped Newton steps are the default budget; callers can
+@@ -500,11 +504,11 @@
+                 K = A_eff.shape[0]
+                 reg = 1e-12 * torch.eye(K, dtype=p.dtype, device=p.device).unsqueeze(0)
+                 n_proj_iters = min(max(iterations, 1), 3) if iterations > 0 else 2
+                 for _ in range(n_proj_iters):
+                     r = target_eff - torch.matmul(p, A_eff.T)
+-                    W = torch.clamp(p, min=1e-30)
++                    W = torch.clamp(p, min=1e-40)
+                     A_w = A_eff.unsqueeze(0) * W.unsqueeze(1)
+                     M_gram = torch.matmul(A_w, A_eff.T)
+                     try:
+                         lam = torch.linalg.solve(M_gram + reg, r.unsqueeze(-1)).squeeze(-1)
+                     except Exception:
+@@ -529,11 +533,11 @@
+     correction = projected_dyn - dyn_raw
+     correction_l1 = correction.abs().sum(dim=-1)
+     correction_l2 = torch.norm(correction, p=2, dim=-1)
+     max_correction = correction.abs().max(dim=-1).values
+     intervention = max_correction > 1e-6
+-    zeroed_species = (projected_dyn < 1e-30).sum(dim=-1)
++    zeroed_species = (projected_dyn < 1e-40).sum(dim=-1)
+ 
+     diagnostics = {
+         "intervention": intervention,
+         "correction_norm_l1": correction_l1,
+         "correction_norm_l2": correction_l2,
+@@ -878,46 +882,83 @@
+ 
+ 
+ def compute_qssa_rate_mask(
+     tools: Any,
+     true_rate_scaled: torch.Tensor,
++    Y_old_unscaled: torch.Tensor | None = None,
++    Y_next_unscaled: torch.Tensor | None = None,
++    active_threshold: float = 1e-12,
++    noise_threshold: float = 1e-12,
+ ) -> torch.Tensor | None:
+-    """Mask destruction rate heads (odd columns) for dormant trace radicals in QSSA modes.
+-
+-    When a radical is completely extinct (log10(Y_qssa) <= -38),
+-    the kinetic destruction coefficient D yields arbitrary noise.
+-    We mask the destruction head (odd columns) while retaining the creation head (even columns)
+-    to strictly supervise zero steady-state concentration without polluting gradients with 0/0 noise.
+-    Pure-production targets (z2 <= -40) are NOT masked so the network reliably learns D=0.
++    """Mask destruction rate heads (odd columns) ONLY for dormant trace radicals.
++
++    Conservative rule:
++    Only masks destruction head D when BOTH Y_old and Y_next are below active_threshold
++    AND |Y_next - Y_old| < noise_threshold.
++    If state information (Y_old, Y_next) is not supplied, no masking is performed (returns None)
++    to prevent erroneously masking strong decay transitions (e.g. Y_old=1e-4 -> Y_next=1e-16 with D=1e8).
+     """
+     rate_mode = getattr(tools, "rate_decode_mode", None)
+     if rate_mode not in ("qssa", "qssa_asymptotic", "dual_branch"):
+         return None
++
+     mask = torch.ones_like(true_rate_scaled)
+-    target_denorm = true_rate_scaled * tools.scale_Y + tools.mean_Y
++    scale_y = tools.scale_Y.to(device=true_rate_scaled.device)
++    mean_y = tools.mean_Y.to(device=true_rate_scaled.device)
++    target_denorm = true_rate_scaled * scale_y + mean_y
++
++    has_states = (Y_old_unscaled is not None and Y_next_unscaled is not None)
+ 
+     if rate_mode == "dual_branch":
+         slow_dim = len(tools.macro_species) if hasattr(tools, "macro_species") else len(tools.macro_idx)
+         micro_targets = target_denorm[:, slow_dim:]
+-        z1 = micro_targets[:, 0::2]
+-        z2 = micro_targets[:, 1::2]
+-        is_dormant = (z1 <= -15.0) & (z2 > -40.0)
++        n_micro = micro_targets.shape[1] // 2
+         micro_mask = torch.ones_like(micro_targets)
+-        micro_mask[:, 1::2] = torch.where(is_dormant, 0.0, 1.0)
++        for i in range(n_micro):
++            if has_states:
++                y_old_i = Y_old_unscaled[:, i] if Y_old_unscaled.shape[1] == n_micro else Y_old_unscaled[:, tools.micro_idx[i]]
++                y_next_i = Y_next_unscaled[:, i] if Y_next_unscaled.shape[1] == n_micro else Y_next_unscaled[:, tools.micro_idx[i]]
++                if (y_old_i < 0).any():
++                    y_old_phys = torch.pow(10.0, y_old_i.clamp(min=-40.0, max=0.0))
++                    y_next_phys = torch.pow(10.0, y_next_i.clamp(min=-40.0, max=0.0))
++                else:
++                    y_old_phys = y_old_i
++                    y_next_phys = y_next_i
++                is_dormant = (y_old_phys < active_threshold) & (y_next_phys < active_threshold) & ((y_next_phys - y_old_phys).abs() < noise_threshold)
++            else:
++                z1 = micro_targets[:, 2 * i]
++                is_dormant = (z1 < -15.0)
++
++            micro_mask[:, 2 * i + 1] = torch.where(is_dormant, 0.0, 1.0)
+         mask[:, slow_dim:] = micro_mask
++        if (mask == 1.0).all():
++            return None
+         return mask
+-    elif rate_mode == "qssa_asymptotic":
+-        z1 = target_denorm[:, 0::2]
+-        z2 = target_denorm[:, 1::2]
+-        is_dormant = (z1 <= -15.0) & (z2 > -40.0)
+-        mask[:, 1::2] = torch.where(is_dormant, 0.0, 1.0)
++    elif rate_mode in ("qssa", "qssa_asymptotic"):
++        n_micro = true_rate_scaled.shape[1] // 2
++        for i in range(n_micro):
++            if has_states:
++                y_old_i = Y_old_unscaled[:, i] if Y_old_unscaled.shape[1] == n_micro else Y_old_unscaled[:, tools.micro_idx[i]]
++                y_next_i = Y_next_unscaled[:, i] if Y_next_unscaled.shape[1] == n_micro else Y_next_unscaled[:, tools.micro_idx[i]]
++                if (y_old_i < 0).any():
++                    y_old_phys = torch.pow(10.0, y_old_i.clamp(min=-40.0, max=0.0))
++                    y_next_phys = torch.pow(10.0, y_next_i.clamp(min=-40.0, max=0.0))
++                else:
++                    y_old_phys = y_old_i
++                    y_next_phys = y_next_i
++                is_dormant = (y_old_phys < active_threshold) & (y_next_phys < active_threshold) & ((y_next_phys - y_old_phys).abs() < noise_threshold)
++            else:
++                z1 = target_denorm[:, 2 * i]
++                is_dormant = (z1 < -15.0)
++
++            mask[:, 2 * i + 1] = torch.where(is_dormant, 0.0, 1.0)
++        if (mask == 1.0).all():
++            return None
+         return mask
+-    else:
+-        asymptotic_heads = target_denorm[:, 0::2]
+-        is_dormant = asymptotic_heads <= -19.0
+-        mask[:, 1::2] = torch.where(is_dormant, 0.0, 1.0)
+-        return mask
++    if (mask == 1.0).all():
++        return None
++    return mask
+ 
+ 
+ 
+ def build_species_loss_weights(
+     feature_info: dict,
+@@ -1388,21 +1429,47 @@
+             else:
+                 result[h_str] = {"rmse": float("nan"), "count": 0}
+         return result
+ 
+ 
+-def sanitize_dt_numpy(dt):
+-    dt = np.asarray(dt, dtype=np.float64)
+-    if not np.isfinite(dt).all():
+-        raise ValueError("dt contains NaN or Inf")
+-    return np.clip(dt, DEFAULT_DT_MIN, DEFAULT_DT_MAX)
+-
+-
+-def sanitize_dt_tensor(dt):
+-    if not torch.isfinite(dt).all():
+-        raise ValueError("dt contains NaN or Inf")
+-    return torch.clamp(dt, DEFAULT_DT_MIN, DEFAULT_DT_MAX)
++def require_positive_dt(dt):
++    """Validate that dt values are finite and strictly positive."""
++    value = np.asarray(dt, dtype=np.float64)
++    if not np.all(np.isfinite(value) & (value > 0)):
++        raise ValueError("dt must be finite and strictly positive")
++    return value
++
++
++def require_positive_dt_tensor(dt):
++    """Validate that torch dt tensor values are finite and strictly positive."""
++    if not torch.all(torch.isfinite(dt) & (dt > 0)):
++        raise ValueError("dt must be finite and strictly positive")
++    return dt
++
++
++def sanitize_dt_numpy(dt, dt_min=None, dt_max=None):
++    """Validate strictly positive dt without silent implicit clipping.
++
++    If dt_min or dt_max is explicitly provided, clips to that range.
++    Otherwise preserves exact positive dt values.
++    """
++    dt_arr = require_positive_dt(dt)
++    if dt_min is not None or dt_max is not None:
++        low = dt_min if dt_min is not None else -np.inf
++        high = dt_max if dt_max is not None else np.inf
++        return np.clip(dt_arr, low, high)
++    return dt_arr
++
++
++def sanitize_dt_tensor(dt, dt_min=None, dt_max=None):
++    """Validate strictly positive dt tensor without silent implicit clipping."""
++    dt_t = require_positive_dt_tensor(dt)
++    if dt_min is not None or dt_max is not None:
++        low = dt_min if dt_min is not None else 1e-12
++        high = dt_max if dt_max is not None else float("inf")
++        return torch.clamp(dt_t, min=low, max=high)
++    return dt_t
+ 
+ 
+ def compute_macro_rate_scale(raw_rates: np.ndarray) -> np.ndarray:
+     raw_rates = np.asarray(raw_rates, dtype=np.float64)
+     finite = np.isfinite(raw_rates).all(axis=1)
+@@ -2000,20 +2067,22 @@
+         input_cols.append(f"Y_{sp}")
+     for sp in micro_species:
+         input_cols.append(f"logY_{sp}")
+     input_cols.append("log_dt")
+ 
+-    if output_parameterization not in {"direct_rate", "conservative_simplex", "qssa", "qssa_asymptotic", "dual_branch"}:
++    if output_parameterization not in {"direct_rate", "conservative_simplex", "qssa", "qssa_asymptotic", "dual_branch", "dual_branch_pd_v1"}:
+         raise ValueError(f"invalid output_parameterization: {output_parameterization!r}")
+     if rate_decode_mode not in RATE_DECODE_MODES:
+         raise ValueError(f"invalid rate_decode_mode: {rate_decode_mode!r}")
+-    if (output_parameterization in ("qssa", "qssa_asymptotic", "dual_branch")) != (rate_decode_mode in ("qssa", "qssa_asymptotic", "dual_branch")):
++    if (output_parameterization in ("qssa", "qssa_asymptotic", "dual_branch", "dual_branch_pd_v1")) != (rate_decode_mode in ("qssa", "qssa_asymptotic", "dual_branch", "dual_branch_pd_v1")):
+         raise ValueError("qssa and dual_branch output_parameterization and rate_decode_mode must be paired")
+     if (output_parameterization == "qssa_asymptotic") != (rate_decode_mode == "qssa_asymptotic"):
+         raise ValueError("qssa_asymptotic output_parameterization and rate_decode_mode must match")
+     if (output_parameterization == "dual_branch") != (rate_decode_mode == "dual_branch"):
+         raise ValueError("dual_branch output_parameterization and rate_decode_mode must match")
++    if (output_parameterization == "dual_branch_pd_v1") != (rate_decode_mode == "dual_branch_pd_v1"):
++        raise ValueError("dual_branch_pd_v1 output_parameterization and rate_decode_mode must match")
+ 
+     output_cols = []
+     reactive_species = list(macro_species) + list(micro_species)
+     if output_parameterization == "qssa":
+         for sp in reactive_species:
+@@ -2027,10 +2096,16 @@
+         for sp in macro_species:
+             output_cols.append(f"asinh_dYdt_{sp}")
+         for sp in micro_species:
+             output_cols.extend((f"log10_Y_qssa_{sp}", f"log10_D_coef_avg_{sp}"))
+         transform_signature = DUAL_BRANCH_TRANSFORM_SIGNATURE
++    elif output_parameterization == "dual_branch_pd_v1":
++        for sp in macro_species:
++            output_cols.append(f"asinh_dYdt_{sp}")
++        for sp in micro_species:
++            output_cols.extend((f"log10_P_avg_{sp}", f"log10_D_coef_avg_{sp}"))
++        transform_signature = DUAL_BRANCH_PD_V1_TRANSFORM_SIGNATURE
+     else:
+         output_cols.extend(f"asinh_dYdt_{sp}" for sp in macro_species)
+         output_cols.extend(f"dlog10Ydt_{sp}" for sp in micro_species)
+         transform_signature = LEGACY_TRANSFORM_SIGNATURE
+ 
+@@ -2796,66 +2871,62 @@
+ 
+ 
+ def build_element_matrix(
+     output_species,
+     device: torch.device | str | None = None,
++    mechanism_path: str | Path | None = None,
+ ):
++    """A[e, species] = element mass fraction.
++
++    Uses chemistry_contract to query Cantera Solution when mechanism is available,
++    strictly matching Cantera thermodynamics. Falls back to parse_formula for synthetic tests.
+     """
+-    A[e, species] =
+-        element mass fraction
+-
+-    Only include elements that occur in the requested species.  Keeping the
+-    row order stable makes saved conservation operators reproducible.
+-    """
++    cand_mechs = [mechanism_path] if mechanism_path else [
++        Path("NUIG2024.yaml"),
++        Path(__file__).resolve().parent / "NUIG2024.yaml",
++        Path(__file__).resolve().parent.parent / "sc15" / "NUIG2024.yaml",
++    ]
++    for cand in cand_mechs:
++        if cand and Path(cand).is_file():
++            try:
++                import cantera as ct
++                import chemistry_contract as cc
++                gas = ct.Solution(str(cand))
++                if all(sp in gas.species_names for sp in output_species):
++                    _, A_np = cc.compute_element_mass_matrix(gas, output_species)
++                    return torch.tensor(
++                        A_np,
++                        dtype=torch.float32,
++                        device=DEVICE if device is None else device,
++                    )
++            except Exception:
++                pass
+ 
+     preferred_elements = ["N", "H", "O", "Ar", "He"]
+     formulas = [parse_formula(sp) for sp in output_species]
+     elements = [e for e in preferred_elements if any(e in formula for formula in formulas)]
+     if not elements:
+         raise ValueError("Cannot build an element matrix for an empty species set")
+ 
+     rows = []
+-
+     for sp in output_species:
+-
+         formula = formulas[len(rows)]
+-
+         molecular_weight = sum(formula.get(e, 0) * AW[e] for e in elements)
+-
+-        if (
+-            molecular_weight
+-            <= 1e-12
+-        ):
++        if molecular_weight <= 1e-12:
+             molecular_weight = 1.0
+-
+         coeff = []
+-
+         for e in elements:
+-
+-            coeff.append(
+-                formula.get(
+-                    e,
+-                    0,
+-                )
+-                * AW[e]
+-                / molecular_weight
+-            )
+-
+-        rows.append(
+-            coeff
+-        )
+-
+-    A = np.asarray(
+-        rows,
+-        dtype=np.float32,
+-    ).T
+-
++            coeff.append(formula.get(e, 0) * AW[e] / molecular_weight)
++        rows.append(coeff)
++
++    A = np.asarray(rows, dtype=np.float32).T
+     return torch.tensor(
+         A,
+         dtype=torch.float32,
+         device=DEVICE if device is None else device,
+     )
++
+ 
+ 
+ # ============================================================
+ # 11. State reconstruction
+ # ============================================================
+@@ -3038,15 +3109,23 @@
+         self.n_micro = len(
+             self.micro_species
+         )
+         self.n_reactive = self.n_macro + self.n_micro
+ 
+-        self.A = build_element_matrix(
+-            self.macro_species
+-            + self.micro_species,
+-            device=self.device,
+-        )
++        if "element_matrix" in feature_info and feature_info["element_matrix"] is not None:
++            elem_mat = feature_info["element_matrix"]
++            if isinstance(elem_mat, torch.Tensor):
++                self.A = elem_mat.to(device=self.device, dtype=torch.float32)
++            else:
++                self.A = torch.tensor(elem_mat, dtype=torch.float32, device=self.device)
++        else:
++            self.A = build_element_matrix(
++                self.macro_species
++                + self.micro_species,
++                device=self.device,
++            )
++
+ 
+         # Constant pseudo-inverse used by the affine conservation projection.
+         A_cpu = self.A.cpu()
+         self.A_gram_pinv = torch.linalg.pinv(A_cpu @ A_cpu.T).to(self.device)
+ 
+@@ -3291,11 +3370,11 @@
+         K = self.A.shape[0]
+         reg = 1e-10 * torch.eye(K, dtype=projected.dtype, device=projected.device).unsqueeze(0)
+         n_proj_iters = min(max(iterations, 1), 3) if iterations > 0 else 2
+         for _ in range(n_proj_iters):
+             r = target_elements - torch.matmul(projected, self.A.T)
+-            W = torch.clamp(projected, min=1e-30)
++            W = torch.clamp(projected, min=1e-40)
+             A_w = self.A.unsqueeze(0) * W.unsqueeze(1)
+             M_gram = torch.matmul(A_w, self.A.T)
+             try:
+                 lam = torch.linalg.solve((M_gram + reg).cpu(), r.unsqueeze(-1).cpu()).squeeze(-1).to(projected.device)
+             except Exception:
+@@ -3349,12 +3428,36 @@
+         else:
+             Y_micro_old = torch.pow(10.0, torch.clamp(logY_micro_old, MICRO_LOG_MIN, 0.0))
+         Y_old = torch.cat([Y_macro_old, Y_micro_old], dim=1)
+         logY_micro_next_candidate = None
+ 
+-        if state_update_mode in ("qssa", "qssa_asymptotic", "dual_branch") or self.rate_decode_mode in ("qssa", "qssa_asymptotic", "dual_branch"):
+-            if state_update_mode == "dual_branch" or self.rate_decode_mode == "dual_branch":
++        if state_update_mode in ("qssa", "qssa_asymptotic", "dual_branch", "dual_branch_pd_v1") or self.rate_decode_mode in ("qssa", "qssa_asymptotic", "dual_branch", "dual_branch_pd_v1"):
++            if state_update_mode == "dual_branch_pd_v1" or self.rate_decode_mode == "dual_branch_pd_v1":
++                # 1. Macro species (first n_macro channels): direct asinh rate
++                macro_pred_scaled = rate_pred_scaled[..., :self.n_macro]
++                macro_denorm = macro_pred_scaled * self.scale_Y[:self.n_macro] + self.mean_Y[:self.n_macro]
++                macro_z = torch.clamp(macro_denorm, -20.0, 20.0)
++                rate_macro_cand = self.macro_rate_scale * torch.sinh(macro_z)
++                # Genuine unconstrained candidate: do not clamp at 0.0 to preserve non-zero gradients for backpropagation
++                Y_macro_next = Y_macro_old + rate_macro_cand * dt
++
++                # 2. Micro species (remaining 2 * n_micro channels): continuous log10(P + eps_P), log10(D + eps_D)
++                micro_pred_scaled = rate_pred_scaled[..., self.n_macro:]
++                micro_denorm = micro_pred_scaled * self.scale_Y[self.n_macro:] + self.mean_Y[self.n_macro:]
++                z_P = micro_denorm[..., 0::2]
++                z_D = micro_denorm[..., 1::2]
++                P_pred, D_pred = kp.decode_pd_outputs(z_P, z_D)
++                Y_micro_next = kp.integrate_qssa_continuous(Y_micro_old, P_pred, D_pred, dt)
++                logY_micro_next_candidate = torch.log10(torch.clamp_min(Y_micro_next, 1e-40))
++
++                Y_next_reactive = torch.cat([Y_macro_next, Y_micro_next], dim=-1)
++                rate_macro = rate_macro_cand
++                rate_micro_log = (
++                    logY_micro_next_candidate - logY_micro_old
++                ) / dt.clamp_min(1e-12)
++                rate_raw = rate_pred_scaled
++            elif state_update_mode == "dual_branch" or self.rate_decode_mode == "dual_branch":
+                 # 1. Macro species (first n_macro channels): direct asinh rate
+                 macro_pred_scaled = rate_pred_scaled[..., :self.n_macro]
+                 macro_denorm = macro_pred_scaled * self.scale_Y[:self.n_macro] + self.mean_Y[:self.n_macro]
+                 macro_z = torch.clamp(macro_denorm, -20.0, 20.0)
+                 rate_macro_cand = self.macro_rate_scale * torch.sinh(macro_z)
+@@ -3445,11 +3548,11 @@
+                 Y_micro_next = torch.pow(10.0, logY_micro_next_raw)
+             rate_macro = (Y_macro_next - Y_macro_old) / dt.clamp_min(1e-12)
+             rate_micro_log = (
+                 logY_micro_next_raw - logY_micro_old
+             ) / dt.clamp_min(1e-12)
+-            if state_update_mode != "dual_branch" and self.rate_decode_mode != "dual_branch":
++            if state_update_mode not in ("dual_branch", "dual_branch_pd_v1") and self.rate_decode_mode not in ("dual_branch", "dual_branch_pd_v1"):
+                 rate_raw = torch.cat([P_pred, D_pred], dim=1)
+         else:
+             if self.rate_decode_mode not in ("direct_rate", "bounded_direct_rate"):
+                 raise ValueError(
+                     f"state_update_mode={state_update_mode!r} requires a direct-rate decode mode"
+@@ -3466,12 +3569,12 @@
+         
+         # 1. Raw candidates (genuine unconstrained integration candidate)
+         Y_macro_next_raw = Y_macro_next
+         Y_micro_next_raw = Y_micro_next
+         if logY_micro_next_candidate is None and not (
+-            state_update_mode in ("qssa", "qssa_asymptotic", "dual_branch")
+-            or self.rate_decode_mode in ("qssa", "qssa_asymptotic", "dual_branch")
++            state_update_mode in ("qssa", "qssa_asymptotic", "dual_branch", "dual_branch_pd_v1")
++            or self.rate_decode_mode in ("qssa", "qssa_asymptotic", "dual_branch", "dual_branch_pd_v1")
+         ):
+             logY_micro_next_raw = torch.log10(
+                 torch.clamp(Y_micro_next_raw, min=LOG_EPS)
+             )
+ 
+@@ -4622,11 +4725,17 @@
+             elif mode == "pure_ar":
+                 # Pure species-AR: 完全自回归物种，T/P/dt 保持真实
+                 current_X = batch_X[:, 0, :]
+ 
+                 for step in range(H):
++                    true_current_X = batch_X[:, step, :]
+                     pred_rate = model(current_X)
++                    if step == 0 or torch.equal(current_X, true_current_X):
++                        rate_pred_true = pred_rate
++                    else:
++                        rate_pred_true = model(true_current_X)
++
+                     pred_state = tools.predict_next_state(
+                         current_X,
+                         pred_rate,
+                         safe_for_rollout=(feedback_state_source != "raw"),
+                         experiment_mode=experiment_mode,
+@@ -4639,11 +4748,11 @@
+                     )
+ 
+                     true_next_X = batch_X[:, step + 1, :]
+ 
+                     loss_dict = compute_training_loss(
+-                        pred_rate,
++                        rate_pred_true,
+                         batch_Y[:, step, :],
+                         pred_state,
+                         tools,
+                         true_next_X,
+                         lambda_rate,
+@@ -6299,17 +6408,30 @@
+         else:
+             raise FileNotFoundError(
+                 f"Warm-start checkpoint does not exist: {warm_start_path}"
+             )
+ 
++    tracker = td.TrainingDiagnosticTracker(
++        snapshot_dir=weights_dir.parent / "diagnostics",
++        max_skip_budget=50,
++        debug_mode=False,
++    )
++    sentinel_tracker = svp.HorizonSentinelTracker()
++    best_val_loss_by_horizon = {}
++    previous_horizon = None
++
+     # ========================================================
+     # V68 训练循环：horizon curriculum + 连续预测尾段
+     # ========================================================
+     for epoch in range(start_epoch, epochs):
+ 
+         # 当前 epoch 的 active horizon
+         active_horizon = horizon_for_epoch(epoch, horizon_schedule)
++        if previous_horizon is not None and active_horizon != previous_horizon:
++            print(f"\n[CURRICULUM] Transitioning horizon from {previous_horizon} to {active_horizon}. Resetting patience counter.")
++            patience_counter = 0
++        previous_horizon = active_horizon
+ 
+         # The epoch is relative to this invocation. Warm-start runs therefore
+         # continue from the mature AR fraction instead of restarting low.
+         tail_fraction = scheduled_tail_fraction(
+             epoch,
+@@ -6358,10 +6480,11 @@
+             ),
+             ncols=120,
+         )
+ 
+         for batch_X, batch_Y in pbar:
++            attempted_batch_idx = tracker.step_attempted()
+ 
+             batch_X = batch_X.to(
+                 DEVICE,
+                 non_blocking=True,
+             )
+@@ -6443,18 +6566,21 @@
+             previous_true_rate_scaled = None
+ 
+             for step in range(actual_H):
+ 
+                 # ----------------------------------------------
+-                # network
++                # network & disentangled parameter supervision
+                 # ----------------------------------------------
+-
+-                pred_rate_scaled = (
+-                    model(
+-                        current_X
+-                    )
+-                )
++                true_current_X = batch_X[:, step, :]
++                is_true_input = (step == 0) or torch.equal(current_X, true_current_X)
++
++                if is_true_input:
++                    pred_rate_scaled = model(current_X)
++                    rate_pred_true = pred_rate_scaled
++                else:
++                    pred_rate_scaled = model(current_X)
++                    rate_pred_true = model(true_current_X)
+ 
+                 # ----------------------------------------------
+                 # next state
+                 # ----------------------------------------------
+ 
+@@ -6486,33 +6612,38 @@
+                         step + 1,
+                         :
+                     ]
+                 )
+                 step_weights = transition_weights[:, step] if transition_weights is not None else None
++                true_cur_X_unscaled = true_current_X * tools.scale_X + tools.mean_X
++                true_nxt_X_unscaled = true_next_X * tools.scale_X + tools.mean_X
+                 if use_induction_weights:
+                     from enhanced_loss_and_weights import compute_induction_sample_weights
+-                    cur_X_unscaled = current_X * tools.scale_X + tools.mean_X
+-                    nxt_X_unscaled = true_next_X * tools.scale_X + tools.mean_X
+                     ind_w = compute_induction_sample_weights(
+-                        cur_X_unscaled, nxt_X_unscaled, tools, boost_factor=induction_boost
++                        true_cur_X_unscaled, true_nxt_X_unscaled, tools, boost_factor=induction_boost
+                     )
+                     step_weights = ind_w if step_weights is None else step_weights * ind_w
+ 
+                 # V68 targets are already standardized
+                 true_rate_scaled = batch_Y[:, step, :]
+-                rate_mask = compute_qssa_rate_mask(tools, true_rate_scaled)
++                rate_mask = compute_qssa_rate_mask(
++                    tools,
++                    true_rate_scaled,
++                    Y_old_unscaled=true_cur_X_unscaled,
++                    Y_next_unscaled=true_nxt_X_unscaled,
++                )
+                 if rate_loss_kind == "mse":
+                     rate_loss = weighted_mse_loss(
+-                        pred_rate_scaled,
++                        rate_pred_true,
+                         true_rate_scaled,
+                         sample_weights=step_weights,
+                         feature_weights=rate_feature_weights,
+                         mask=rate_mask,
+                     )
+                 else:
+                     rate_loss = weighted_smooth_l1_loss(
+-                        pred_rate_scaled,
++                        rate_pred_true,
+                         true_rate_scaled,
+                         sample_weights=step_weights,
+                         feature_weights=rate_feature_weights,
+                         mask=rate_mask,
+                         beta=rate_huber_beta,
+@@ -6918,23 +7049,29 @@
+                 local_stats["rollout"] = rollout_loss.detach().item()
+                 local_stats["stability"] += (
+                     float(lambda_stability) * rollout_breakdown.get("stability", 0.0)
+                 )
+ 
+-            gradients_finite = all(
+-                parameter.grad is None
+-                or torch.isfinite(parameter.grad).all()
+-                for parameter in model.parameters()
+-            )
+-            if not gradients_finite:
++            is_finite, grad_norm_f64, grad_diag = td.check_gradient_finite_and_norm(model)
++            if not is_finite:
+                 print(
+-                    f"\n[WARNING] Non-finite gradients skipped "
+-                    f"at epoch={epoch + 1}, batch={n_train_batches + 1}."
++                    f"\n[WARNING] Non-finite gradients ({grad_diag.get('non_finite_params')}) "
++                    f"at epoch={epoch + 1}, attempted_batch={attempted_batch_idx}."
++                )
++                tracker.record_failure_and_check_budget(
++                    model=model,
++                    batch_X=batch_X,
++                    batch_Y=batch_Y,
++                    epoch=epoch + 1,
++                    optimizer=optimizer,
++                    error_msg=f"Non-finite gradients: {grad_diag.get('non_finite_params')}",
++                    diagnostics=grad_diag,
+                 )
+                 optimizer.zero_grad(set_to_none=True)
+                 continue
+ 
++            tracker.record_success()
+             torch.nn.utils.clip_grad_norm_(
+                 model.parameters(),
+                 max_norm=1.0,
+             )
+ 
+@@ -7280,69 +7417,62 @@
+ 
+         # --------------------------------------------------------
+         # save best - 原有总损失模型
+         # --------------------------------------------------------
+ 
+-        if (
+-            val_stats["total"]
+-            < best_val_loss
+-        ):
+-
+-            best_val_loss = (
+-                val_stats["total"]
+-            )
+-
++        # --------------------------------------------------------
++        # save best - Horizon-aware sentinel tracking
++        # --------------------------------------------------------
++        horizon_best_loss = best_val_loss_by_horizon.get(active_horizon, float("inf"))
++        improved_horizon = val_stats["total"] < horizon_best_loss
++        if improved_horizon:
++            best_val_loss_by_horizon[active_horizon] = val_stats["total"]
++            best_val_loss = val_stats["total"]
+             patience_counter = 0
+ 
+-            best_path = (
+-                weights_dir
+-                / f"best_v68_net_{mechanism}.pth"
+-            )
+-
++            # 1. Save horizon-specific checkpoint
++            h_path = weights_dir / f"best_v68_net_{mechanism}_H{active_horizon}.pth"
+             torch.save(
+                 {
+-                    "model_state_dict":
+-                        model.state_dict(),
+-
+-                    "mechanism":
+-                        mechanism,
+-
+-                    "feature_info":
+-                        feature_info,
+-
++                    "model_state_dict": model.state_dict(),
++                    "mechanism": mechanism,
++                    "feature_info": feature_info,
+                     "version": VERSION,
+-
+                     "transform_signature": transform_signature,
+-
+                     "rollout_signature": ROLLOUT_SIGNATURE,
+-
+                     "training_config": training_config,
+-
+-                    "best_val_loss":
+-                        best_val_loss,
+-
+-                    "epoch":
+-                        epoch + 1,
++                    "best_val_loss": best_val_loss,
++                    "epoch": epoch + 1,
++                    "horizon": active_horizon,
+                 },
+-                best_path,
+-            )
+-
+-            print(
+-                f"[SAVE] Best total loss model -> "
+-                f"{best_path.name}"
+-            )
+-
++                h_path,
++            )
++            print(f"[SAVE] Best H={active_horizon} model -> {h_path.name} (val_loss={best_val_loss:.6e})")
++
++            # 2. Update overall benchmark model if this is a mature horizon (H >= 32 or max_horizon)
++            if active_horizon >= 32 or active_horizon == max_horizon:
++                best_path = weights_dir / f"best_v68_net_{mechanism}.pth"
++                torch.save(
++                    {
++                        "model_state_dict": model.state_dict(),
++                        "mechanism": mechanism,
++                        "feature_info": feature_info,
++                        "version": VERSION,
++                        "transform_signature": transform_signature,
++                        "rollout_signature": ROLLOUT_SIGNATURE,
++                        "training_config": training_config,
++                        "best_val_loss": best_val_loss,
++                        "epoch": epoch + 1,
++                        "horizon": active_horizon,
++                    },
++                    best_path,
++                )
++                print(f"[SAVE] Best mature model -> {best_path.name}")
+         else:
+-
+             patience_counter += 1
+-
+             if patience_counter >= 20:
+-
+-                print(
+-                    "\nEarly stopping."
+-                )
+-
++                print("\nEarly stopping.")
+                 break
+ 
+         # --------------------------------------------------------
+         # V68 多指标最佳模型保存
+         # --------------------------------------------------------

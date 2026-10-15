@@ -1,0 +1,317 @@
+FFFFFFFFFFFFFF                                                           [100%]
+================================== FAILURES ===================================
+____ test_fixed_validation_preserves_even_a_truncated_prefix_across_epochs ____
+
+tmp_path = WindowsPath('C:/Users/123/AppData/Local/Temp/pytest-of-123/pytest-155/test_fixed_validation_preserve0')
+
+    def test_fixed_validation_preserves_even_a_truncated_prefix_across_epochs(tmp_path):
+        dataset=tiny_dataset(tmp_path)
+        dataset.set_epoch(0); a=list(dataset)[:3]
+        dataset.set_epoch(1); b=list(dataset)[:3]
+>       assert all(torch.equal(x[0],y[0]) for x,y in zip(a,b))
+E       assert False
+E        +  where False = all(<generator object test_fixed_validation_preserves_even_a_truncated_prefix_across_epochs.<locals>.<genexpr> at 0x000001DE7ECD8220>)
+
+test\test_review_repairs.py:34: AssertionError
+______________ test_explicit_missing_mechanism_cannot_fall_back _______________
+
+tmp_path = WindowsPath('C:/Users/123/AppData/Local/Temp/pytest-of-123/pytest-155/test_explicit_missing_mechanis0')
+
+    def test_explicit_missing_mechanism_cannot_fall_back(tmp_path):
+>       with pytest.raises(FileNotFoundError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE FileNotFoundError
+
+test\test_review_repairs.py:38: Failed
+_______ test_stable_clipping_preserves_finite_large_gradient_direction ________
+
+    def test_stable_clipping_preserves_finite_large_gradient_direction():
+        model=torch.nn.Linear(2,1,bias=False)
+        model.weight.grad=torch.full_like(model.weight,1e20)
+>       td.clip_gradients_stable(model, max_norm=1.)
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'training_diagnostics' has no attribute 'clip_gradients_stable'
+
+test\test_review_repairs.py:45: AttributeError
+_________ test_snapshot_replays_the_failed_stochastic_forward_exactly _________
+
+tmp_path = WindowsPath('C:/Users/123/AppData/Local/Temp/pytest-of-123/pytest-155/test_snapshot_replays_the_fail0')
+
+    def test_snapshot_replays_the_failed_stochastic_forward_exactly(tmp_path):
+        torch.manual_seed(123)
+        model=torch.nn.Sequential(torch.nn.Linear(8,8),torch.nn.Dropout(.5))
+        model.train(); x=torch.ones(4,8)
+        tracker=td.TrainingDiagnosticTracker(tmp_path)
+>       tracker.step_attempted(model=model)
+E       TypeError: TrainingDiagnosticTracker.step_attempted() got an unexpected keyword argument 'model'
+
+test\test_review_repairs.py:54: TypeError
+______ test_sentinel_restores_best_and_rejects_a_worse_resume_candidate _______
+
+    def test_sentinel_restores_best_and_rejects_a_worse_resume_candidate():
+        first=svp.HorizonSentinelTracker([1,8])
+        assert first.consider_candidate(8,{'is_valid_candidate':True,'composite_score':.1},3)
+        restored=svp.HorizonSentinelTracker([1,8])
+>       restored.load_state_dict(first.as_dict())
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'HorizonSentinelTracker' object has no attribute 'load_state_dict'
+
+test\test_review_repairs.py:69: AttributeError
+____________ test_manifest_rejects_a_changed_validation_population ____________
+
+    def test_manifest_rejects_a_changed_validation_population():
+        manifest=dict(mechanism_sha256='a'*64,species_order=['H2'],output_parameterization='dual_branch_pd_v1',
+                      transform_signature='dual_branch_pd_v1',scaler_hashes={'X':'x'},split_hash='group_a',
+                      evaluation_protocol_id=svp.PROTOCOL_ID,sentinel_hash='windows_a')
+        old={**manifest,'sentinel_hash':'windows_b'}
+        good,errors=em.verify_checkpoint_compatibility({'manifest':old},manifest,strict=True)
+>       assert not good and errors
+E       assert (not True)
+
+test\test_review_repairs.py:80: AssertionError
+_________ test_manifest_missing_mechanism_hash_has_a_clear_rejection __________
+
+    def test_manifest_missing_mechanism_hash_has_a_clear_rejection():
+        expected=dict(mechanism_sha256='a'*64,species_order=['H2'])
+>       good,errors=em.verify_checkpoint_compatibility({'manifest':{'species_order':['H2']}},expected,strict=True)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+test\test_review_repairs.py:85: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+checkpoint = {'manifest': {'species_order': ['H2']}}
+expected_manifest = {'mechanism_sha256': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'species_order': ['H2']}
+strict = True
+
+    def verify_checkpoint_compatibility(
+        checkpoint: Dict[str, Any],
+        expected_manifest: Dict[str, Any],
+        strict: bool = True,
+    ) -> Tuple[bool, List[str]]:
+        """Verify that a checkpoint is strictly compatible with the current experimental contract."""
+        errors = []
+    
+        ckpt_manifest = checkpoint.get("manifest")
+        training_config = checkpoint.get("training_config", {})
+    
+        if ckpt_manifest is None:
+            if strict:
+                errors.append("Checkpoint lacks 'manifest'; legacy checkpoint cannot be loaded in strict new experiment mode")
+            # Check training_config as fallback
+            ckpt_param = training_config.get("output_parameterization")
+            exp_param = expected_manifest.get("output_parameterization")
+            if ckpt_param and exp_param and ckpt_param != exp_param:
+                errors.append(f"Output parameterization mismatch: checkpoint '{ckpt_param}' vs expected '{exp_param}'")
+            return (len(errors) == 0, errors)
+    
+        # 1. Mechanism check
+        if ckpt_manifest.get("mechanism_sha256") != expected_manifest.get("mechanism_sha256"):
+            errors.append(
+>               f"Mechanism SHA256 mismatch: checkpoint {ckpt_manifest.get('mechanism_sha256')[:8]} "
+                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                f"vs expected {expected_manifest.get('mechanism_sha256')[:8]}"
+            )
+E           TypeError: 'NoneType' object is not subscriptable
+
+experiment_manifest.py:162: TypeError
+__________ test_initial_phi_does_not_change_with_burning_composition __________
+
+tmp_path = WindowsPath('C:/Users/123/AppData/Local/Temp/pytest-of-123/pytest-155/test_initial_phi_does_not_chan0')
+
+    def test_initial_phi_does_not_change_with_burning_composition(tmp_path):
+        from data_pipeline import build_training_dataset_v72 as builder
+        frame=builder.convert_mini_ds(tmp_path)
+>       assert (frame.groupby('sample_id').phi.nunique()==1).all()
+E       AssertionError: assert False
+E        +  where False = all()
+E        +    where all = sample_id\n10    151\n11    160\n12    160\n13    160\n14    160\n15    143\n16    160\n17    160\n18    159\n19    160\n20     4...  160\n31    160\n32    160\n33    160\n34    160\n35    160\n36    160\n37    160\n38      1\n39    160\nName: phi, dtype: int64 == 1.all
+E        +      where sample_id\n10    151\n11    160\n12    160\n13    160\n14    160\n15    143\n16    160\n17    160\n18    159\n19    160\n20     4...  160\n31    160\n32    160\n33    160\n34    160\n35    160\n36    160\n37    160\n38      1\n39    160\nName: phi, dtype: int64 = nunique()
+E        +        where nunique = <pandas.core.groupby.generic.SeriesGroupBy object at 0x000001DE502F1B50>.nunique
+E        +          where <pandas.core.groupby.generic.SeriesGroupBy object at 0x000001DE502F1B50> = <pandas.core.groupby.generic.DataFrameGroupBy object at 0x000001DE502B7D40>.phi
+E        +            where <pandas.core.groupby.generic.DataFrameGroupBy object at 0x000001DE502B7D40> = groupby('sample_id')
+E        +              where groupby =       sample_id condition_group_id  ...  P_avg_T-ONNH  D_coef_avg_T-ONNH\n0            37       mini_traj_37  ...  1.77...       6.130071e+08\n4799         16       mini_traj_16  ...  3.421071e-18       6.089468e+08\n\n[4800 rows x 210 columns].groupby
+
+test\test_review_repairs.py:92: AssertionError
+---------------------------- Captured stdout call -----------------------------
+Loading mini_ds.pkl from C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc16\data_pipeline\mini_ds.pkl...
+Saved 4800 rows (30 trajectories) to C:\Users\123\AppData\Local\Temp\pytest-of-123\pytest-155\test_initial_phi_does_not_chan0\part-000001.parquet
+___________ test_dataset_diagnostic_metadata_identifies_the_window ____________
+
+tmp_path = WindowsPath('C:/Users/123/AppData/Local/Temp/pytest-of-123/pytest-155/test_dataset_diagnostic_metada0')
+
+    def test_dataset_diagnostic_metadata_identifies_the_window(tmp_path):
+>       dataset=tiny_dataset(tmp_path,include_metadata=True)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+test\test_review_repairs.py:97: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tmp_path = WindowsPath('C:/Users/123/AppData/Local/Temp/pytest-of-123/pytest-155/test_dataset_diagnostic_metada0')
+kwargs = {'include_metadata': True}
+
+    def tiny_dataset(tmp_path, **kwargs):
+        fi = tr.build_feature_info(['H2','H'], [], ['H2'], ['H'], 'dual_branch_pd_v1','dual_branch_pd_v1')
+        sx = tr.FeatureScaler(np.zeros(5), np.ones(5), 1)
+        sy = tr.FeatureScaler(np.zeros(3), np.ones(3), 1)
+        files = []
+        for n in range(3):
+            frame = pd.DataFrame([dict(sample_id=n, time=i*1e-6, T=1000.+n*100+i,
+                P=1., dt=1e-6, T_next=1001.+n*100+i, P_next=1., Y_H2=1., Y_H=1e-20,
+                Y_next_H2=1., Y_next_H=1e-20, dYdt_H2=0., P_avg_H=0.,D_coef_avg_H=0.) for i in range(4)])
+            p=tmp_path/f'part-{n:05d}.parquet'; frame.to_parquet(p,index=False); files.append(p)
+>       return tr.CoarseOperatorDataset(files,fi,sx,sy,max_horizon=1,stride=1,
+                                       parts_per_epoch=2,shuffle_parts=False,**kwargs)
+E       TypeError: CoarseOperatorDataset.__init__() got an unexpected keyword argument 'include_metadata'
+
+test\test_review_repairs.py:26: TypeError
+_ test_mass_gate_rejects_large_total_defect_even_when_individual_elements_pass _
+
+    def test_mass_gate_rejects_large_total_defect_even_when_individual_elements_pass():
+        true = np.full((1,3), 1/3)
+        metrics = svp.compute_species_trajectory_metrics(true, true-.04, ['H2','N2','O2'], element_matrix=np.eye(3))
+        assert metrics['mass_closure']['max_unity_error'] > .05
+        assert metrics['element_closure']['max_element_error'] < .05
+>       assert metrics['is_valid_candidate'] is False
+E       assert True is False
+
+analysis_20261015\gemini_revision2_review\test_followup_regressions.py:26: AssertionError
+_ test_missing_states_cannot_certify_dormancy_at_moderate_d[dual_branch--16.0] _
+
+mode = 'dual_branch', z1 = -16.0
+
+    @pytest.mark.parametrize('mode,z1', [('dual_branch',-16.),('dual_branch_pd_v1',-20.)])
+    def test_missing_states_cannot_certify_dormancy_at_moderate_d(mode,z1):
+        # Both labels are compatible with Y_old=1e-4, dt=1e-4, D=1e4:
+        # Y_next~=3.6788e-5. Parameter labels alone cannot imply dormancy.
+        mask = tr.compute_qssa_rate_mask(tools_for(mode), torch.tensor([[0.,z1,4.]]))
+>       assert mask is None or mask[0,-1].item() == 1.0
+E       assert (tensor([[1., 1., 0.]]) is None or 0.0 == 1.0)
+E        +  where 0.0 = <built-in method item of Tensor object at 0x000001E08A0A83C0>()
+E        +    where <built-in method item of Tensor object at 0x000001E08A0A83C0> = tensor(0.).item
+
+analysis_20261015\gemini_revision2_review\test_followup_regressions.py:33: AssertionError
+_ test_missing_states_cannot_certify_dormancy_at_moderate_d[dual_branch_pd_v1--20.0] _
+
+mode = 'dual_branch_pd_v1', z1 = -20.0
+
+    @pytest.mark.parametrize('mode,z1', [('dual_branch',-16.),('dual_branch_pd_v1',-20.)])
+    def test_missing_states_cannot_certify_dormancy_at_moderate_d(mode,z1):
+        # Both labels are compatible with Y_old=1e-4, dt=1e-4, D=1e4:
+        # Y_next~=3.6788e-5. Parameter labels alone cannot imply dormancy.
+        mask = tr.compute_qssa_rate_mask(tools_for(mode), torch.tensor([[0.,z1,4.]]))
+>       assert mask is None or mask[0,-1].item() == 1.0
+E       assert (tensor([[1., 1., 0.]]) is None or 0.0 == 1.0)
+E        +  where 0.0 = <built-in method item of Tensor object at 0x000001DE0E4CB020>()
+E        +    where <built-in method item of Tensor object at 0x000001DE0E4CB020> = tensor(0.).item
+
+analysis_20261015\gemini_revision2_review\test_followup_regressions.py:33: AssertionError
+______ test_actual_validation_counts_inert_mass_in_a_perfect_prediction _______
+
+    def test_actual_validation_counts_inert_mass_in_a_perfect_prediction():
+        metrics = inert_validation_metrics()
+        assert metrics['mean_major_nmae'] < 1e-6
+>       assert metrics['mass_closure']['max_unity_error'] < 1e-6
+E       assert 0.10000002384185791 < 1e-06
+
+analysis_20261015\gemini_revision2_review\test_followup_regressions.py:49: AssertionError
+________________ test_published_workstation_flags_are_accepted ________________
+
+    def test_published_workstation_flags_are_accepted():
+>       tr.get_training_arg_parser().parse_args([
+            '--mechanism','nuig_2024','--output_parameterization','dual_branch_pd_v1',
+            '--rate_decode_mode','dual_branch_pd_v1','--state_update_mode','dual_branch_pd_v1',
+            '--curriculum_warmup_epochs','5','--weight_decay','1e-5'])
+
+analysis_20261015\gemini_revision2_review\test_followup_regressions.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\123\.conda\envs\cantera\Lib\argparse.py:1908: in parse_args
+    self.error(msg)
+C:\Users\123\.conda\envs\cantera\Lib\argparse.py:2650: in error
+    self.exit(2, _('%(prog)s: error: %(message)s\n') % args)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ArgumentParser(prog='__main__.py', usage=None, description='V68 long-horizon species-autoregressive chemistry operator training', formatter_class=<class 'argparse.HelpFormatter'>, conflict_handler='error', add_help=True)
+status = 2
+message = '__main__.py: error: unrecognized arguments: --curriculum_warmup_epochs 5 --weight_decay 1e-5\n'
+
+    def exit(self, status=0, message=None):
+        if message:
+            self._print_message(message, _sys.stderr)
+>       _sys.exit(status)
+E       SystemExit: 2
+
+C:\Users\123\.conda\envs\cantera\Lib\argparse.py:2637: SystemExit
+---------------------------- Captured stderr call -----------------------------
+usage: __main__.py [-h] [--data_dir DATA_DIR] [--split_dir SPLIT_DIR]
+                   [--mechanism MECHANISM] [--epochs EPOCHS]
+                   [--batch_size BATCH_SIZE] [--lr LR]
+                   [--max_horizon MAX_HORIZON]
+                   [--curriculum_horizons CURRICULUM_HORIZONS [CURRICULUM_HORIZONS ...]]
+                   [--curriculum_start_epochs CURRICULUM_START_EPOCHS [CURRICULUM_START_EPOCHS ...]]
+                   [--eval_horizons EVAL_HORIZONS [EVAL_HORIZONS ...]]
+                   [--tail_start TAIL_START] [--tail_end TAIL_END]
+                   [--tail_ramp_epochs TAIL_RAMP_EPOCHS]
+                   [--train_stride TRAIN_STRIDE] [--val_stride VAL_STRIDE]
+                   [--backward_chunk_steps BACKWARD_CHUNK_STEPS]
+                   [--parts_per_epoch PARTS_PER_EPOCH]
+                   [--val_parts_per_epoch VAL_PARTS_PER_EPOCH]
+                   [--val_batch_size VAL_BATCH_SIZE] [--val_ratio VAL_RATIO]
+                   [--scaler_parts SCALER_PARTS]
+                   [--scaler_sample_rate SCALER_SAMPLE_RATE]
+                   [--scaler_max_rows SCALER_MAX_ROWS]
+                   [--lambda_rate LAMBDA_RATE] [--rate_loss_kind {mse,huber}]
+                   [--output_parameterization {direct_rate,conservative_simplex,qssa,qssa_asymptotic,dual_branch,dual_branch_pd_v1}]
+                   [--rate_huber_beta RATE_HUBER_BETA]
+                   [--rate_decode_mode {direct_rate,bounded_direct_rate,qssa,qssa_asymptotic,dual_branch,dual_branch_pd_v1}]
+                   [--rate_z_limit RATE_Z_LIMIT] [--lambda_state LAMBDA_STATE]
+                   [--lambda_element LAMBDA_ELEMENT]
+                   [--lambda_mass LAMBDA_MASS]
+                   [--lambda_positive LAMBDA_POSITIVE]
+                   [--lambda_rollout LAMBDA_ROLLOUT]
+                   [--lambda_stability LAMBDA_STABILITY]
+                   [--transition_weight_alpha TRANSITION_WEIGHT_ALPHA]
+                   [--transition_weight_clip TRANSITION_WEIGHT_CLIP]
+                   [--feedback_noise_std FEEDBACK_NOISE_STD]
+                   [--macro_loss_weight MACRO_LOSS_WEIGHT]
+                   [--micro_loss_weight MICRO_LOSS_WEIGHT]
+                   [--key_species_loss_weight KEY_SPECIES_LOSS_WEIGHT]
+                   [--feedback_blend_start FEEDBACK_BLEND_START]
+                   [--feedback_blend_end FEEDBACK_BLEND_END]
+                   [--feedback_blend_ramp_epochs FEEDBACK_BLEND_RAMP_EPOCHS]
+                   [--trust_region_fraction TRUST_REGION_FRACTION]
+                   [--temperature_mode {recorded,autonomous}]
+                   [--max_delta_temperature MAX_DELTA_TEMPERATURE]
+                   [--experiment_mode {baseline,diagnostic,constrained_delta,conserve_project,qssa,dual_branch_pd_v1}]
+                   [--state_update_mode {legacy,task8_conservative_state,qssa,qssa_asymptotic,dual_branch,dual_branch_pd_v1}]
+                   [--warm_start WARM_START] [--resume RESUME]
+                   [--checkpoint_every CHECKPOINT_EVERY]
+                   [--full_val_every FULL_VAL_EVERY]
+                   [--max_val_batches MAX_VAL_BATCHES]
+                   [--output_root OUTPUT_ROOT]
+                   [--state-loss-source {constrained,raw}]
+                   [--feedback-state-source {constrained,raw}]
+                   [--micro-rate-z-limit MICRO_RATE_Z_LIMIT]
+                   [--lambda_radical LAMBDA_RADICAL] [--lambda_no LAMBDA_NO]
+                   [--use_induction_weights]
+                   [--induction_boost INDUCTION_BOOST]
+                   [--projection_mode {multiplicative_kl,weighted_linear}]
+                   [--desentinelize_scaler]
+                   [--network_arch {mlp,resmlp,dual_branch}]
+                   [--num_workers NUM_WORKERS]
+__main__.py: error: unrecognized arguments: --curriculum_warmup_epochs 5 --weight_decay 1e-5
+=========================== short test summary info ===========================
+FAILED test/test_review_repairs.py::test_fixed_validation_preserves_even_a_truncated_prefix_across_epochs
+FAILED test/test_review_repairs.py::test_explicit_missing_mechanism_cannot_fall_back
+FAILED test/test_review_repairs.py::test_stable_clipping_preserves_finite_large_gradient_direction
+FAILED test/test_review_repairs.py::test_snapshot_replays_the_failed_stochastic_forward_exactly
+FAILED test/test_review_repairs.py::test_sentinel_restores_best_and_rejects_a_worse_resume_candidate
+FAILED test/test_review_repairs.py::test_manifest_rejects_a_changed_validation_population
+FAILED test/test_review_repairs.py::test_manifest_missing_mechanism_hash_has_a_clear_rejection
+FAILED test/test_review_repairs.py::test_initial_phi_does_not_change_with_burning_composition
+FAILED test/test_review_repairs.py::test_dataset_diagnostic_metadata_identifies_the_window
+FAILED analysis_20261015/gemini_revision2_review/test_followup_regressions.py::test_mass_gate_rejects_large_total_defect_even_when_individual_elements_pass
+FAILED analysis_20261015/gemini_revision2_review/test_followup_regressions.py::test_missing_states_cannot_certify_dormancy_at_moderate_d[dual_branch--16.0]
+FAILED analysis_20261015/gemini_revision2_review/test_followup_regressions.py::test_missing_states_cannot_certify_dormancy_at_moderate_d[dual_branch_pd_v1--20.0]
+FAILED analysis_20261015/gemini_revision2_review/test_followup_regressions.py::test_actual_validation_counts_inert_mass_in_a_perfect_prediction
+FAILED analysis_20261015/gemini_revision2_review/test_followup_regressions.py::test_published_workstation_flags_are_accepted
+14 failed in 11.61s

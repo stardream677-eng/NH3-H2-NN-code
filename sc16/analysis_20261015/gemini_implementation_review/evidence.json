@@ -1,0 +1,451 @@
+{
+  "python": "C:\\Users\\123\\.conda\\envs\\cantera\\python.exe",
+  "versions": {
+    "torch": "2.11.0.dev20260120+cu130",
+    "cantera": "3.0.1"
+  },
+  "source_sha256": {
+    "chemistry_contract.py": "5a5c0e6c097d2dfc8b2fab0b785ea35a49da71211dc2dd3b5594404163c5eddf",
+    "compute_physical_metrics.py": "d58e8b68100d2a2eb63d768333b98a3ca77d7089c214ba53d50e31ca6dea6bdd",
+    "dual_branch_network.py": "7f7324e200340cd782c58898ab9b5fa7c55dc554e233e2c663da02955f66c17a",
+    "enhanced_loss_and_weights.py": "2cf8fd3729ce27c1669b2e454b210957e1fbab87f1961eace622fcfd3e849e9f",
+    "experiment_manifest.py": "e11086480ed616182380ff07598536c1047f13f2c2e115a8d0f4439c9f08f1b7",
+    "kinetics_parameterization.py": "b56995c73c9d6a1871d5d39988ea1ced29b93604d8f4d37d495688f45845d940",
+    "species_validation_protocol.py": "075707fcc184951d69c45fc691108c2ca08223a083a60487179454687dda53c9",
+    "thermo_nasa7_layer.py": "b127ff7642f7199af61306241e19c98dfc798386e7c6c63fd87f2bc7789e415b",
+    "training_diagnostics.py": "7de82f2ced15e57a9bd302a4816cbf0a8d19128c904b061adb571f5f62225e8d",
+    "train_all_v68.py": "c046c29cd78909d64a15b0a1f93d77545f5fc7011ebffbe8964350c293e395a1",
+    "train_sc_v68.py": "8408d52a945e3fc91f5926c9c6f9d1e079e8070092c29994852efc6499ee0fb0",
+    "validate_all_best_models_v68.py": "f507cf0b23d2d0d9175bd72a6c1355b244163b9dd22f68e52f57eb42e800260e",
+    "validate_sc_v68.py": "a27dc653c110eef2e1b1b34b3d1f1383b1e7e73d1eac3da9362034657d2e289f",
+    "data_pipeline\\audit_generated_database.py": "d43da8f1f1aa90697ac590be893d3b2fbfdd08d4520a0e2c757100172ae9619f",
+    "data_pipeline\\audit_initial_conditions_v67.py": "e2f2d0c206d6e9829160e3b8b28fd17c1674ec0e0f7ee7086a4c34469254cf1e",
+    "data_pipeline\\build_training_dataset_v72.py": "9ea24233a17fd37f44b01faafb87450330e0f2871fd714966b65debd2dbdb5fd",
+    "data_pipeline\\generate_augmented_trajectories.py": "a4d9441db7f4b121fd612f2b6f3593bb73bc60917290d067908307f533c48110",
+    "data_pipeline\\lhs_sampler_sc_v11.py": "e6c5a73268ccbce035a68105ef8914d53d69c822e5da402ead93b0026bc83260",
+    "data_pipeline\\runner_sc_v21_qssa.py": "4c520242f54083d6ee9884ac767acf51612a9ea9d8c98ffce0df7dc4c5c69970",
+    "data_pipeline\\split_trajectories_v21.py": "f64ab322845299618e5946782a985e2ccf4d6918d14bb548dd69b4c7b6ba3a03",
+    "data_pipeline\\trajectory_conditions_v67.py": "24eed3ec3a1df7cba5e598223829315091edd4be2f8a8ea431a71f2c1d482880",
+    "data_pipeline\\__init__.py": "dfcd5b4d75934f8bd75ebfe36d9934399ad15f39ac02405909c7149bd8ab27be"
+  },
+  "new_mode_cli": {
+    "accepted": false,
+    "exit_code": 2,
+    "message": "probe_integration.py: error: argument --output_parameterization: invalid choice: 'dual_branch_pd_v1' (choose from direct_rate, conservative_simplex, qssa, qssa_asymptotic, dual_branch)"
+  },
+  "new_mode_target_transform": {
+    "error": "ValueError: invalid output_parameterization: 'dual_branch_pd_v1'"
+  },
+  "new_mode_tools_constructor": {
+    "error": "ValueError: Incompatible V68 transform signature: expected 'macro_asinh_p90_v2', got 'dual_branch_pd_v1'"
+  },
+  "new_mode_mlp_constructor": {
+    "error": "ValueError: invalid output_parameterization: 'dual_branch_pd_v1'"
+  },
+  "new_decoder_cold_float32_backward": [
+    {
+      "initial_logY": -40.0,
+      "raw_logY": [
+        [
+          -40.0
+        ]
+      ],
+      "input_gradient": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "output_gradient": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "all_gradients_finite": true
+    },
+    {
+      "initial_logY": -39.5,
+      "raw_logY": [
+        [
+          -39.5
+        ]
+      ],
+      "input_gradient": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          "inf",
+          "nan"
+        ]
+      ],
+      "output_gradient": [
+        [
+          0.0,
+          "inf",
+          "nan"
+        ]
+      ],
+      "all_gradients_finite": false
+    },
+    {
+      "initial_logY": -39.0,
+      "raw_logY": [
+        [
+          -39.0
+        ]
+      ],
+      "input_gradient": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          "inf",
+          "nan"
+        ]
+      ],
+      "output_gradient": [
+        [
+          0.0,
+          "inf",
+          "nan"
+        ]
+      ],
+      "all_gradients_finite": false
+    },
+    {
+      "initial_logY": -38.0,
+      "raw_logY": [
+        [
+          -38.0
+        ]
+      ],
+      "input_gradient": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ]
+      ],
+      "output_gradient": [
+        [
+          0.0,
+          1000000061440.0,
+          -1.0000000830368325e-16
+        ]
+      ],
+      "all_gradients_finite": true
+    },
+    {
+      "initial_logY": -30.0,
+      "raw_logY": [
+        [
+          -30.0
+        ]
+      ],
+      "input_gradient": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.9999999403953552,
+          0.0
+        ]
+      ],
+      "output_gradient": [
+        [
+          0.0,
+          9999.9990234375,
+          -1.0000000168623835e-16
+        ]
+      ],
+      "all_gradients_finite": true
+    }
+  ],
+  "condition_group_ingestion_and_split": {
+    "selected_columns": [
+      "sample_id",
+      "time",
+      "T",
+      "P",
+      "phi_actual",
+      "Y_H2"
+    ],
+    "true_groups": 10,
+    "loaded_groups": 30,
+    "split_sizes": {
+      "train": 18,
+      "validation": 6,
+      "test": 6
+    },
+    "true_group_overlap": {
+      "train_validation": [
+        "g_0",
+        "g_2",
+        "g_4",
+        "g_6",
+        "g_8"
+      ],
+      "train_test": [
+        "g_0",
+        "g_3",
+        "g_5",
+        "g_7",
+        "g_9"
+      ],
+      "validation_test": [
+        "g_0"
+      ]
+    }
+  },
+  "metric_zero_radical": {
+    "zero_H": {
+      "protocol_id": "v68_species_sentinel_protocol_v1",
+      "composite_score": 4.00040004000356e-05,
+      "mean_major_nmae": 0.000100010001000089,
+      "mean_radical_log_rmse": 0.0,
+      "mean_pollutant_nmae": 0.0,
+      "cold_fp_rate": 0.0,
+      "nonfinite_count": 0,
+      "negative_count": 0,
+      "is_valid_candidate": true,
+      "mass_closure": {
+        "mean_mass_sum": 1.0,
+        "max_unity_error": 0.0,
+        "rmse_unity_error": 0.0
+      },
+      "element_closure": {},
+      "timing_metrics": {},
+      "per_species": {
+        "H2": {
+          "n": 2,
+          "mae": 9.999999999998899e-05,
+          "rmse": 9.999999999998899e-05,
+          "nmae": 0.000100010001000089,
+          "peak_true": 0.9999,
+          "peak_pred": 1.0,
+          "peak_error": 9.999999999998899e-05,
+          "active_log_rmse": 4.3431619807505604e-05,
+          "cold_fp_count": 0,
+          "cold_fp_ratio": 0.0
+        },
+        "H": {
+          "n": 2,
+          "mae": 0.0001,
+          "rmse": 0.0001,
+          "nmae": 1.0,
+          "peak_true": 0.0001,
+          "peak_pred": 0.0,
+          "peak_error": 0.0001,
+          "active_log_rmse": 0.0,
+          "cold_fp_count": 0,
+          "cold_fp_ratio": 0.0
+        }
+      }
+    },
+    "tenfold_low_H": {
+      "protocol_id": "v68_species_sentinel_protocol_v1",
+      "composite_score": 0.35003600360036,
+      "mean_major_nmae": 9.000900090012451e-05,
+      "mean_radical_log_rmse": 1.0,
+      "mean_pollutant_nmae": 0.0,
+      "cold_fp_rate": 0.0,
+      "nonfinite_count": 0,
+      "negative_count": 0,
+      "is_valid_candidate": true,
+      "mass_closure": {
+        "mean_mass_sum": 1.0,
+        "max_unity_error": 0.0,
+        "rmse_unity_error": 0.0
+      },
+      "element_closure": {},
+      "timing_metrics": {},
+      "per_species": {
+        "H2": {
+          "n": 2,
+          "mae": 9.00000000000345e-05,
+          "rmse": 9.00000000000345e-05,
+          "nmae": 9.000900090012451e-05,
+          "peak_true": 0.9999,
+          "peak_pred": 0.99999,
+          "peak_error": 9.00000000000345e-05,
+          "active_log_rmse": 3.908865327362399e-05,
+          "cold_fp_count": 0,
+          "cold_fp_ratio": 0.0
+        },
+        "H": {
+          "n": 2,
+          "mae": 9e-05,
+          "rmse": 9e-05,
+          "nmae": 0.9,
+          "peak_true": 0.0001,
+          "peak_pred": 1e-05,
+          "peak_error": 9e-05,
+          "active_log_rmse": 1.0,
+          "cold_fp_count": 0,
+          "cold_fp_ratio": 0.0
+        }
+      }
+    }
+  },
+  "metric_invalid_state_gate": {
+    "protocol_id": "v68_species_sentinel_protocol_v1",
+    "composite_score": 0.8400000000000001,
+    "mean_major_nmae": 2.1,
+    "mean_radical_log_rmse": 0.0,
+    "mean_pollutant_nmae": 0.0,
+    "cold_fp_rate": 0.0,
+    "nonfinite_count": 0,
+    "negative_count": 1,
+    "is_valid_candidate": true,
+    "mass_closure": {
+      "mean_mass_sum": 1.9,
+      "max_unity_error": 0.8999999999999999,
+      "rmse_unity_error": 0.8999999999999999
+    },
+    "element_closure": {
+      "max_element_error": 1.5,
+      "rmse_element_error": 1.1423659658795862
+    },
+    "timing_metrics": {},
+    "per_species": {
+      "H2": {
+        "n": 1,
+        "mae": 0.6,
+        "rmse": 0.6,
+        "nmae": 1.2,
+        "peak_true": 0.5,
+        "peak_pred": -0.1,
+        "peak_error": 0.6,
+        "active_log_rmse": 0.0,
+        "cold_fp_count": 0,
+        "cold_fp_ratio": 0.0
+      },
+      "O2": {
+        "n": 1,
+        "mae": 1.5,
+        "rmse": 1.5,
+        "nmae": 3.0,
+        "peak_true": 0.5,
+        "peak_pred": 2.0,
+        "peak_error": 1.5,
+        "active_log_rmse": 0.6020599913279624,
+        "cold_fp_count": 0,
+        "cold_fp_ratio": 0.0
+      }
+    }
+  },
+  "mask_missing_states": {
+    "mask": [
+      [
+        1.0,
+        1.0,
+        0.0
+      ]
+    ],
+    "should_not_mask_without_states": true
+  },
+  "qssa_mask_full_input_layout": {
+    "error": "IndexError: index 1 is out of bounds for dimension 0 with size 1"
+  },
+  "actual_gradient_clipping_after_diagnostic": {
+    "finite_check_passed": true,
+    "float64_norm": 1.4142135907151756e+20,
+    "clip_returned_norm": "inf",
+    "gradient_after_clip": [
+      [
+        0.0,
+        0.0
+      ]
+    ]
+  },
+  "failure_snapshot_rng_replay": {
+    "exact_replay": false,
+    "max_abs_difference": 1.4914599657058716,
+    "snapshot_keys": [
+      "attempted_batch_idx",
+      "batch_X",
+      "batch_Y",
+      "diagnostics",
+      "epoch",
+      "error_msg",
+      "model_state_dict",
+      "optimizer_state_dict",
+      "rng_state",
+      "sample_ids",
+      "window_start"
+    ],
+    "snapshot_sample_ids": null,
+    "snapshot_window_start": null,
+    "replay": {
+      "anomaly_detected": false,
+      "anomaly_msg": null,
+      "attempted_batch_idx": 1,
+      "epoch": 0
+    }
+  },
+  "production_callsites": {
+    "get_mechanism_contract": [],
+    "verify_checkpoint_compatibility": [],
+    "audit_parquet_dataset": [],
+    "create_experiment_manifest": [],
+    "encode_pd_targets": [],
+    "consider_candidate": [],
+    "compute_species_trajectory_metrics": []
+  },
+  "missing_mechanism_silent_fallback": {
+    "missing_explicit_path_accepted": true,
+    "matrix": [
+      [
+        0.8224614858627319,
+        0.0
+      ],
+      [
+        0.17753851413726807,
+        0.11189097166061401
+      ],
+      [
+        0.0,
+        0.888109028339386
+      ]
+    ]
+  },
+  "mini_phi_not_initial_condition": {
+    "trajectories": 30,
+    "trajectories_phi_range_gt_0_1": 15,
+    "worst_sample_id": 34,
+    "worst_phi": {
+      "min": 2.671054576208122,
+      "max": 97089.84099399796,
+      "first": 2.671054576208122,
+      "last": 43898.39002988628
+    },
+    "mechanism_present": true
+  },
+  "manifest_contract_missing_checks": {
+    "wrong_transform_missing_scalers_accepted": true,
+    "errors": []
+  },
+  "verified_improvements": {
+    "actual_decoded_dt": 0.000162499985890463,
+    "NO_cold_loss": 0.18510405719280243,
+    "NO_cold_grad": 43.42727279663086,
+    "projected_dormant_Y": 1e-40
+  },
+  "actual_real_label_roundtrip": {
+    "rows": 4800,
+    "mode": "dual_branch (existing mode, not new PD mode)",
+    "max_absolute_projected_error": 1.9422058528855216e-07,
+    "previous_audit_max_absolute_projected_error": 5.226598988744557e-06,
+    "matrix_max_difference_vs_mechanism": 2.8369165017139153e-08,
+    "has_saved_element_matrix": false,
+    "has_saved_mechanism_hash": false
+  }
+}

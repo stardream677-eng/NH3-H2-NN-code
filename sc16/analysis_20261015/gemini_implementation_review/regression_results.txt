@@ -1,0 +1,165 @@
+FFFFFFFFFF                                                               [100%]
+================================== FAILURES ===================================
+_________________ test_reported_training_cli_accepts_new_mode _________________
+C:\Users\123\.conda\envs\cantera\Lib\argparse.py:1943: in _parse_known_args2
+    namespace, args = self._parse_known_args(args, namespace, intermixed)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\123\.conda\envs\cantera\Lib\argparse.py:2184: in _parse_known_args
+    start_index = consume_optional(start_index)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\123\.conda\envs\cantera\Lib\argparse.py:2113: in consume_optional
+    take_action(action, args, option_string)
+C:\Users\123\.conda\envs\cantera\Lib\argparse.py:2003: in take_action
+    argument_values = self._get_values(action, argument_strings)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\123\.conda\envs\cantera\Lib\argparse.py:2514: in _get_values
+    self._check_value(action, value)
+C:\Users\123\.conda\envs\cantera\Lib\argparse.py:2573: in _check_value
+    raise ArgumentError(action, msg % args)
+E   argparse.ArgumentError: argument --output_parameterization: invalid choice: 'dual_branch_pd_v1' (choose from direct_rate, conservative_simplex, qssa, qssa_asymptotic, dual_branch)
+
+During handling of the above exception, another exception occurred:
+analysis_20261015\gemini_implementation_review\test_review_regressions.py:28: in test_reported_training_cli_accepts_new_mode
+    args=tr.get_training_arg_parser().parse_args(['--mechanism','nuig_2024',
+C:\Users\123\.conda\envs\cantera\Lib\argparse.py:1904: in parse_args
+    args, argv = self.parse_known_args(args, namespace)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\123\.conda\envs\cantera\Lib\argparse.py:1914: in parse_known_args
+    return self._parse_known_args2(args, namespace, intermixed=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\123\.conda\envs\cantera\Lib\argparse.py:1945: in _parse_known_args2
+    self.error(str(err))
+C:\Users\123\.conda\envs\cantera\Lib\argparse.py:2650: in error
+    self.exit(2, _('%(prog)s: error: %(message)s\n') % args)
+C:\Users\123\.conda\envs\cantera\Lib\argparse.py:2637: in exit
+    _sys.exit(status)
+E   SystemExit: 2
+---------------------------- Captured stderr call -----------------------------
+usage: __main__.py [-h] [--data_dir DATA_DIR] [--split_dir SPLIT_DIR]
+                   [--mechanism MECHANISM] [--epochs EPOCHS]
+                   [--batch_size BATCH_SIZE] [--lr LR]
+                   [--max_horizon MAX_HORIZON]
+                   [--curriculum_horizons CURRICULUM_HORIZONS [CURRICULUM_HORIZONS ...]]
+                   [--curriculum_start_epochs CURRICULUM_START_EPOCHS [CURRICULUM_START_EPOCHS ...]]
+                   [--eval_horizons EVAL_HORIZONS [EVAL_HORIZONS ...]]
+                   [--tail_start TAIL_START] [--tail_end TAIL_END]
+                   [--tail_ramp_epochs TAIL_RAMP_EPOCHS]
+                   [--train_stride TRAIN_STRIDE] [--val_stride VAL_STRIDE]
+                   [--backward_chunk_steps BACKWARD_CHUNK_STEPS]
+                   [--parts_per_epoch PARTS_PER_EPOCH]
+                   [--val_parts_per_epoch VAL_PARTS_PER_EPOCH]
+                   [--val_batch_size VAL_BATCH_SIZE] [--val_ratio VAL_RATIO]
+                   [--scaler_parts SCALER_PARTS]
+                   [--scaler_sample_rate SCALER_SAMPLE_RATE]
+                   [--scaler_max_rows SCALER_MAX_ROWS]
+                   [--lambda_rate LAMBDA_RATE] [--rate_loss_kind {mse,huber}]
+                   [--output_parameterization {direct_rate,conservative_simplex,qssa,qssa_asymptotic,dual_branch}]
+                   [--rate_huber_beta RATE_HUBER_BETA]
+                   [--rate_decode_mode {direct_rate,bounded_direct_rate,qssa,qssa_asymptotic,dual_branch,dual_branch_pd_v1}]
+                   [--rate_z_limit RATE_Z_LIMIT] [--lambda_state LAMBDA_STATE]
+                   [--lambda_element LAMBDA_ELEMENT]
+                   [--lambda_mass LAMBDA_MASS]
+                   [--lambda_positive LAMBDA_POSITIVE]
+                   [--lambda_rollout LAMBDA_ROLLOUT]
+                   [--lambda_stability LAMBDA_STABILITY]
+                   [--transition_weight_alpha TRANSITION_WEIGHT_ALPHA]
+                   [--transition_weight_clip TRANSITION_WEIGHT_CLIP]
+                   [--feedback_noise_std FEEDBACK_NOISE_STD]
+                   [--macro_loss_weight MACRO_LOSS_WEIGHT]
+                   [--micro_loss_weight MICRO_LOSS_WEIGHT]
+                   [--key_species_loss_weight KEY_SPECIES_LOSS_WEIGHT]
+                   [--feedback_blend_start FEEDBACK_BLEND_START]
+                   [--feedback_blend_end FEEDBACK_BLEND_END]
+                   [--feedback_blend_ramp_epochs FEEDBACK_BLEND_RAMP_EPOCHS]
+                   [--trust_region_fraction TRUST_REGION_FRACTION]
+                   [--temperature_mode {recorded,autonomous}]
+                   [--max_delta_temperature MAX_DELTA_TEMPERATURE]
+                   [--experiment_mode {baseline,diagnostic,constrained_delta,conserve_project,qssa,dual_branch_pd_v1}]
+                   [--state_update_mode {legacy,task8_conservative_state,qssa,qssa_asymptotic,dual_branch}]
+                   [--warm_start WARM_START] [--resume RESUME]
+                   [--checkpoint_every CHECKPOINT_EVERY]
+                   [--full_val_every FULL_VAL_EVERY]
+                   [--max_val_batches MAX_VAL_BATCHES]
+                   [--output_root OUTPUT_ROOT]
+                   [--state-loss-source {constrained,raw}]
+                   [--feedback-state-source {constrained,raw}]
+                   [--micro-rate-z-limit MICRO_RATE_Z_LIMIT]
+                   [--lambda_radical LAMBDA_RADICAL] [--lambda_no LAMBDA_NO]
+                   [--use_induction_weights]
+                   [--induction_boost INDUCTION_BOOST]
+                   [--projection_mode {multiplicative_kl,weighted_linear}]
+                   [--desentinelize_scaler]
+                   [--network_arch {mlp,resmlp,dual_branch}]
+                   [--num_workers NUM_WORKERS]
+__main__.py: error: argument --output_parameterization: invalid choice: 'dual_branch_pd_v1' (choose from direct_rate, conservative_simplex, qssa, qssa_asymptotic, dual_branch)
+_________________ test_real_target_pipeline_encodes_new_mode __________________
+analysis_20261015\gemini_implementation_review\test_review_regressions.py:34: in test_real_target_pipeline_encodes_new_mode
+    result=tr.transform_target_array(df,['H2'],['H'],[1.],output_parameterization='dual_branch_pd_v1')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+train_sc_v68.py:1973: in transform_target_array
+    raise ValueError(f"invalid output_parameterization: {output_parameterization!r}")
+E   ValueError: invalid output_parameterization: 'dual_branch_pd_v1'
+________________ test_real_tools_accept_new_feature_signature _________________
+analysis_20261015\gemini_implementation_review\test_review_regressions.py:38: in test_real_tools_accept_new_feature_signature
+    assert make_tools('dual_branch_pd_v1').rate_decode_mode=='dual_branch_pd_v1'
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+analysis_20261015\gemini_implementation_review\test_review_regressions.py:25: in make_tools
+    return tr.CoarseOperatorTools(fi,sx,sy,device='cpu')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+train_sc_v68.py:2996: in __init__
+    raise ValueError(
+E   ValueError: Incompatible V68 transform signature: expected 'macro_asinh_p90_v2', got 'dual_branch_pd_v1'
+____________ test_new_decoder_float32_cold_log_gradient_is_finite _____________
+analysis_20261015\gemini_implementation_review\test_review_regressions.py:47: in test_new_decoder_float32_cold_log_gradient_is_finite
+    assert torch.isfinite(x.grad).all() and torch.isfinite(z.grad).all()
+E   assert (tensor(False))
+E    +  where tensor(False) = <built-in method all of Tensor object at 0x000001A101417E80>()
+E    +    where <built-in method all of Tensor object at 0x000001A101417E80> = tensor([[ True,  True,  True, False, False]]).all
+E    +      where tensor([[ True,  True,  True, False, False]]) = <built-in method isfinite of type object at 0x00007FF9B3BACF40>(tensor([[0., 0., 0., inf, nan]]))
+E    +        where <built-in method isfinite of type object at 0x00007FF9B3BACF40> = torch.isfinite
+E    +        and   tensor([[0., 0., 0., inf, nan]]) = tensor([[ 1.2000e+03,  4.0000e+01,  1.0000e+00, -3.9000e+01, -6.0000e+00]],\n       requires_grad=True).grad
+_____________ test_original_condition_groups_do_not_cross_splits ______________
+analysis_20261015\gemini_implementation_review\test_review_regressions.py:59: in test_original_condition_groups_do_not_cross_splits
+    assert groups['train'].isdisjoint(groups['validation'])
+E   AssertionError: assert False
+E    +  where False = <built-in method isdisjoint of set object at 0x000001A1013A0E40>({'g_0', 'g_2', 'g_4', 'g_6', 'g_8'})
+E    +    where <built-in method isdisjoint of set object at 0x000001A1013A0E40> = {'g_0', 'g_1', 'g_2', 'g_3', 'g_4', 'g_5', ...}.isdisjoint
+___________ test_zero_prediction_of_active_radical_is_not_rewarded ____________
+analysis_20261015\gemini_implementation_review\test_review_regressions.py:67: in test_zero_prediction_of_active_radical_is_not_rewarded
+    assert zero['mean_radical_log_rmse']>low['mean_radical_log_rmse']
+E   assert 0.0 > 1.0
+_____________ test_invalid_physical_state_is_not_valid_candidate ______________
+analysis_20261015\gemini_implementation_review\test_review_regressions.py:72: in test_invalid_physical_state_is_not_valid_candidate
+    assert result['is_valid_candidate'] is False
+E   assert True is False
+_________________ test_missing_states_do_not_mask_destruction _________________
+analysis_20261015\gemini_implementation_review\test_review_regressions.py:76: in test_missing_states_do_not_mask_destruction
+    assert mask is None or bool((mask==1.).all())
+E   assert (tensor([[1., 1., 0.]]) is None or False)
+E    +  where False = bool(tensor(False))
+E    +    where tensor(False) = <built-in method all of Tensor object at 0x000001A14C031270>()
+E    +      where <built-in method all of Tensor object at 0x000001A14C031270> = tensor([[1., 1., 0.]]) == 1.0.all
+_______________ test_qssa_mask_accepts_actual_full_input_layout _______________
+analysis_20261015\gemini_implementation_review\test_review_regressions.py:81: in test_qssa_mask_accepts_actual_full_input_layout
+    mask=tr.compute_qssa_rate_mask(op,torch.zeros(1,4),Y_old_unscaled=x,Y_next_unscaled=x)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+train_sc_v68.py:940: in compute_qssa_rate_mask
+    y_old_i = Y_old_unscaled[:, i] if Y_old_unscaled.shape[1] == n_micro else Y_old_unscaled[:, tools.micro_idx[i]]
+                                                                                                ^^^^^^^^^^^^^^^^^^
+E   IndexError: index 1 is out of bounds for dimension 0 with size 1
+_______ test_manifest_rejects_wrong_transform_and_missing_scaler_hashes _______
+analysis_20261015\gemini_implementation_review\test_review_regressions.py:89: in test_manifest_rejects_wrong_transform_and_missing_scaler_hashes
+    assert not compatible and errors
+E   assert (not True)
+=========================== short test summary info ===========================
+FAILED analysis_20261015/gemini_implementation_review/test_review_regressions.py::test_reported_training_cli_accepts_new_mode
+FAILED analysis_20261015/gemini_implementation_review/test_review_regressions.py::test_real_target_pipeline_encodes_new_mode
+FAILED analysis_20261015/gemini_implementation_review/test_review_regressions.py::test_real_tools_accept_new_feature_signature
+FAILED analysis_20261015/gemini_implementation_review/test_review_regressions.py::test_new_decoder_float32_cold_log_gradient_is_finite
+FAILED analysis_20261015/gemini_implementation_review/test_review_regressions.py::test_original_condition_groups_do_not_cross_splits
+FAILED analysis_20261015/gemini_implementation_review/test_review_regressions.py::test_zero_prediction_of_active_radical_is_not_rewarded
+FAILED analysis_20261015/gemini_implementation_review/test_review_regressions.py::test_invalid_physical_state_is_not_valid_candidate
+FAILED analysis_20261015/gemini_implementation_review/test_review_regressions.py::test_missing_states_do_not_mask_destruction
+FAILED analysis_20261015/gemini_implementation_review/test_review_regressions.py::test_qssa_mask_accepts_actual_full_input_layout
+FAILED analysis_20261015/gemini_implementation_review/test_review_regressions.py::test_manifest_rejects_wrong_transform_and_missing_scaler_hashes
+10 failed in 8.51s

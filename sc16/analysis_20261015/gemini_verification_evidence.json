@@ -1,0 +1,208 @@
+{
+  "date": "2026-10-15",
+  "source_unchanged_since_audit": true,
+  "current_core_sc15_sc16_equal": {
+    "compute_physical_metrics.py": true,
+    "dual_branch_network.py": true,
+    "enhanced_loss_and_weights.py": true,
+    "thermo_nasa7_layer.py": true,
+    "train_all_v68.py": true,
+    "train_sc_v68.py": true,
+    "validate_all_best_models_v68.py": true,
+    "validate_sc_v68.py": true
+  },
+  "historical_crash_log": {
+    "path": "C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc15\\v68_training_log_20261014_205615.txt",
+    "sha256": "e52041612beb00efc5305f8f8d297745bf078bbd3ce5dd2c36ad62ee8e199247",
+    "reported_data_root": "D:\\zmwj\\sc01\\08\\database_Transient_V21_QSSA",
+    "reported_rows": 206607041,
+    "reported_success_trajectories": 19374,
+    "reported_train_ids": 13562,
+    "reported_validation_ids": 2906,
+    "nonfinite_gradient_warnings_per_epoch": {
+      "9": 30,
+      "10": 193,
+      "11": 201,
+      "12": 219,
+      "13": 221,
+      "14": 242
+    },
+    "contains_no_valid_batches_error": true,
+    "last_traceback_module_line": 8112,
+    "current_training_module_lines": 8229,
+    "caveat": "Historical source snapshot not supplied; present source equality does not establish historical source equality."
+  },
+  "local_small_data_parts": [
+    {
+      "path": "C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc14\\07\\01\\database_Transient_V21_QSSA\\trajectories_nuig_2024\\part-000000.parquet",
+      "rows": 817,
+      "trajectories": 4,
+      "dt_min": 1.0120130825854671e-08,
+      "dt_max": 9.970084595096128e-05,
+      "fraction_dt_le_5e_6": 0.6915544675642595,
+      "fraction_dt_gt_1e_4": 0.0
+    },
+    {
+      "path": "C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc14\\07\\01\\database_Transient_V21_QSSA\\trajectories_nuig_2024\\part-000001.parquet",
+      "rows": 4800,
+      "trajectories": 30,
+      "dt_min": 1.0024391415694098e-08,
+      "dt_max": 9.98187468086581e-05,
+      "fraction_dt_le_5e_6": 0.6754166666666667,
+      "fraction_dt_gt_1e_4": 0.0
+    },
+    {
+      "path": "C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc14\\07\\01\\database_Transient_V21_QSSA\\trajectories_nuig_2024\\part-000002.parquet",
+      "rows": 3840,
+      "trajectories": 24,
+      "dt_min": 8.76278553878774e-06,
+      "dt_max": 9.737569330934751e-05,
+      "fraction_dt_le_5e_6": 0.0,
+      "fraction_dt_gt_1e_4": 0.0
+    },
+    {
+      "path": "C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc14\\07\\01\\database_Transient_V21_QSSA\\trajectories_nuig_2024\\part-000003.parquet",
+      "rows": 6400,
+      "trajectories": 40,
+      "dt_min": 2.276920092075113e-05,
+      "dt_max": 0.00016246443099494817,
+      "fraction_dt_le_5e_6": 0.0,
+      "fraction_dt_gt_1e_4": 0.375625
+    }
+  ],
+  "local_small_data_actual_rows": 15857,
+  "local_summary_json_reported_rows": 817,
+  "benchmarks": [
+    {
+      "checkpoint": "best_oracle_h128_epoch27.pth",
+      "root": "output1/phase68_runs/v71_qssa_asymptotic_exact",
+      "closure": "UV",
+      "projection": "kl",
+      "dt": 2e-06,
+      "num_cases": 24,
+      "closure_success_rate": 0.875,
+      "ignited_count": 15,
+      "mean_idt_ratio": 3.438383940746109,
+      "median_idt_ratio": 2.7305389221556884,
+      "mean_abs_delta_Tend": 740.8920960003137,
+      "mean_no_rel_err": 0.7464550360623518,
+      "total_wiped_species": 0,
+      "path": "C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc15\\benchmarks\\baseline_benchmark_v71.json",
+      "checkpoint_path": "C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc15\\output1\\phase68_runs\\v71_qssa_asymptotic_exact\\weights_v68\\best_oracle_h128_epoch27.pth",
+      "checkpoint_exists": true,
+      "reference_ignited_count": 23,
+      "nn_only_ignition_count": 0,
+      "missed_ignition_count": 8
+    },
+    {
+      "checkpoint": "best_composite_epoch4.pth",
+      "root": "output1/phase68_runs/v72_cfd_optimized",
+      "closure": "UV",
+      "projection": "kl",
+      "dt": 2e-06,
+      "num_cases": 24,
+      "closure_success_rate": 1.0,
+      "ignited_count": 23,
+      "mean_idt_ratio": 1.2740441266680274,
+      "median_idt_ratio": 0.3333333333333333,
+      "mean_abs_delta_Tend": 288.7966568948879,
+      "mean_no_rel_err": 0.9992121198700555,
+      "total_wiped_species": 0,
+      "path": "C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc15\\benchmarks\\retrained_benchmark_v72_audited.json",
+      "checkpoint_path": "C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc15\\output1\\phase68_runs\\v72_cfd_optimized\\weights_v68\\best_composite_epoch4.pth",
+      "checkpoint_exists": false,
+      "reference_ignited_count": 23,
+      "nn_only_ignition_count": 1,
+      "missed_ignition_count": 0
+    },
+    {
+      "checkpoint": "best_v68_net_nuig_2024.pth",
+      "root": "output1/phase68_runs/v72_cfd_optimized",
+      "closure": "UV",
+      "projection": "kl",
+      "dt": 2e-06,
+      "num_cases": 24,
+      "closure_success_rate": 1.0,
+      "ignited_count": 1,
+      "mean_idt_ratio": 0.0023510971786833857,
+      "median_idt_ratio": 0.0023510971786833857,
+      "mean_abs_delta_Tend": 1515.1563722981625,
+      "mean_no_rel_err": 0.999999998602615,
+      "total_wiped_species": 0,
+      "path": "C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc15\\benchmarks\\retrained_benchmark_v72_resmlp.json",
+      "checkpoint_path": "C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc15\\output1\\phase68_runs\\v72_cfd_optimized\\weights_v68\\best_v68_net_nuig_2024.pth",
+      "checkpoint_exists": true,
+      "reference_ignited_count": 23,
+      "nn_only_ignition_count": 1,
+      "missed_ignition_count": 22
+    },
+    {
+      "checkpoint": "best_pure_ar_h128_epoch4.pth",
+      "root": "output1/phase68_runs/v72_cfd_optimized",
+      "closure": "UV",
+      "projection": "kl",
+      "dt": 2e-06,
+      "num_cases": 24,
+      "closure_success_rate": 1.0,
+      "ignited_count": 18,
+      "mean_idt_ratio": 9.349877919667264,
+      "median_idt_ratio": 3.4687785994069626,
+      "mean_abs_delta_Tend": 1156.5242336985184,
+      "mean_no_rel_err": 0.9990350387818184,
+      "total_wiped_species": 0,
+      "path": "C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc15\\benchmarks\\retrained_benchmark_v72_resmlp_pure_ar.json",
+      "checkpoint_path": "C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc15\\output1\\phase68_runs\\v72_cfd_optimized\\weights_v68\\best_pure_ar_h128_epoch4.pth",
+      "checkpoint_exists": true,
+      "reference_ignited_count": 23,
+      "nn_only_ignition_count": 1,
+      "missed_ignition_count": 5
+    }
+  ],
+  "two_buffer_rank_probe": {
+    "elements": [
+      "N",
+      "H",
+      "O"
+    ],
+    "buffers": [
+      "N2",
+      "H2O"
+    ],
+    "A": [
+      [
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.11190674437968359
+      ],
+      [
+        0.0,
+        0.8880932556203164
+      ]
+    ],
+    "rank": 2,
+    "counterexample_element_residual": [
+      0.0,
+      1e-06,
+      0.0
+    ],
+    "remaining_residual_after_least_squares": [
+      0.0,
+      9.843701852728217e-07,
+      -1.240383957441096e-07
+    ]
+  },
+  "audited_benchmark_summary_consistency": {
+    "actual_case_count": 24,
+    "summary_nn_ignited_count": 23,
+    "recomputed_nn_ignited_count": 24,
+    "summary_mean_idt_ratio": 1.2740441266680274,
+    "recomputed_mean_idt_ratio": 1.2740441266680274,
+    "summary_median_idt_ratio": 0.3333333333333333,
+    "recomputed_median_idt_ratio": 0.3333333333333333,
+    "summary_mean_no_error": 0.9992121198700555,
+    "recomputed_mean_no_error": 0.9992121198700555
+  }
+}

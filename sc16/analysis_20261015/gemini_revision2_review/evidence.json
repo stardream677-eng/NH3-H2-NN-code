@@ -1,0 +1,1992 @@
+{
+  "python": "C:\\Users\\123\\.conda\\envs\\cantera\\python.exe",
+  "python_version": "3.12.12",
+  "torch": "2.11.0.dev20260120+cu130",
+  "cantera": "3.0.1",
+  "device": "cuda",
+  "source_sha256": {
+    "chemistry_contract.py": "5a5c0e6c097d2dfc8b2fab0b785ea35a49da71211dc2dd3b5594404163c5eddf",
+    "compute_physical_metrics.py": "d58e8b68100d2a2eb63d768333b98a3ca77d7089c214ba53d50e31ca6dea6bdd",
+    "dual_branch_network.py": "7f7324e200340cd782c58898ab9b5fa7c55dc554e233e2c663da02955f66c17a",
+    "enhanced_loss_and_weights.py": "2cf8fd3729ce27c1669b2e454b210957e1fbab87f1961eace622fcfd3e849e9f",
+    "experiment_manifest.py": "a5d9856981d11eefccc43ea1804e2892b5c350c6f9f30eed1704f3abf9ff8d98",
+    "kinetics_parameterization.py": "e20542c46a88fb07389cfe8618077dfb600237daa286307d611a4d971ec4e572",
+    "species_validation_protocol.py": "bc0ff5c9f0c47ea66a28fc02f4506efe0f05d41b08e2551208352d8f061b25e5",
+    "thermo_nasa7_layer.py": "b127ff7642f7199af61306241e19c98dfc798386e7c6c63fd87f2bc7789e415b",
+    "training_diagnostics.py": "7de82f2ced15e57a9bd302a4816cbf0a8d19128c904b061adb571f5f62225e8d",
+    "train_all_v68.py": "89578eb55adfd0a9f0dd6442895def62dac6b8721cb688bb8201143c96ed35ad",
+    "train_sc_v68.py": "5e69891a1d4b274b2f4a0d50f01beabdf9c15a89bb48236d7bf6b7317b6d718d",
+    "validate_all_best_models_v68.py": "f507cf0b23d2d0d9175bd72a6c1355b244163b9dd22f68e52f57eb42e800260e",
+    "validate_sc_v68.py": "4a603d2cc5bf884c94d0496e8fd4c880ab3692a2e98fb54facf8bfed8d98e900",
+    "data_pipeline\\audit_generated_database.py": "d43da8f1f1aa90697ac590be893d3b2fbfdd08d4520a0e2c757100172ae9619f",
+    "data_pipeline\\audit_initial_conditions_v67.py": "e2f2d0c206d6e9829160e3b8b28fd17c1674ec0e0f7ee7086a4c34469254cf1e",
+    "data_pipeline\\build_training_dataset_v72.py": "9ea24233a17fd37f44b01faafb87450330e0f2871fd714966b65debd2dbdb5fd",
+    "data_pipeline\\generate_augmented_trajectories.py": "a4d9441db7f4b121fd612f2b6f3593bb73bc60917290d067908307f533c48110",
+    "data_pipeline\\lhs_sampler_sc_v11.py": "e6c5a73268ccbce035a68105ef8914d53d69c822e5da402ead93b0026bc83260",
+    "data_pipeline\\runner_sc_v21_qssa.py": "4c520242f54083d6ee9884ac767acf51612a9ea9d8c98ffce0df7dc4c5c69970",
+    "data_pipeline\\split_trajectories_v21.py": "0b7a9181dde62ecfc5187e50da29605a24e63e22a72a8b9ef7191cf42cf144d1",
+    "data_pipeline\\trajectory_conditions_v67.py": "24eed3ec3a1df7cba5e598223829315091edd4be2f8a8ea431a71f2c1d482880",
+    "data_pipeline\\__init__.py": "dfcd5b4d75934f8bd75ebfe36d9934399ad15f39ac02405909c7149bd8ab27be"
+  },
+  "mass_gate_12_percent_defect": {
+    "protocol_id": "v68_species_sentinel_protocol_v1",
+    "composite_score": 0.04799999999999998,
+    "mean_major_nmae": 0.11999999999999994,
+    "mean_radical_log_rmse": 0.0,
+    "mean_pollutant_nmae": 0.0,
+    "cold_fp_rate": 0.0,
+    "nonfinite_count": 0,
+    "negative_count": 0,
+    "is_valid_candidate": true,
+    "mass_closure": {
+      "mean_mass_sum": 0.88,
+      "max_unity_error": 0.12,
+      "rmse_unity_error": 0.12
+    },
+    "element_closure": {
+      "max_element_error": 0.03999999999999998,
+      "rmse_element_error": 0.03999999999999998
+    },
+    "timing_metrics": {},
+    "per_species": {
+      "H2": {
+        "n": 1,
+        "mae": 0.03999999999999998,
+        "rmse": 0.03999999999999998,
+        "nmae": 0.11999999999999994,
+        "peak_true": 0.3333333333333333,
+        "peak_pred": 0.29333333333333333,
+        "peak_error": 0.03999999999999998,
+        "active_log_rmse": 0.05551732784983138,
+        "cold_fp_count": 0,
+        "cold_fp_ratio": 0.0
+      },
+      "N2": {
+        "n": 1,
+        "mae": 0.03999999999999998,
+        "rmse": 0.03999999999999998,
+        "nmae": 0.11999999999999994,
+        "peak_true": 0.3333333333333333,
+        "peak_pred": 0.29333333333333333,
+        "peak_error": 0.03999999999999998,
+        "active_log_rmse": 0.05551732784983138,
+        "cold_fp_count": 0,
+        "cold_fp_ratio": 0.0
+      },
+      "O2": {
+        "n": 1,
+        "mae": 0.03999999999999998,
+        "rmse": 0.03999999999999998,
+        "nmae": 0.11999999999999994,
+        "peak_true": 0.3333333333333333,
+        "peak_pred": 0.29333333333333333,
+        "peak_error": 0.03999999999999998,
+        "active_log_rmse": 0.05551732784983138,
+        "cold_fp_count": 0,
+        "cold_fp_ratio": 0.0
+      }
+    }
+  },
+  "active_decay_missing_states": [
+    {
+      "mode": "dual_branch",
+      "D": 10000.0,
+      "dt": 0.0001,
+      "Y_old": 0.0001,
+      "Y_next": 3.678794411714424e-05,
+      "without_states": [
+        [
+          1.0,
+          1.0,
+          0.0
+        ]
+      ],
+      "with_states": null
+    },
+    {
+      "mode": "dual_branch_pd_v1",
+      "D": 10000.0,
+      "dt": 0.0001,
+      "Y_old": 0.0001,
+      "Y_next": 3.678794411714424e-05,
+      "without_states": [
+        [
+          1.0,
+          1.0,
+          0.0
+        ]
+      ],
+      "with_states": null
+    }
+  ],
+  "gemini_recommended_command": {
+    "accepted": false,
+    "exit_code": 2,
+    "last_line": "probe_revision2.py: error: unrecognized arguments: --curriculum_warmup_epochs 5 --weight_decay 1e-5"
+  },
+  "production_callsites": {
+    "compute_species_trajectory_metrics": [
+      {
+        "file": "train_sc_v68.py",
+        "line": 4934,
+        "keywords": [
+          "true_states",
+          "pred_states",
+          "species_names",
+          "element_matrix"
+        ]
+      }
+    ],
+    "audit_parquet_dataset": [],
+    "compute_qssa_rate_mask": [
+      {
+        "file": "train_sc_v68.py",
+        "line": 4328,
+        "keywords": []
+      },
+      {
+        "file": "train_sc_v68.py",
+        "line": 6726,
+        "keywords": [
+          "Y_old_unscaled",
+          "Y_next_unscaled"
+        ]
+      }
+    ],
+    "create_experiment_manifest": [
+      {
+        "file": "train_sc_v68.py",
+        "line": 6268,
+        "keywords": [
+          "mechanism_contract",
+          "output_parameterization",
+          "transform_signature",
+          "dt_policy",
+          "concentration_policy",
+          "evaluation_protocol_id",
+          "scaler_hashes"
+        ]
+      }
+    ],
+    "verify_checkpoint_compatibility": []
+  },
+  "actual_new_mode_training_and_resume": {
+    "rows": 64,
+    "trajectory_ids": [
+      10,
+      11,
+      12,
+      13
+    ],
+    "kwargs": {
+      "data_dir": "C:\\Users\\123\\AppData\\Local\\Temp\\sc16_review_qloh_8lm\\data",
+      "split_dir": "C:\\Users\\123\\AppData\\Local\\Temp\\sc16_review_qloh_8lm\\splits",
+      "output_root": "C:\\Users\\123\\AppData\\Local\\Temp\\sc16_review_qloh_8lm\\output",
+      "epochs": 1,
+      "batch_size": 8,
+      "val_batch_size": 8,
+      "max_horizon": 8,
+      "curriculum_horizons": [
+        1
+      ],
+      "curriculum_start_epochs": [
+        0
+      ],
+      "eval_horizons": [
+        1,
+        8
+      ],
+      "train_stride": 8,
+      "val_stride": 8,
+      "parts_per_epoch": 1,
+      "val_parts_per_epoch": 1,
+      "scaler_parts": 1,
+      "scaler_sample_rate": 1.0,
+      "scaler_max_rows": 512,
+      "full_val_every": 1,
+      "checkpoint_every": 1,
+      "backward_chunk_steps": 1,
+      "num_workers": 0,
+      "output_parameterization": "dual_branch_pd_v1",
+      "rate_decode_mode": "dual_branch_pd_v1",
+      "state_update_mode": "dual_branch_pd_v1",
+      "resume": "none",
+      "lr": 1e-05
+    },
+    "first_run": "success",
+    "artifact_names": [
+      "checkpoints_v68\\checkpoint_v68_nuig_2024_epoch1.pth",
+      "history_v68\\history_nuig_2024.json",
+      "scalers_v68\\feature_info_nuig_2024_macro_asinh_p90_v2_split_5025cb2308c5ecf8.pkl",
+      "scalers_v68\\scaler_X_nuig_2024_macro_asinh_p90_v2_split_5025cb2308c5ecf8.pkl",
+      "scalers_v68\\scaler_Y_nuig_2024_macro_asinh_p90_v2_split_5025cb2308c5ecf8.pkl",
+      "weights_v68\\best_composite_epoch1.pth",
+      "weights_v68\\best_oracle_avg_epoch1.pth",
+      "weights_v68\\best_robust_raw_epoch1.pth",
+      "weights_v68\\best_v68_net_nuig_2024_H1.pth",
+      "weights_v68\\best_v68_net_nuig_2024_H8.pth",
+      "weights_v68\\latest_v68_nuig_2024.pth"
+    ],
+    "feature_info_signature": "dual_branch_pd_v1",
+    "checkpoints": {
+      "checkpoint_v68_nuig_2024_epoch1.pth": {
+        "top_keys": [
+          "epoch",
+          "model_state_dict",
+          "optimizer_state_dict",
+          "scheduler_state_dict",
+          "best_val_loss",
+          "patience_counter",
+          "history",
+          "feature_info",
+          "version",
+          "transform_signature",
+          "rollout_signature",
+          "training_config",
+          "rng_states"
+        ],
+        "transform_signature": "macro_asinh_p90_v2",
+        "feature_info_signature": "dual_branch_pd_v1",
+        "manifest": {
+          "manifest_version": "1.0",
+          "source_hashes": {
+            "train_sc_v68.py": "5e69891a1d4b274b2f4a0d50f01beabdf9c15a89bb48236d7bf6b7317b6d718d",
+            "dual_branch_network.py": "7f7324e200340cd782c58898ab9b5fa7c55dc554e233e2c663da02955f66c17a",
+            "enhanced_loss_and_weights.py": "2cf8fd3729ce27c1669b2e454b210957e1fbab87f1961eace622fcfd3e849e9f",
+            "thermo_nasa7_layer.py": "b127ff7642f7199af61306241e19c98dfc798386e7c6c63fd87f2bc7789e415b",
+            "chemistry_contract.py": "5a5c0e6c097d2dfc8b2fab0b785ea35a49da71211dc2dd3b5594404163c5eddf",
+            "validate_sc_v68.py": "4a603d2cc5bf884c94d0496e8fd4c880ab3692a2e98fb54facf8bfed8d98e900"
+          },
+          "mechanism_name": "nuig_2024",
+          "mechanism_sha256": "unverified",
+          "species_order": [
+            "AR",
+            "C-HNN(O)OH",
+            "C-ONNH",
+            "H",
+            "H2",
+            "H2NN",
+            "H2NNO2",
+            "H2NO",
+            "H2O",
+            "H2O2",
+            "HE",
+            "HNO",
+            "HNO2",
+            "HNOH",
+            "HO2",
+            "HON",
+            "HONO",
+            "HONO2",
+            "N",
+            "N2",
+            "N2H2",
+            "N2H3",
+            "N2H4",
+            "N2O",
+            "NH",
+            "NH2",
+            "NH2OH",
+            "NH3",
+            "NNH",
+            "NO",
+            "NO2",
+            "NO3",
+            "O",
+            "O2",
+            "OH",
+            "OHV",
+            "ONHN",
+            "T-HNN(O)OH",
+            "T-ONNH"
+          ],
+          "element_names": [
+            "H",
+            "N",
+            "O",
+            "AR"
+          ],
+          "output_parameterization": "dual_branch_pd_v1",
+          "transform_signature": "macro_asinh_p90_v2",
+          "dt_policy": {
+            "min": 1e-08,
+            "max": 0.0001
+          },
+          "concentration_policy": {
+            "floor": 1e-40
+          },
+          "evaluation_protocol_id": "v68_species_sentinel_protocol_v1",
+          "split_hash": null,
+          "scaler_hashes": {
+            "scaler_X": "133a235489b73afd0255538f6c7b78bbbb58c19956d5dd1f6bdc7f9ed8516e7e",
+            "scaler_Y": "98f3c13dcd2d4c56b4310c53f14c57baeadfd83df2ba91f74143dfab8a9fbebc"
+          },
+          "dataset_audit": {}
+        },
+        "sentinel_metrics": null,
+        "history": [
+          {
+            "epoch": 1,
+            "horizon": 1,
+            "tail_fraction": 1.0,
+            "lr": 1e-05,
+            "train": {
+              "total": 1.8790785359081725,
+              "rate": 1.5585583448410034,
+              "state": 0.32051565317608427,
+              "element": 2.21076697926037e-05,
+              "mass": 2.3271416011994006e-06,
+              "positive": 4.7692999723125684e-12,
+              "rollout": 0.0,
+              "stability": 0.0,
+              "transition_weight": 1.0,
+              "radical": 0.0,
+              "no": 0.0,
+              "transition_audit": {
+                "sample_count": 6,
+                "high_activity_fraction": 0.0,
+                "weight_mean": 1.0,
+                "weight_p50": 1.0,
+                "weight_p90": 1.0,
+                "weight_max": 1.0,
+                "rate_mse_high_activity": null,
+                "rate_mse_normal": 1.454938570658366,
+                "state_mse_high_activity": null,
+                "state_mse_normal": 0.32051565317608427
+              }
+            },
+            "validation_oracle": {
+              "total": 3.1671773619496317,
+              "rate": 2.4548892974853516,
+              "state": 0.7122878732817346,
+              "element": 8.979590120361536e-07,
+              "mass": 2.3181473807198927e-07,
+              "positive": 0.0,
+              "per_horizon": {
+                "1": {
+                  "rmse": 0.8445616394085687,
+                  "count": 2
+                },
+                "8": {
+                  "rmse": NaN,
+                  "count": 0
+                }
+              }
+            },
+            "validation_pure_ar": {
+              "total": 1.7390905577290998,
+              "rate": 1.4628166407346725,
+              "state": 0.2762738810125911,
+              "element": 1.7140767774505988e-07,
+              "mass": 3.400599119646446e-08,
+              "positive": 0.0,
+              "per_horizon": {
+                "1": {
+                  "rmse": 0.8445616394085687,
+                  "count": 2
+                },
+                "8": {
+                  "rmse": 0.8109791675507263,
+                  "count": 2
+                }
+              }
+            }
+          }
+        ]
+      },
+      "best_composite_epoch1.pth": {
+        "top_keys": [
+          "model_state_dict",
+          "mechanism",
+          "feature_info",
+          "version",
+          "transform_signature",
+          "rollout_signature",
+          "training_config",
+          "metric_name",
+          "metric_value",
+          "metric_formula",
+          "oracle_h",
+          "pure_ar_h",
+          "horizon",
+          "epoch",
+          "all_metrics"
+        ],
+        "transform_signature": "macro_asinh_p90_v2",
+        "feature_info_signature": "dual_branch_pd_v1",
+        "manifest": {
+          "manifest_version": "1.0",
+          "source_hashes": {
+            "train_sc_v68.py": "5e69891a1d4b274b2f4a0d50f01beabdf9c15a89bb48236d7bf6b7317b6d718d",
+            "dual_branch_network.py": "7f7324e200340cd782c58898ab9b5fa7c55dc554e233e2c663da02955f66c17a",
+            "enhanced_loss_and_weights.py": "2cf8fd3729ce27c1669b2e454b210957e1fbab87f1961eace622fcfd3e849e9f",
+            "thermo_nasa7_layer.py": "b127ff7642f7199af61306241e19c98dfc798386e7c6c63fd87f2bc7789e415b",
+            "chemistry_contract.py": "5a5c0e6c097d2dfc8b2fab0b785ea35a49da71211dc2dd3b5594404163c5eddf",
+            "validate_sc_v68.py": "4a603d2cc5bf884c94d0496e8fd4c880ab3692a2e98fb54facf8bfed8d98e900"
+          },
+          "mechanism_name": "nuig_2024",
+          "mechanism_sha256": "unverified",
+          "species_order": [
+            "AR",
+            "C-HNN(O)OH",
+            "C-ONNH",
+            "H",
+            "H2",
+            "H2NN",
+            "H2NNO2",
+            "H2NO",
+            "H2O",
+            "H2O2",
+            "HE",
+            "HNO",
+            "HNO2",
+            "HNOH",
+            "HO2",
+            "HON",
+            "HONO",
+            "HONO2",
+            "N",
+            "N2",
+            "N2H2",
+            "N2H3",
+            "N2H4",
+            "N2O",
+            "NH",
+            "NH2",
+            "NH2OH",
+            "NH3",
+            "NNH",
+            "NO",
+            "NO2",
+            "NO3",
+            "O",
+            "O2",
+            "OH",
+            "OHV",
+            "ONHN",
+            "T-HNN(O)OH",
+            "T-ONNH"
+          ],
+          "element_names": [
+            "H",
+            "N",
+            "O",
+            "AR"
+          ],
+          "output_parameterization": "dual_branch_pd_v1",
+          "transform_signature": "macro_asinh_p90_v2",
+          "dt_policy": {
+            "min": 1e-08,
+            "max": 0.0001
+          },
+          "concentration_policy": {
+            "floor": 1e-40
+          },
+          "evaluation_protocol_id": "v68_species_sentinel_protocol_v1",
+          "split_hash": null,
+          "scaler_hashes": {
+            "scaler_X": "133a235489b73afd0255538f6c7b78bbbb58c19956d5dd1f6bdc7f9ed8516e7e",
+            "scaler_Y": "98f3c13dcd2d4c56b4310c53f14c57baeadfd83df2ba91f74143dfab8a9fbebc"
+          },
+          "dataset_audit": {}
+        },
+        "sentinel_metrics": null,
+        "history": null
+      },
+      "best_oracle_avg_epoch1.pth": {
+        "top_keys": [
+          "model_state_dict",
+          "mechanism",
+          "feature_info",
+          "version",
+          "transform_signature",
+          "rollout_signature",
+          "training_config",
+          "metric_name",
+          "metric_value",
+          "epoch",
+          "all_metrics"
+        ],
+        "transform_signature": "macro_asinh_p90_v2",
+        "feature_info_signature": "dual_branch_pd_v1",
+        "manifest": {
+          "manifest_version": "1.0",
+          "source_hashes": {
+            "train_sc_v68.py": "5e69891a1d4b274b2f4a0d50f01beabdf9c15a89bb48236d7bf6b7317b6d718d",
+            "dual_branch_network.py": "7f7324e200340cd782c58898ab9b5fa7c55dc554e233e2c663da02955f66c17a",
+            "enhanced_loss_and_weights.py": "2cf8fd3729ce27c1669b2e454b210957e1fbab87f1961eace622fcfd3e849e9f",
+            "thermo_nasa7_layer.py": "b127ff7642f7199af61306241e19c98dfc798386e7c6c63fd87f2bc7789e415b",
+            "chemistry_contract.py": "5a5c0e6c097d2dfc8b2fab0b785ea35a49da71211dc2dd3b5594404163c5eddf",
+            "validate_sc_v68.py": "4a603d2cc5bf884c94d0496e8fd4c880ab3692a2e98fb54facf8bfed8d98e900"
+          },
+          "mechanism_name": "nuig_2024",
+          "mechanism_sha256": "unverified",
+          "species_order": [
+            "AR",
+            "C-HNN(O)OH",
+            "C-ONNH",
+            "H",
+            "H2",
+            "H2NN",
+            "H2NNO2",
+            "H2NO",
+            "H2O",
+            "H2O2",
+            "HE",
+            "HNO",
+            "HNO2",
+            "HNOH",
+            "HO2",
+            "HON",
+            "HONO",
+            "HONO2",
+            "N",
+            "N2",
+            "N2H2",
+            "N2H3",
+            "N2H4",
+            "N2O",
+            "NH",
+            "NH2",
+            "NH2OH",
+            "NH3",
+            "NNH",
+            "NO",
+            "NO2",
+            "NO3",
+            "O",
+            "O2",
+            "OH",
+            "OHV",
+            "ONHN",
+            "T-HNN(O)OH",
+            "T-ONNH"
+          ],
+          "element_names": [
+            "H",
+            "N",
+            "O",
+            "AR"
+          ],
+          "output_parameterization": "dual_branch_pd_v1",
+          "transform_signature": "macro_asinh_p90_v2",
+          "dt_policy": {
+            "min": 1e-08,
+            "max": 0.0001
+          },
+          "concentration_policy": {
+            "floor": 1e-40
+          },
+          "evaluation_protocol_id": "v68_species_sentinel_protocol_v1",
+          "split_hash": null,
+          "scaler_hashes": {
+            "scaler_X": "133a235489b73afd0255538f6c7b78bbbb58c19956d5dd1f6bdc7f9ed8516e7e",
+            "scaler_Y": "98f3c13dcd2d4c56b4310c53f14c57baeadfd83df2ba91f74143dfab8a9fbebc"
+          },
+          "dataset_audit": {}
+        },
+        "sentinel_metrics": null,
+        "history": null
+      },
+      "best_robust_raw_epoch1.pth": {
+        "top_keys": [
+          "model_state_dict",
+          "mechanism",
+          "feature_info",
+          "version",
+          "transform_signature",
+          "rollout_signature",
+          "training_config",
+          "metric_name",
+          "metric_value",
+          "metric_formula",
+          "pure_ar_h",
+          "pure_ar_mass",
+          "pure_ar_element",
+          "pure_ar_rate",
+          "epoch",
+          "all_metrics"
+        ],
+        "transform_signature": "macro_asinh_p90_v2",
+        "feature_info_signature": "dual_branch_pd_v1",
+        "manifest": {
+          "manifest_version": "1.0",
+          "source_hashes": {
+            "train_sc_v68.py": "5e69891a1d4b274b2f4a0d50f01beabdf9c15a89bb48236d7bf6b7317b6d718d",
+            "dual_branch_network.py": "7f7324e200340cd782c58898ab9b5fa7c55dc554e233e2c663da02955f66c17a",
+            "enhanced_loss_and_weights.py": "2cf8fd3729ce27c1669b2e454b210957e1fbab87f1961eace622fcfd3e849e9f",
+            "thermo_nasa7_layer.py": "b127ff7642f7199af61306241e19c98dfc798386e7c6c63fd87f2bc7789e415b",
+            "chemistry_contract.py": "5a5c0e6c097d2dfc8b2fab0b785ea35a49da71211dc2dd3b5594404163c5eddf",
+            "validate_sc_v68.py": "4a603d2cc5bf884c94d0496e8fd4c880ab3692a2e98fb54facf8bfed8d98e900"
+          },
+          "mechanism_name": "nuig_2024",
+          "mechanism_sha256": "unverified",
+          "species_order": [
+            "AR",
+            "C-HNN(O)OH",
+            "C-ONNH",
+            "H",
+            "H2",
+            "H2NN",
+            "H2NNO2",
+            "H2NO",
+            "H2O",
+            "H2O2",
+            "HE",
+            "HNO",
+            "HNO2",
+            "HNOH",
+            "HO2",
+            "HON",
+            "HONO",
+            "HONO2",
+            "N",
+            "N2",
+            "N2H2",
+            "N2H3",
+            "N2H4",
+            "N2O",
+            "NH",
+            "NH2",
+            "NH2OH",
+            "NH3",
+            "NNH",
+            "NO",
+            "NO2",
+            "NO3",
+            "O",
+            "O2",
+            "OH",
+            "OHV",
+            "ONHN",
+            "T-HNN(O)OH",
+            "T-ONNH"
+          ],
+          "element_names": [
+            "H",
+            "N",
+            "O",
+            "AR"
+          ],
+          "output_parameterization": "dual_branch_pd_v1",
+          "transform_signature": "macro_asinh_p90_v2",
+          "dt_policy": {
+            "min": 1e-08,
+            "max": 0.0001
+          },
+          "concentration_policy": {
+            "floor": 1e-40
+          },
+          "evaluation_protocol_id": "v68_species_sentinel_protocol_v1",
+          "split_hash": null,
+          "scaler_hashes": {
+            "scaler_X": "133a235489b73afd0255538f6c7b78bbbb58c19956d5dd1f6bdc7f9ed8516e7e",
+            "scaler_Y": "98f3c13dcd2d4c56b4310c53f14c57baeadfd83df2ba91f74143dfab8a9fbebc"
+          },
+          "dataset_audit": {}
+        },
+        "sentinel_metrics": null,
+        "history": null
+      },
+      "best_v68_net_nuig_2024_H1.pth": {
+        "top_keys": [
+          "model_state_dict",
+          "mechanism",
+          "feature_info",
+          "version",
+          "transform_signature",
+          "rollout_signature",
+          "training_config",
+          "manifest",
+          "best_val_loss",
+          "sentinel_score",
+          "sentinel_metrics",
+          "epoch",
+          "horizon"
+        ],
+        "transform_signature": "macro_asinh_p90_v2",
+        "feature_info_signature": "dual_branch_pd_v1",
+        "manifest": {
+          "manifest_version": "1.0",
+          "source_hashes": {
+            "train_sc_v68.py": "5e69891a1d4b274b2f4a0d50f01beabdf9c15a89bb48236d7bf6b7317b6d718d",
+            "dual_branch_network.py": "7f7324e200340cd782c58898ab9b5fa7c55dc554e233e2c663da02955f66c17a",
+            "enhanced_loss_and_weights.py": "2cf8fd3729ce27c1669b2e454b210957e1fbab87f1961eace622fcfd3e849e9f",
+            "thermo_nasa7_layer.py": "b127ff7642f7199af61306241e19c98dfc798386e7c6c63fd87f2bc7789e415b",
+            "chemistry_contract.py": "5a5c0e6c097d2dfc8b2fab0b785ea35a49da71211dc2dd3b5594404163c5eddf",
+            "validate_sc_v68.py": "4a603d2cc5bf884c94d0496e8fd4c880ab3692a2e98fb54facf8bfed8d98e900"
+          },
+          "mechanism_name": "nuig_2024",
+          "mechanism_sha256": "unverified",
+          "species_order": [
+            "AR",
+            "C-HNN(O)OH",
+            "C-ONNH",
+            "H",
+            "H2",
+            "H2NN",
+            "H2NNO2",
+            "H2NO",
+            "H2O",
+            "H2O2",
+            "HE",
+            "HNO",
+            "HNO2",
+            "HNOH",
+            "HO2",
+            "HON",
+            "HONO",
+            "HONO2",
+            "N",
+            "N2",
+            "N2H2",
+            "N2H3",
+            "N2H4",
+            "N2O",
+            "NH",
+            "NH2",
+            "NH2OH",
+            "NH3",
+            "NNH",
+            "NO",
+            "NO2",
+            "NO3",
+            "O",
+            "O2",
+            "OH",
+            "OHV",
+            "ONHN",
+            "T-HNN(O)OH",
+            "T-ONNH"
+          ],
+          "element_names": [
+            "H",
+            "N",
+            "O",
+            "AR"
+          ],
+          "output_parameterization": "dual_branch_pd_v1",
+          "transform_signature": "macro_asinh_p90_v2",
+          "dt_policy": {
+            "min": 1e-08,
+            "max": 0.0001
+          },
+          "concentration_policy": {
+            "floor": 1e-40
+          },
+          "evaluation_protocol_id": "v68_species_sentinel_protocol_v1",
+          "split_hash": null,
+          "scaler_hashes": {
+            "scaler_X": "133a235489b73afd0255538f6c7b78bbbb58c19956d5dd1f6bdc7f9ed8516e7e",
+            "scaler_Y": "98f3c13dcd2d4c56b4310c53f14c57baeadfd83df2ba91f74143dfab8a9fbebc"
+          },
+          "dataset_audit": {}
+        },
+        "sentinel_metrics": {
+          "protocol_id": "v68_species_sentinel_protocol_v1",
+          "composite_score": 0.8108394926688027,
+          "mean_major_nmae": 0.04520247231600153,
+          "mean_radical_log_rmse": 1.9561381065261738,
+          "mean_pollutant_nmae": 0.4324406658329656,
+          "cold_fp_rate": 0.0,
+          "nonfinite_count": 0,
+          "negative_count": 0,
+          "is_valid_candidate": true,
+          "mass_closure": {
+            "mean_mass_sum": 0.9996613407444599,
+            "max_unity_error": 0.0006808758914408353,
+            "rmse_unity_error": 0.00048145853118434974
+          },
+          "element_closure": {
+            "max_element_error": 0.00035085718160726817,
+            "rmse_element_error": 0.00018759865109513948
+          },
+          "timing_metrics": {},
+          "per_species": {
+            "H2": {
+              "n": 2,
+              "mae": 0.00014794780872762203,
+              "rmse": 0.00020920049444794655,
+              "nmae": 0.026772852320752615,
+              "peak_true": 0.0055260383524000645,
+              "peak_pred": 0.005525996908545494,
+              "peak_error": 4.1443854570388794e-08,
+              "active_log_rmse": 0.017638068820075885,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "H2O": {
+              "n": 2,
+              "mae": 0.0014892645413056016,
+              "rmse": 0.002105438689584173,
+              "nmae": 0.18993482757359195,
+              "peak_true": 0.007840923964977264,
+              "peak_pred": 0.0048633841797709465,
+              "peak_error": 0.002977539785206318,
+              "active_log_rmse": 0.14667427113232392,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "N2": {
+              "n": 2,
+              "mae": 1.043081283569336e-05,
+              "rmse": 1.4625502996030576e-05,
+              "nmae": 1.591994976209682e-05,
+              "peak_true": 0.6552038788795471,
+              "peak_pred": 0.6551831960678101,
+              "peak_error": 2.0682811737060547e-05,
+              "active_log_rmse": 9.694502400900886e-06,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "NH3": {
+              "n": 2,
+              "mae": 0.00017245858907699585,
+              "rmse": 0.00024367210513034273,
+              "nmae": 0.0010179518739690527,
+              "peak_true": 0.16941723227500916,
+              "peak_pred": 0.16941691935062408,
+              "peak_error": 3.129243850708008e-07,
+              "active_log_rmse": 0.0006271720260403168,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "O2": {
+              "n": 2,
+              "mae": 0.001386113464832306,
+              "rmse": 0.0019596599603967277,
+              "nmae": 0.008270809861931922,
+              "peak_true": 0.16759102046489716,
+              "peak_pred": 0.1675901710987091,
+              "peak_error": 8.493661880493164e-07,
+              "active_log_rmse": 0.005203546243392708,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "C-HNN(O)OH": {
+              "n": 2,
+              "mae": 9.379206271573613e-11,
+              "rmse": 1.326029172564533e-10,
+              "nmae": 9.379206271573613e-05,
+              "peak_true": 1.876130223399386e-10,
+              "peak_pred": 8.418649620738766e-14,
+              "peak_error": 1.875288358437312e-10,
+              "active_log_rmse": 2.2732629797471784,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "C-ONNH": {
+              "n": 2,
+              "mae": 4.431347306785814e-10,
+              "rmse": 6.257646866177042e-10,
+              "nmae": 0.0004431347306785814,
+              "peak_true": 8.863945133441575e-10,
+              "peak_pred": 1.4305696384442346e-12,
+              "peak_error": 8.849639437057133e-10,
+              "active_log_rmse": 2.7921180555721943,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "H": {
+              "n": 2,
+              "mae": 3.729035181893048e-07,
+              "rmse": 5.193054303561862e-07,
+              "nmae": 0.3729035181893048,
+              "peak_true": 7.478501515834068e-07,
+              "peak_pred": 1.3531226805696406e-08,
+              "peak_error": 7.343189247777104e-07,
+              "active_log_rmse": 1.869664618541039,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "H2NN": {
+              "n": 2,
+              "mae": 6.315021765257171e-07,
+              "rmse": 8.930045635977032e-07,
+              "nmae": 0.4999261001922776,
+              "peak_true": 1.263191052203183e-06,
+              "peak_pred": 2.9189148320618585e-10,
+              "peak_error": 1.2628991607199769e-06,
+              "active_log_rmse": 3.6362476173398983,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "H2NNO2": {
+              "n": 2,
+              "mae": 7.477304752581335e-09,
+              "rmse": 1.0571719656060019e-08,
+              "nmae": 0.007477304752581335,
+              "peak_true": 1.4959866234676156e-08,
+              "peak_pred": 9.197438817498682e-12,
+              "peak_error": 1.4950668795858657e-08,
+              "active_log_rmse": 3.211260802720796,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "H2NO": {
+              "n": 2,
+              "mae": 3.667606791065781e-05,
+              "rmse": 5.176903894211586e-05,
+              "nmae": 0.48387918026347015,
+              "peak_true": 7.579592056572437e-05,
+              "peak_pred": 2.5835770429694094e-06,
+              "peak_error": 7.321234352275496e-05,
+              "active_log_rmse": 3.3112442668495565,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "H2O2": {
+              "n": 2,
+              "mae": 2.3130141186787634e-05,
+              "rmse": 3.2223501650076865e-05,
+              "nmae": 0.4343209736346577,
+              "peak_true": 5.325586971594021e-05,
+              "peak_pred": 7.690251550229732e-06,
+              "peak_error": 4.5565618165710475e-05,
+              "active_log_rmse": 2.944543468618679,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "HNO": {
+              "n": 2,
+              "mae": 6.234485368426476e-06,
+              "rmse": 8.792465766280135e-06,
+              "nmae": 0.49699043361570405,
+              "peak_true": 1.2544477613118943e-05,
+              "peak_pred": 1.1010140354983378e-07,
+              "peak_error": 1.2434376209569109e-05,
+              "active_log_rmse": 2.0566597254960834,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "HNO2": {
+              "n": 2,
+              "mae": 4.854085890182436e-08,
+              "rmse": 6.859540388797567e-08,
+              "nmae": 0.04854085890182436,
+              "peak_true": 9.816630353043365e-08,
+              "peak_pred": 1.1577806491303022e-09,
+              "peak_error": 9.700852288130335e-08,
+              "active_log_rmse": 1.9283361512697166,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "HNOH": {
+              "n": 2,
+              "mae": 2.835052910004551e-06,
+              "rmse": 3.954462152302037e-06,
+              "nmae": 0.4981332453634903,
+              "peak_true": 5.691354544978822e-06,
+              "peak_pred": 9.944728418531668e-08,
+              "peak_error": 5.591907260793505e-06,
+              "active_log_rmse": 1.757622713546069,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "HO2": {
+              "n": 2,
+              "mae": 9.124226212442466e-05,
+              "rmse": 0.00012806049198964384,
+              "nmae": 0.398714707711453,
+              "peak_true": 0.00022884097415953875,
+              "peak_pred": 4.774138506036252e-05,
+              "peak_error": 0.00018109958909917623,
+              "active_log_rmse": 1.1524421642659377,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "HON": {
+              "n": 2,
+              "mae": 4.111393525976761e-10,
+              "rmse": 5.789902020827447e-10,
+              "nmae": 0.00041113935259767614,
+              "peak_true": 8.215224611696215e-10,
+              "peak_pred": 3.4702627056681923e-12,
+              "peak_error": 8.180521984639533e-10,
+              "active_log_rmse": 2.481006609460888,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "HONO": {
+              "n": 2,
+              "mae": 4.4279673766522976e-07,
+              "rmse": 6.25384277932433e-07,
+              "nmae": 0.44279673766522976,
+              "peak_true": 9.039260362442292e-07,
+              "peak_pred": 1.9499879044815316e-08,
+              "peak_error": 8.844261571994139e-07,
+              "active_log_rmse": 1.6661009782800722,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "HONO2": {
+              "n": 2,
+              "mae": 3.5995117986502984e-10,
+              "rmse": 5.066784183653303e-10,
+              "nmae": 0.00035995117986502984,
+              "peak_true": 7.216441333390833e-10,
+              "peak_pred": 5.100514195027772e-12,
+              "peak_error": 7.165436191440555e-10,
+              "active_log_rmse": 2.1507091247727477,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "N": {
+              "n": 2,
+              "mae": 1.1490670566164975e-08,
+              "rmse": 1.625005893298865e-08,
+              "nmae": 0.011490670566164976,
+              "peak_true": 2.2981490488405143e-08,
+              "peak_pred": 4.367578076546613e-13,
+              "peak_error": 2.2981053730597488e-08,
+              "active_log_rmse": 4.3613781918848264,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "N2H2": {
+              "n": 2,
+              "mae": 4.2807367591669125e-05,
+              "rmse": 6.0538592629844946e-05,
+              "nmae": 0.49555828707764915,
+              "peak_true": 8.6382104200311e-05,
+              "peak_pred": 7.676054565308732e-07,
+              "peak_error": 8.561449874378013e-05,
+              "active_log_rmse": 2.0512857256523374,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "N2H3": {
+              "n": 2,
+              "mae": 8.976489274947708e-07,
+              "rmse": 1.2693795092692285e-06,
+              "nmae": 0.4999862251841306,
+              "peak_true": 1.7953473161469446e-06,
+              "peak_pred": 1.7360263226962047e-10,
+              "peak_error": 1.795173713514675e-06,
+              "active_log_rmse": 4.014592170881567,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "N2H4": {
+              "n": 2,
+              "mae": 3.2220356732028255e-05,
+              "rmse": 4.556588290649405e-05,
+              "nmae": 0.49983380866407007,
+              "peak_true": 6.446213956223801e-05,
+              "peak_pred": 2.2249979636512762e-08,
+              "peak_error": 6.44398895826015e-05,
+              "active_log_rmse": 3.46197509823455,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "N2O": {
+              "n": 2,
+              "mae": 6.3969654583969524e-06,
+              "rmse": 9.046493595297596e-06,
+              "nmae": 0.4441582347881521,
+              "peak_true": 1.4402447050088085e-05,
+              "peak_pred": 1.6087731182778953e-06,
+              "peak_error": 1.279367393181019e-05,
+              "active_log_rmse": 0.9519414864132916,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "NH": {
+              "n": 2,
+              "mae": 1.0648278958805276e-06,
+              "rmse": 1.5053765154176078e-06,
+              "nmae": 0.49982695172323505,
+              "peak_true": 2.130393113475293e-06,
+              "peak_pred": 1.4693547489841308e-09,
+              "peak_error": 2.128923758726309e-06,
+              "active_log_rmse": 3.1613330886156055,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "NH2": {
+              "n": 2,
+              "mae": 0.00012032583173926525,
+              "rmse": 0.00016968111749619035,
+              "nmae": 0.49578929173528774,
+              "peak_true": 0.00024269550340250134,
+              "peak_pred": 2.7311500616633566e-06,
+              "peak_error": 0.000239964353340838,
+              "active_log_rmse": 1.7546284384714832,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "NH2OH": {
+              "n": 2,
+              "mae": 1.4984238848965972e-06,
+              "rmse": 2.1187132798943594e-06,
+              "nmae": 0.4809713358852049,
+              "peak_true": 3.1154120279097697e-06,
+              "peak_pred": 1.1909902042361864e-07,
+              "peak_error": 2.996313007486151e-06,
+              "active_log_rmse": 1.4176073028108593,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "NNH": {
+              "n": 2,
+              "mae": 5.240126577182272e-10,
+              "rmse": 6.962833892292343e-10,
+              "nmae": 0.0005240126577182272,
+              "peak_true": 1.0583250942275413e-09,
+              "peak_pred": 7.581348049345848e-11,
+              "peak_error": 9.825116137340828e-10,
+              "active_log_rmse": 1.1448726589560962,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "NO": {
+              "n": 2,
+              "mae": 0.00014748804131619532,
+              "rmse": 0.00020851271512240362,
+              "nmae": 0.42072309687777903,
+              "peak_true": 0.00035055846092291176,
+              "peak_pred": 5.5676966439932585e-05,
+              "peak_error": 0.0002948814944829792,
+              "active_log_rmse": 0.799084888804666,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "NO2": {
+              "n": 2,
+              "mae": 3.13733922214787e-05,
+              "rmse": 4.436325422100417e-05,
+              "nmae": 0.4955019891995055,
+              "peak_true": 6.331637996481732e-05,
+              "peak_pred": 5.772646431978501e-07,
+              "peak_error": 6.273911532161947e-05,
+              "active_log_rmse": 2.040141118383233,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "NO3": {
+              "n": 2,
+              "mae": 1.6792412724231376e-08,
+              "rmse": 2.3745753100713568e-08,
+              "nmae": 0.016792412724231376,
+              "peak_true": 3.360374734029392e-08,
+              "peak_pred": 2.218141469112478e-11,
+              "peak_error": 3.3581565925602797e-08,
+              "active_log_rmse": 3.1803984694524416,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "O": {
+              "n": 2,
+              "mae": 1.54005030193749e-06,
+              "rmse": 2.13747553383229e-06,
+              "nmae": 0.5018209130838996,
+              "peak_true": 3.0689241157233482e-06,
+              "peak_pred": 5.793421919975117e-08,
+              "peak_error": 3.010989896523597e-06,
+              "active_log_rmse": 2.2764016423537723,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "OH": {
+              "n": 2,
+              "mae": 1.7784069616666454e-06,
+              "rmse": 2.260493405466856e-06,
+              "nmae": 0.5012471734583953,
+              "peak_true": 3.5479640700941673e-06,
+              "peak_pred": 3.8312177252919355e-07,
+              "peak_error": 3.1648422975649737e-06,
+              "active_log_rmse": 2.6270320500287276,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "OHV": {
+              "n": 2,
+              "mae": 4.6030828344145884e-17,
+              "rmse": 6.363554534069118e-17,
+              "nmae": 4.6030828344145884e-11,
+              "peak_true": 9.130027848622214e-17,
+              "peak_pred": 2.091718498332749e-18,
+              "peak_error": 8.92085599878894e-17,
+              "active_log_rmse": 0.0,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "ONHN": {
+              "n": 2,
+              "mae": 1.8470883733890317e-14,
+              "rmse": 2.6110118447953958e-14,
+              "nmae": 1.847088373389032e-08,
+              "peak_true": 3.6947736401426665e-14,
+              "peak_pred": 2.2456458088267205e-17,
+              "peak_error": 3.69252799433384e-14,
+              "active_log_rmse": 0.0,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "T-HNN(O)OH": {
+              "n": 2,
+              "mae": 1.6842657626535488e-11,
+              "rmse": 2.3814990191800454e-11,
+              "nmae": 1.6842657626535488e-05,
+              "peak_true": 3.3690820966381096e-11,
+              "peak_pred": 1.1339354578736565e-14,
+              "peak_error": 3.367948161180236e-11,
+              "active_log_rmse": 1.5275115938491837,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "T-ONNH": {
+              "n": 2,
+              "mae": 2.8472842148255517e-09,
+              "rmse": 4.01694427519298e-09,
+              "nmae": 0.0028472842148255517,
+              "peak_true": 5.689830384625338e-09,
+              "peak_pred": 1.3768040527106784e-11,
+              "peak_error": 5.676062344098232e-09,
+              "active_log_rmse": 2.7994117862005172,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            }
+          }
+        },
+        "history": null
+      },
+      "best_v68_net_nuig_2024_H8.pth": {
+        "top_keys": [
+          "model_state_dict",
+          "mechanism",
+          "feature_info",
+          "version",
+          "transform_signature",
+          "rollout_signature",
+          "training_config",
+          "manifest",
+          "best_val_loss",
+          "sentinel_score",
+          "sentinel_metrics",
+          "epoch",
+          "horizon"
+        ],
+        "transform_signature": "macro_asinh_p90_v2",
+        "feature_info_signature": "dual_branch_pd_v1",
+        "manifest": {
+          "manifest_version": "1.0",
+          "source_hashes": {
+            "train_sc_v68.py": "5e69891a1d4b274b2f4a0d50f01beabdf9c15a89bb48236d7bf6b7317b6d718d",
+            "dual_branch_network.py": "7f7324e200340cd782c58898ab9b5fa7c55dc554e233e2c663da02955f66c17a",
+            "enhanced_loss_and_weights.py": "2cf8fd3729ce27c1669b2e454b210957e1fbab87f1961eace622fcfd3e849e9f",
+            "thermo_nasa7_layer.py": "b127ff7642f7199af61306241e19c98dfc798386e7c6c63fd87f2bc7789e415b",
+            "chemistry_contract.py": "5a5c0e6c097d2dfc8b2fab0b785ea35a49da71211dc2dd3b5594404163c5eddf",
+            "validate_sc_v68.py": "4a603d2cc5bf884c94d0496e8fd4c880ab3692a2e98fb54facf8bfed8d98e900"
+          },
+          "mechanism_name": "nuig_2024",
+          "mechanism_sha256": "unverified",
+          "species_order": [
+            "AR",
+            "C-HNN(O)OH",
+            "C-ONNH",
+            "H",
+            "H2",
+            "H2NN",
+            "H2NNO2",
+            "H2NO",
+            "H2O",
+            "H2O2",
+            "HE",
+            "HNO",
+            "HNO2",
+            "HNOH",
+            "HO2",
+            "HON",
+            "HONO",
+            "HONO2",
+            "N",
+            "N2",
+            "N2H2",
+            "N2H3",
+            "N2H4",
+            "N2O",
+            "NH",
+            "NH2",
+            "NH2OH",
+            "NH3",
+            "NNH",
+            "NO",
+            "NO2",
+            "NO3",
+            "O",
+            "O2",
+            "OH",
+            "OHV",
+            "ONHN",
+            "T-HNN(O)OH",
+            "T-ONNH"
+          ],
+          "element_names": [
+            "H",
+            "N",
+            "O",
+            "AR"
+          ],
+          "output_parameterization": "dual_branch_pd_v1",
+          "transform_signature": "macro_asinh_p90_v2",
+          "dt_policy": {
+            "min": 1e-08,
+            "max": 0.0001
+          },
+          "concentration_policy": {
+            "floor": 1e-40
+          },
+          "evaluation_protocol_id": "v68_species_sentinel_protocol_v1",
+          "split_hash": null,
+          "scaler_hashes": {
+            "scaler_X": "133a235489b73afd0255538f6c7b78bbbb58c19956d5dd1f6bdc7f9ed8516e7e",
+            "scaler_Y": "98f3c13dcd2d4c56b4310c53f14c57baeadfd83df2ba91f74143dfab8a9fbebc"
+          },
+          "dataset_audit": {}
+        },
+        "sentinel_metrics": {
+          "protocol_id": "v68_species_sentinel_protocol_v1",
+          "composite_score": 1.1079381116769396,
+          "mean_major_nmae": 0.3770194345507837,
+          "mean_radical_log_rmse": 2.162338018102188,
+          "mean_pollutant_nmae": 0.8012481260834409,
+          "cold_fp_rate": 0.0,
+          "nonfinite_count": 0,
+          "negative_count": 0,
+          "is_valid_candidate": true,
+          "mass_closure": {
+            "mean_mass_sum": 0.999486425091276,
+            "max_unity_error": 0.001037150723823821,
+            "rmse_unity_error": 0.0007334104042269294
+          },
+          "element_closure": {
+            "max_element_error": 0.0005609156832516714,
+            "rmse_element_error": 0.00030611059679106525
+          },
+          "timing_metrics": {},
+          "per_species": {
+            "H2": {
+              "n": 2,
+              "mae": 0.004750328604131937,
+              "rmse": 0.006595700591832112,
+              "nmae": 0.32800482069278714,
+              "peak_true": 0.014482496306300163,
+              "peak_pred": 0.0054905712604522705,
+              "peak_error": 0.008991925045847893,
+              "active_log_rmse": 0.31729028317359037,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "H2O": {
+              "n": 2,
+              "mae": 0.09004810568876565,
+              "rmse": 0.12648341039895272,
+              "nmae": 0.4807887860238971,
+              "peak_true": 0.1872924417257309,
+              "peak_pred": 0.008422087877988815,
+              "peak_error": 0.17887035384774208,
+              "active_log_rmse": 0.9575954596426305,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "N2": {
+              "n": 2,
+              "mae": 0.0688169002532959,
+              "rmse": 0.09720410669334734,
+              "nmae": 0.08673837893569922,
+              "peak_true": 0.7933846712112427,
+              "peak_pred": 0.6559174060821533,
+              "peak_error": 0.13746726512908936,
+              "active_log_rmse": 0.05843157308429111,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "NH3": {
+              "n": 2,
+              "mae": 0.0839385837316513,
+              "rmse": 0.11862670511908138,
+              "nmae": 0.4965956492827162,
+              "peak_true": 0.16902802884578705,
+              "peak_pred": 0.1691417396068573,
+              "peak_error": 0.00011371076107025146,
+              "active_log_rmse": 2.7679643278665362,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "O2": {
+              "n": 2,
+              "mae": 0.08149247616529465,
+              "rmse": 0.11422388609355842,
+              "nmae": 0.4929695378188188,
+              "peak_true": 0.1653093546628952,
+              "peak_pred": 0.16676388680934906,
+              "peak_error": 0.0014545321464538574,
+              "active_log_rmse": 2.440765945714647,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "C-HNN(O)OH": {
+              "n": 2,
+              "mae": 2.961504080376807e-11,
+              "rmse": 4.1823311962465345e-11,
+              "nmae": 2.9615040803768073e-05,
+              "peak_true": 5.923094653637051e-11,
+              "peak_pred": 8.390983491802367e-14,
+              "peak_error": 5.914703670145249e-11,
+              "active_log_rmse": 1.7725486729117197,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "C-ONNH": {
+              "n": 2,
+              "mae": 1.3452992089465002e-10,
+              "rmse": 1.8330991557954881e-10,
+              "nmae": 0.00013452992089465002,
+              "peak_true": 2.6048854739890714e-10,
+              "peak_pred": 1.442661528433531e-12,
+              "peak_error": 2.590458858704736e-10,
+              "active_log_rmse": 1.7179297036744126,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "H": {
+              "n": 2,
+              "mae": 0.00014788276566957137,
+              "rmse": 0.0002087710696023808,
+              "nmae": 0.5008563917913391,
+              "peak_true": 0.00029525981517508626,
+              "peak_pred": 1.3393467668265657e-08,
+              "peak_error": 0.000295246421707418,
+              "active_log_rmse": 3.2728604831704953,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "H2NN": {
+              "n": 2,
+              "mae": 3.26490016711381e-07,
+              "rmse": 4.615297711839604e-07,
+              "nmae": 0.326490016711381,
+              "peak_true": 6.529922416120826e-07,
+              "peak_pred": 2.906391516344087e-10,
+              "peak_error": 6.527016024604482e-07,
+              "active_log_rmse": 2.564523063739409,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "H2NNO2": {
+              "n": 2,
+              "mae": 2.5400564930336186e-09,
+              "rmse": 3.585547893819275e-09,
+              "nmae": 0.002540056493033619,
+              "peak_true": 5.080114551248016e-09,
+              "peak_pred": 9.392787762851906e-12,
+              "peak_error": 5.070721763485164e-09,
+              "active_log_rmse": 2.733078996043858,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "H2NO": {
+              "n": 2,
+              "mae": 3.515642325879753e-05,
+              "rmse": 4.7927676723823074e-05,
+              "nmae": 0.49979716060226165,
+              "peak_true": 7.034138252492994e-05,
+              "peak_pred": 2.610612000353285e-06,
+              "peak_error": 6.773077052457666e-05,
+              "active_log_rmse": 1.971802600512014,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "H2O2": {
+              "n": 2,
+              "mae": 3.085546974546105e-05,
+              "rmse": 3.864098997289176e-05,
+              "nmae": 0.4989419309530279,
+              "peak_true": 6.184180529089645e-05,
+              "peak_pred": 7.74421732785413e-06,
+              "peak_error": 5.4097587963042315e-05,
+              "active_log_rmse": 1.3700825881268952,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "HNO": {
+              "n": 2,
+              "mae": 5.252830185042967e-06,
+              "rmse": 6.610581944962853e-06,
+              "nmae": 0.5602074585771945,
+              "peak_true": 9.376580237585586e-06,
+              "peak_pred": 1.104929268080923e-07,
+              "peak_error": 9.266087310777493e-06,
+              "active_log_rmse": 1.5658775902922857,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "HNO2": {
+              "n": 2,
+              "mae": 1.8281221647598045e-08,
+              "rmse": 2.5700487042565823e-08,
+              "nmae": 0.018281221647598045,
+              "peak_true": 3.749379118289653e-08,
+              "peak_pred": 1.1567209412532975e-09,
+              "peak_error": 3.633707024164323e-08,
+              "active_log_rmse": 1.071751003927595,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "HNOH": {
+              "n": 2,
+              "mae": 2.518048164423803e-06,
+              "rmse": 3.4940215106707796e-06,
+              "nmae": 0.49952751078469226,
+              "peak_true": 5.040859832661226e-06,
+              "peak_pred": 1.0049464549410914e-07,
+              "peak_error": 4.940365187167117e-06,
+              "active_log_rmse": 1.5740282002638448,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "HO2": {
+              "n": 2,
+              "mae": 0.00011563628794419856,
+              "rmse": 0.00013413150439213617,
+              "nmae": 0.49988262939847056,
+              "peak_true": 0.00023132687783800066,
+              "peak_pred": 4.791562241734937e-05,
+              "peak_error": 0.0001834112554206513,
+              "active_log_rmse": 1.6895889237936712,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "HON": {
+              "n": 2,
+              "mae": 3.273126521978042e-08,
+              "rmse": 4.6116993882455325e-08,
+              "nmae": 0.03273126521978042,
+              "peak_true": 6.522155615584779e-08,
+              "peak_pred": 2.7373194856628036e-12,
+              "peak_error": 6.521881883636213e-08,
+              "active_log_rmse": 3.389982555543447,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "HONO": {
+              "n": 2,
+              "mae": 1.608582920198387e-07,
+              "rmse": 2.0273137015863152e-07,
+              "nmae": 0.1608582920198387,
+              "peak_true": 3.0334740586113185e-07,
+              "peak_pred": 1.9126154882087576e-08,
+              "peak_error": 2.8422125097904427e-07,
+              "active_log_rmse": 0.912171463186529,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "HONO2": {
+              "n": 2,
+              "mae": 1.294283704733959e-10,
+              "rmse": 1.8020186451662653e-10,
+              "nmae": 0.0001294283704733959,
+              "peak_true": 2.5986524043730697e-10,
+              "peak_pred": 5.11181635215463e-12,
+              "peak_error": 2.5475342408515234e-10,
+              "active_log_rmse": 1.3021319748095066,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "N": {
+              "n": 2,
+              "mae": 4.3750219190296724e-07,
+              "rmse": 6.117681396806066e-07,
+              "nmae": 0.43750219190296724,
+              "peak_true": 8.651147140881221e-07,
+              "peak_pred": 4.447032748555041e-13,
+              "peak_error": 8.651142693848473e-07,
+              "active_log_rmse": 5.060169390412439,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "N2H2": {
+              "n": 2,
+              "mae": 1.0312815249630125e-05,
+              "rmse": 1.4564101903286128e-05,
+              "nmae": 0.4999685744182875,
+              "peak_true": 2.0626926925615408e-05,
+              "peak_pred": 3.019676597659782e-08,
+              "peak_error": 2.059673015963881e-05,
+              "active_log_rmse": 2.2939272306086465,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "N2H3": {
+              "n": 2,
+              "mae": 3.3359927715604157e-07,
+              "rmse": 4.716590014751973e-07,
+              "nmae": 0.3335992771560416,
+              "peak_true": 6.672005952168547e-07,
+              "peak_pred": 1.743341998539094e-10,
+              "peak_error": 6.670262610170008e-07,
+              "active_log_rmse": 2.8604881710918315,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "N2H4": {
+              "n": 2,
+              "mae": 1.8837126106737746e-05,
+              "rmse": 2.6623855586269776e-05,
+              "nmae": 0.500004470672146,
+              "peak_true": 3.767391535802744e-05,
+              "peak_pred": 2.2442259606236803e-08,
+              "peak_error": 3.7651473098421206e-05,
+              "active_log_rmse": 3.8296733849355853,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "N2O": {
+              "n": 2,
+              "mae": 1.6531339497305453e-06,
+              "rmse": 1.6945008074382554e-06,
+              "nmae": 1.0871997103815387,
+              "peak_true": 1.5205430372589035e-06,
+              "peak_pred": 2.3742263692838605e-06,
+              "peak_error": 8.536833320249571e-07,
+              "active_log_rmse": 0.8178214453798553,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "NH": {
+              "n": 2,
+              "mae": 1.229554983994685e-06,
+              "rmse": 1.2315858299521941e-06,
+              "nmae": 0.9445625579102047,
+              "peak_true": 1.3017189530728501e-06,
+              "peak_pred": 1.5057354252334676e-09,
+              "peak_error": 1.3002132176476167e-06,
+              "active_log_rmse": 2.917771181903764,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "NH2": {
+              "n": 2,
+              "mae": 8.234101278503658e-05,
+              "rmse": 0.00011612468303106507,
+              "nmae": 0.49322742732554087,
+              "peak_true": 0.00016694329679012299,
+              "peak_pred": 2.7188325475435704e-06,
+              "peak_error": 0.00016422446424257942,
+              "active_log_rmse": 1.2653425396895501,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "NH2OH": {
+              "n": 2,
+              "mae": 8.712356547313505e-07,
+              "rmse": 1.1936177953639236e-06,
+              "nmae": 0.4996048886748185,
+              "peak_true": 1.7438493387089693e-06,
+              "peak_pred": 5.6726513264493406e-08,
+              "peak_error": 1.6871228254444759e-06,
+              "active_log_rmse": 1.5570969984956318,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "NNH": {
+              "n": 2,
+              "mae": 2.328364033590824e-07,
+              "rmse": 3.2908753121273e-07,
+              "nmae": 0.2328364033590824,
+              "peak_true": 4.6547489773729467e-07,
+              "peak_pred": 7.561048315229968e-11,
+              "peak_error": 4.6539928725414237e-07,
+              "active_log_rmse": 2.7229646645737895,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "NO": {
+              "n": 2,
+              "mae": 0.0011232592732994817,
+              "rmse": 0.001521093305970799,
+              "nmae": 0.515296541785343,
+              "peak_true": 0.002179830800741911,
+              "peak_pred": 3.089445817749947e-05,
+              "peak_error": 0.0021489363425644115,
+              "active_log_rmse": 1.3828028350575705,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "NO2": {
+              "n": 2,
+              "mae": 1.1836003153575803e-05,
+              "rmse": 1.6467289673008443e-05,
+              "nmae": 0.4968084981348241,
+              "peak_true": 2.3824075469747186e-05,
+              "peak_pred": 5.413706958279363e-07,
+              "peak_error": 2.328270477391925e-05,
+              "active_log_rmse": 1.2255974774203593,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "NO3": {
+              "n": 2,
+              "mae": 6.195652000107513e-09,
+              "rmse": 8.746572939337633e-09,
+              "nmae": 0.006195652000107513,
+              "peak_true": 1.2391908832398713e-08,
+              "peak_pred": 2.240596944091955e-11,
+              "peak_error": 1.2369502862957793e-08,
+              "active_log_rmse": 2.742774470336313,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "O": {
+              "n": 2,
+              "mae": 2.563685947265526e-05,
+              "rmse": 3.480355168409655e-05,
+              "nmae": 0.5208524287105353,
+              "peak_true": 4.9220965593121946e-05,
+              "peak_pred": 4.62263720635292e-08,
+              "peak_error": 4.917473922105842e-05,
+              "active_log_rmse": 2.4443813819795888,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "OH": {
+              "n": 2,
+              "mae": 0.0011160500741880242,
+              "rmse": 0.0015768580836661098,
+              "nmae": 0.5003853126037381,
+              "peak_true": 0.0022303813602775335,
+              "peak_pred": 3.763108509247104e-07,
+              "peak_error": 0.002230005049426609,
+              "active_log_rmse": 2.7359771896875373,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "OHV": {
+              "n": 2,
+              "mae": 6.642998463437959e-11,
+              "rmse": 9.39461575026183e-11,
+              "nmae": 6.642998463437959e-05,
+              "peak_true": 1.3285993138989483e-10,
+              "peak_pred": 1.3620572067233183e-18,
+              "peak_error": 1.3285993002783762e-10,
+              "active_log_rmse": 2.1233940238318763,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "ONHN": {
+              "n": 2,
+              "mae": 2.913866200841768e-13,
+              "rmse": 4.071418391722979e-13,
+              "nmae": 2.913866200841768e-07,
+              "peak_true": 5.757650758074495e-13,
+              "peak_pred": 2.2678069700537512e-17,
+              "peak_error": 5.75742397737749e-13,
+              "active_log_rmse": 0.0,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "T-HNN(O)OH": {
+              "n": 2,
+              "mae": 5.039133333433093e-12,
+              "rmse": 7.118555250274224e-12,
+              "nmae": 5.039133333433093e-06,
+              "peak_true": 1.007828195898064e-11,
+              "peak_pred": 1.1140545781620614e-14,
+              "peak_error": 1.0067141413199019e-11,
+              "active_log_rmse": 1.0033865043984438,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            },
+            "T-ONNH": {
+              "n": 2,
+              "mae": 8.781838659044361e-10,
+              "rmse": 1.2298483686865696e-09,
+              "nmae": 0.0008781838659044361,
+              "peak_true": 1.7482068015439722e-09,
+              "peak_pred": 9.055591346229797e-12,
+              "peak_error": 1.7391512101977424e-09,
+              "active_log_rmse": 1.6499791534760881,
+              "cold_fp_count": 0,
+              "cold_fp_ratio": 0.0
+            }
+          }
+        },
+        "history": null
+      },
+      "latest_v68_nuig_2024.pth": {
+        "top_keys": [
+          "epoch",
+          "model_state_dict",
+          "optimizer_state_dict",
+          "scheduler_state_dict",
+          "best_val_loss",
+          "patience_counter",
+          "history",
+          "feature_info",
+          "version",
+          "transform_signature",
+          "rollout_signature",
+          "training_config",
+          "best_oracle_h128",
+          "best_oracle_avg",
+          "best_pure_ar_h128",
+          "best_composite",
+          "best_robust_raw",
+          "rng_states"
+        ],
+        "transform_signature": "macro_asinh_p90_v2",
+        "feature_info_signature": "dual_branch_pd_v1",
+        "manifest": {
+          "manifest_version": "1.0",
+          "source_hashes": {
+            "train_sc_v68.py": "5e69891a1d4b274b2f4a0d50f01beabdf9c15a89bb48236d7bf6b7317b6d718d",
+            "dual_branch_network.py": "7f7324e200340cd782c58898ab9b5fa7c55dc554e233e2c663da02955f66c17a",
+            "enhanced_loss_and_weights.py": "2cf8fd3729ce27c1669b2e454b210957e1fbab87f1961eace622fcfd3e849e9f",
+            "thermo_nasa7_layer.py": "b127ff7642f7199af61306241e19c98dfc798386e7c6c63fd87f2bc7789e415b",
+            "chemistry_contract.py": "5a5c0e6c097d2dfc8b2fab0b785ea35a49da71211dc2dd3b5594404163c5eddf",
+            "validate_sc_v68.py": "4a603d2cc5bf884c94d0496e8fd4c880ab3692a2e98fb54facf8bfed8d98e900"
+          },
+          "mechanism_name": "nuig_2024",
+          "mechanism_sha256": "unverified",
+          "species_order": [
+            "AR",
+            "C-HNN(O)OH",
+            "C-ONNH",
+            "H",
+            "H2",
+            "H2NN",
+            "H2NNO2",
+            "H2NO",
+            "H2O",
+            "H2O2",
+            "HE",
+            "HNO",
+            "HNO2",
+            "HNOH",
+            "HO2",
+            "HON",
+            "HONO",
+            "HONO2",
+            "N",
+            "N2",
+            "N2H2",
+            "N2H3",
+            "N2H4",
+            "N2O",
+            "NH",
+            "NH2",
+            "NH2OH",
+            "NH3",
+            "NNH",
+            "NO",
+            "NO2",
+            "NO3",
+            "O",
+            "O2",
+            "OH",
+            "OHV",
+            "ONHN",
+            "T-HNN(O)OH",
+            "T-ONNH"
+          ],
+          "element_names": [
+            "H",
+            "N",
+            "O",
+            "AR"
+          ],
+          "output_parameterization": "dual_branch_pd_v1",
+          "transform_signature": "macro_asinh_p90_v2",
+          "dt_policy": {
+            "min": 1e-08,
+            "max": 0.0001
+          },
+          "concentration_policy": {
+            "floor": 1e-40
+          },
+          "evaluation_protocol_id": "v68_species_sentinel_protocol_v1",
+          "split_hash": null,
+          "scaler_hashes": {
+            "scaler_X": "133a235489b73afd0255538f6c7b78bbbb58c19956d5dd1f6bdc7f9ed8516e7e",
+            "scaler_Y": "98f3c13dcd2d4c56b4310c53f14c57baeadfd83df2ba91f74143dfab8a9fbebc"
+          },
+          "dataset_audit": {}
+        },
+        "sentinel_metrics": null,
+        "history": [
+          {
+            "epoch": 1,
+            "horizon": 1,
+            "tail_fraction": 1.0,
+            "lr": 1e-05,
+            "train": {
+              "total": 1.8790785359081725,
+              "rate": 1.5585583448410034,
+              "state": 0.32051565317608427,
+              "element": 2.21076697926037e-05,
+              "mass": 2.3271416011994006e-06,
+              "positive": 4.7692999723125684e-12,
+              "rollout": 0.0,
+              "stability": 0.0,
+              "transition_weight": 1.0,
+              "radical": 0.0,
+              "no": 0.0,
+              "transition_audit": {
+                "sample_count": 6,
+                "high_activity_fraction": 0.0,
+                "weight_mean": 1.0,
+                "weight_p50": 1.0,
+                "weight_p90": 1.0,
+                "weight_max": 1.0,
+                "rate_mse_high_activity": null,
+                "rate_mse_normal": 1.454938570658366,
+                "state_mse_high_activity": null,
+                "state_mse_normal": 0.32051565317608427
+              }
+            },
+            "validation_oracle": {
+              "total": 3.1671773619496317,
+              "rate": 2.4548892974853516,
+              "state": 0.7122878732817346,
+              "element": 8.979590120361536e-07,
+              "mass": 2.3181473807198927e-07,
+              "positive": 0.0,
+              "per_horizon": {
+                "1": {
+                  "rmse": 0.8445616394085687,
+                  "count": 2
+                },
+                "8": {
+                  "rmse": NaN,
+                  "count": 0
+                }
+              }
+            },
+            "validation_pure_ar": {
+              "total": 1.7390905577290998,
+              "rate": 1.4628166407346725,
+              "state": 0.2762738810125911,
+              "element": 1.7140767774505988e-07,
+              "mass": 3.400599119646446e-08,
+              "positive": 0.0,
+              "per_horizon": {
+                "1": {
+                  "rmse": 0.8445616394085687,
+                  "count": 2
+                },
+                "8": {
+                  "rmse": 0.8109791675507263,
+                  "count": 2
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "resume": {
+      "error": "RuntimeError: Refusing incompatible scaler transform"
+    }
+  }
+}

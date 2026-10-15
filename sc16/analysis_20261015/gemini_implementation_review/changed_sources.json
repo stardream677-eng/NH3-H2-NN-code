@@ -1,0 +1,26 @@
+{
+  "enhanced_loss_and_weights.py": {
+    "sha256": "2cf8fd3729ce27c1669b2e454b210957e1fbab87f1961eace622fcfd3e849e9f",
+    "baseline_matches": true
+  },
+  "train_sc_v68.py": {
+    "sha256": "8408d52a945e3fc91f5926c9c6f9d1e079e8070092c29994852efc6499ee0fb0",
+    "baseline_matches": true
+  },
+  "validate_sc_v68.py": {
+    "sha256": "a27dc653c110eef2e1b1b34b3d1f1383b1e7e73d1eac3da9362034657d2e289f",
+    "baseline_matches": true
+  },
+  "data_pipeline\\build_training_dataset_v72.py": {
+    "sha256": "9ea24233a17fd37f44b01faafb87450330e0f2871fd714966b65debd2dbdb5fd",
+    "baseline_matches": true
+  },
+  "data_pipeline\\generate_augmented_trajectories.py": {
+    "sha256": "a4d9441db7f4b121fd612f2b6f3593bb73bc60917290d067908307f533c48110",
+    "baseline_matches": true
+  },
+  "data_pipeline\\split_trajectories_v21.py": {
+    "sha256": "f64ab322845299618e5946782a985e2ccf4d6918d14bb548dd69b4c7b6ba3a03",
+    "baseline_matches": true
+  }
+}

@@ -1,0 +1,157 @@
+Using device: cuda
+PROBE mass_gate_12_percent_defect
+PROBE active_decay_missing_states
+PROBE gemini_recommended_command
+PROBE production_callsites
+PROBE actual_new_mode_training_and_resume
+{
+  "python": "C:\\Users\\123\\.conda\\envs\\cantera\\python.exe",
+  "python_version": "3.12.12",
+  "torch": "2.11.0.dev20260120+cu130",
+  "cantera": "3.0.1",
+  "device": "cuda",
+  "mass_gate_12_percent_defect": {
+    "protocol_id": "v68_species_sentinel_protocol_v1",
+    "composite_score": 0.04799999999999998,
+    "mean_major_nmae": 0.11999999999999994,
+    "mean_radical_log_rmse": 0.0,
+    "mean_pollutant_nmae": 0.0,
+    "cold_fp_rate": 0.0,
+    "nonfinite_count": 0,
+    "negative_count": 0,
+    "is_valid_candidate": true,
+    "mass_closure": {
+      "mean_mass_sum": 0.88,
+      "max_unity_error": 0.12,
+      "rmse_unity_error": 0.12
+    },
+    "element_closure": {
+      "max_element_error": 0.03999999999999998,
+      "rmse_element_error": 0.03999999999999998
+    },
+    "timing_metrics": {},
+    "per_species": {
+      "H2": {
+        "n": 1,
+        "mae": 0.03999999999999998,
+        "rmse": 0.03999999999999998,
+        "nmae": 0.11999999999999994,
+        "peak_true": 0.3333333333333333,
+        "peak_pred": 0.29333333333333333,
+        "peak_error": 0.03999999999999998,
+        "active_log_rmse": 0.05551732784983138,
+        "cold_fp_count": 0,
+        "cold_fp_ratio": 0.0
+      },
+      "N2": {
+        "n": 1,
+        "mae": 0.03999999999999998,
+        "rmse": 0.03999999999999998,
+        "nmae": 0.11999999999999994,
+        "peak_true": 0.3333333333333333,
+        "peak_pred": 0.29333333333333333,
+        "peak_error": 0.03999999999999998,
+        "active_log_rmse": 0.05551732784983138,
+        "cold_fp_count": 0,
+        "cold_fp_ratio": 0.0
+      },
+      "O2": {
+        "n": 1,
+        "mae": 0.03999999999999998,
+        "rmse": 0.03999999999999998,
+        "nmae": 0.11999999999999994,
+        "peak_true": 0.3333333333333333,
+        "peak_pred": 0.29333333333333333,
+        "peak_error": 0.03999999999999998,
+        "active_log_rmse": 0.05551732784983138,
+        "cold_fp_count": 0,
+        "cold_fp_ratio": 0.0
+      }
+    }
+  },
+  "active_decay_missing_states": [
+    {
+      "mode": "dual_branch",
+      "D": 10000.0,
+      "dt": 0.0001,
+      "Y_old": 0.0001,
+      "Y_next": 3.678794411714424e-05,
+      "without_states": [
+        [
+          1.0,
+          1.0,
+          0.0
+        ]
+      ],
+      "with_states": null
+    },
+    {
+      "mode": "dual_branch_pd_v1",
+      "D": 10000.0,
+      "dt": 0.0001,
+      "Y_old": 0.0001,
+      "Y_next": 3.678794411714424e-05,
+      "without_states": [
+        [
+          1.0,
+          1.0,
+          0.0
+        ]
+      ],
+      "with_states": null
+    }
+  ],
+  "gemini_recommended_command": {
+    "accepted": false,
+    "exit_code": 2,
+    "last_line": "probe_revision2.py: error: unrecognized arguments: --curriculum_warmup_epochs 5 --weight_decay 1e-5"
+  },
+  "production_callsites": {
+    "compute_species_trajectory_metrics": [
+      {
+        "file": "train_sc_v68.py",
+        "line": 4934,
+        "keywords": [
+          "true_states",
+          "pred_states",
+          "species_names",
+          "element_matrix"
+        ]
+      }
+    ],
+    "audit_parquet_dataset": [],
+    "compute_qssa_rate_mask": [
+      {
+        "file": "train_sc_v68.py",
+        "line": 4328,
+        "keywords": []
+      },
+      {
+        "file": "train_sc_v68.py",
+        "line": 6726,
+        "keywords": [
+          "Y_old_unscaled",
+          "Y_next_unscaled"
+        ]
+      }
+    ],
+    "create_experiment_manifest": [
+      {
+        "file": "train_sc_v68.py",
+        "line": 6268,
+        "keywords": [
+          "mechanism_contract",
+          "output_parameterization",
+          "transform_signature",
+          "dt_policy",
+          "concentration_policy",
+          "evaluation_protocol_id",
+          "scaler_hashes"
+        ]
+      }
+    ],
+    "verify_checkpoint_compatibility": []
+  }
+}
+Training result: success
+Resume result: {'error': 'RuntimeError: Refusing incompatible scaler transform'}

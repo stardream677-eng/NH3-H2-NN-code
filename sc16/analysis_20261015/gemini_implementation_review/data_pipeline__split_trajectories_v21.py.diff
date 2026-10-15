@@ -1,0 +1,63 @@
+--- before/data_pipeline\split_trajectories_v21.py
++++ after/data_pipeline\split_trajectories_v21.py
+@@ -207,18 +207,22 @@
+                 values["stratum_name"] = (
+                     str(stratum_name).strip()
+                     if pd.notna(stratum_name) and str(stratum_name).strip()
+                     else "unknown"
+                 )
++                if "condition_group_id" in row and pd.notna(row["condition_group_id"]):
++                    values["condition_group_id"] = str(row["condition_group_id"]).strip()
++                else:
++                    values["condition_group_id"] = str(key)
+                 actual, reason, _ = _conditions.actual_phi(row.to_dict(), gas, mechanism_error)
+                 if actual is not None:
+                     values["phi"] = actual
+                 values["phi_actual_error"] = reason
+                 first_rows[key] = values
+                 first_times[key] = candidate_time
+     metadata = pd.DataFrame.from_dict(first_rows, orient="index").reindex(
+-        columns=[*CONDITION_FIELDS, "stratum_name", "phi_actual_error"]
++        columns=[*CONDITION_FIELDS, "stratum_name", "phi_actual_error", "condition_group_id"]
+     )
+     metadata.index.name = "sample_id"
+     metadata = metadata.reindex(sorted(counts), fill_value=np.nan)
+     return counts, metadata
+ 
+@@ -283,10 +287,36 @@
+     if metadata is None:
+         rng.shuffle(ids)
+         n_train = int(round(len(ids) * train))
+         n_val = int(round(len(ids) * val))
+         return {"train": ids[:n_train], "validation": ids[n_train:n_train+n_val], "test": ids[n_train+n_val:]}
++
++    if "condition_group_id" in metadata:
++        meta_ids = metadata.loc[ids]
++        cg = meta_ids["condition_group_id"].fillna(pd.Series(ids, index=ids)).astype(str)
++        if cg.nunique() < len(ids):
++            group_to_ids: dict[str, list] = {}
++            group_first_row: dict[str, pd.Series] = {}
++            for sid, grp in zip(ids, cg):
++                group_to_ids.setdefault(grp, []).append(sid)
++                if grp not in group_first_row:
++                    group_first_row[grp] = meta_ids.loc[sid]
++
++            group_keys = np.asarray(list(group_to_ids.keys()), dtype=object)
++            group_meta = pd.DataFrame.from_dict(group_first_row, orient="index")
++
++            group_splits = _split_ids(
++                group_keys, rng, train, val, metadata=group_meta, strata_bins=strata_bins
++            )
++            result = {}
++            for split_name, g_keys in group_splits.items():
++                split_sids = []
++                for gk in g_keys:
++                    split_sids.extend(group_to_ids[gk])
++                result[split_name] = np.asarray(split_sids, dtype=object)
++            return result
++
+     strata = _condition_strata(metadata.loc[ids], strata_bins)
+     groups = {label: group.to_numpy(dtype=object) for label, group in strata.groupby(strata).groups.items()}
+     for group in groups.values():
+         rng.shuffle(group)
+     labels = sorted(groups)

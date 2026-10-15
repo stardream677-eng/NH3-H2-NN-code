@@ -1,0 +1,287 @@
+"""Dataset Builder for V72 CFD-Optimized Surrogate Training.
+
+1. Converts mini_ds.pkl (30 trajectories, 4800 steps) into standard Parquet format.
+2. Generates Cantera ground-truth trajectories for all 24 benchmark combustion conditions
+   using the exact QSSA asymptotic solver from runner_sc_v21_qssa.py.
+3. Saves to trajectories_nuig_2024/part-000001.parquet and part-000002.parquet using atomic replacement.
+"""
+
+from __future__ import annotations
+
+import argparse
+import importlib.util
+import os
+from pathlib import Path
+import sys
+import time
+
+import cantera as ct
+import joblib
+import numpy as np
+import pandas as pd
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = SCRIPT_DIR.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+bench_path = PROJECT_ROOT / "test" / "benchmark_cfd_closed_loop.py"
+if not bench_path.exists():
+    bench_path = SCRIPT_DIR / "test" / "benchmark_cfd_closed_loop.py"
+
+bench_spec = importlib.util.spec_from_file_location("bench", str(bench_path))
+bench_mod = importlib.util.module_from_spec(bench_spec)
+bench_spec.loader.exec_module(bench_mod)
+BENCHMARK_CASES = bench_mod.BENCHMARK_CASES
+import runner_sc_v21_qssa as r21
+
+DEFAULT_TARGET_DIR = PROJECT_ROOT / "trajectories_nuig_2024"
+
+
+def compute_phi_from_species_dict(sp_dict: dict, gas: ct.Solution | None = None) -> float:
+    """Calculate stoichiometric equivalence ratio phi from mass fractions."""
+    y_nh3 = float(sp_dict.get("NH3", 0.0))
+    y_h2 = float(sp_dict.get("H2", 0.0))
+    y_o2 = float(sp_dict.get("O2", 0.0))
+    if y_o2 <= 1e-12:
+        return 1.0
+    w_nh3, w_h2, w_o2 = 17.03052, 2.01588, 31.9988
+    if gas is not None:
+        try:
+            w_nh3 = gas.molecular_weights[gas.species_index("NH3")]
+            w_h2 = gas.molecular_weights[gas.species_index("H2")]
+            w_o2 = gas.molecular_weights[gas.species_index("O2")]
+        except Exception:
+            pass
+    req_o2 = (0.75 * (y_nh3 / w_nh3) + 0.5 * (y_h2 / w_h2)) * w_o2
+    return float(req_o2 / y_o2)
+
+
+def compute_phi_from_mole_fractions(X_dict: dict, gas: ct.Solution | None = None) -> float:
+    """Calculate stoichiometric equivalence ratio phi from mole fractions."""
+    x_nh3 = float(X_dict.get("NH3", 0.0))
+    x_h2 = float(X_dict.get("H2", 0.0))
+    x_o2 = float(X_dict.get("O2", 0.0))
+    if x_o2 <= 1e-12:
+        return 1.0
+    req_o2 = 0.75 * x_nh3 + 0.5 * x_h2
+    return float(req_o2 / x_o2)
+
+
+def convert_mini_ds(target_dir: str | Path | None = None) -> pd.DataFrame | None:
+    pkl_path = SCRIPT_DIR / "mini_ds.pkl"
+    if not pkl_path.exists():
+        print(f"mini_ds.pkl not found at {pkl_path}")
+        return None
+
+    if target_dir is None:
+        target_dir = DEFAULT_TARGET_DIR
+    target_dir = Path(target_dir)
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"Loading mini_ds.pkl from {pkl_path}...")
+    ds = joblib.load(pkl_path)
+    names = ds["names"]
+    rows = ds["rows"]
+
+    mech_cand = PROJECT_ROOT / "NUIG2024.yaml"
+    gas = None
+    if mech_cand.exists():
+        try:
+            gas = ct.Solution(str(mech_cand))
+        except Exception:
+            gas = None
+    W_k = [gas.molecular_weights[gas.species_index(s)] if gas else 28.0 for s in names]
+
+    records = []
+    time_per_sid: dict[int, float] = {}
+    intervals_per_sid: dict[int, int] = {}
+    for r in rows:
+        sid = r["sid"] + 10
+        intervals_per_sid[sid] = intervals_per_sid.get(sid, 0) + 1
+
+    for idx, r in enumerate(rows):
+        sid = r["sid"] + 10
+        dt = float(r["dt"])
+        t_curr = time_per_sid.get(sid, 0.0)
+        time_per_sid[sid] = t_curr + dt
+
+        T = float(r["T"])
+        P = float(r["P"])
+        Tn = float(r["Tn"])
+        dTdt = (Tn - T) / dt if dt > 0 else 0.0
+
+        # P_next recovery: next row's P if in same trajectory, otherwise const-volume EOS
+        if idx + 1 < len(rows) and (rows[idx + 1]["sid"] + 10) == sid:
+            Pn = float(rows[idx + 1]["P"])
+        else:
+            w_inv_old = sum(float(r["Y"][i]) / float(W_k[i]) for i in range(len(names)))
+            w_inv_next = sum(float(r["Yn"][i]) / float(W_k[i]) for i in range(len(names)))
+            Pn = P * (Tn / max(T, 1.0)) * (w_inv_next / max(w_inv_old, 1e-12))
+
+        # Calculate phi from composition
+        sp_dict = {names[i]: float(r["Y"][i]) for i in range(len(names))}
+        phi_calc = compute_phi_from_species_dict(sp_dict, gas)
+
+        rec = {
+            "sample_id": sid,
+            "condition_group_id": f"mini_traj_{sid}",
+            "mechanism_name": "nuig_2024",
+            "phi": phi_calc,
+            "phi_actual": phi_calc,
+            "initial_radical_total": 0.0,
+            "time": t_curr,
+            "dt": dt,
+            "T": T,
+            "P": P,
+            "T_next": Tn,
+            "P_next": Pn,
+            "dTdt_avg": dTdt,
+            "termination_reason": "normal",
+            "n_intervals_in_trajectory": intervals_per_sid[sid],
+        }
+
+        Y = r["Y"]
+        Yn = r["Yn"]
+        Pq = r["Pq"]
+        Dq = r["Dq"]
+
+        for i, sp in enumerate(names):
+            y_i = float(Y[i])
+            yn_i = float(Yn[i])
+            rec[f"Y_{sp}"] = y_i
+            rec[f"dYdt_{sp}"] = (yn_i - y_i) / dt if dt > 0 else 0.0
+            rec[f"Y_next_{sp}"] = yn_i
+            rec[f"P_avg_{sp}"] = float(Pq[i])
+            rec[f"D_coef_avg_{sp}"] = float(Dq[i])
+
+        records.append(rec)
+
+    df = pd.DataFrame(records)
+    out_path = target_dir / "part-000001.parquet"
+    tmp_path = out_path.with_suffix(".tmp")
+    df.to_parquet(tmp_path, index=False)
+    tmp_path.replace(out_path)
+    print(f"Saved {len(df)} rows ({len(intervals_per_sid)} trajectories) to {out_path}")
+    return df
+
+
+def generate_benchmark_trajectories(target_dir: str | Path | None = None) -> pd.DataFrame:
+    print("\nGenerating Cantera trajectories for 24 benchmark conditions...")
+    if target_dir is None:
+        target_dir = DEFAULT_TARGET_DIR
+    target_dir = Path(target_dir)
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    mech_path = PROJECT_ROOT / "NUIG2024.yaml"
+    if not mech_path.exists():
+        mech_path = SCRIPT_DIR / "NUIG2024.yaml"
+    gas = ct.Solution(str(mech_path))
+    names = list(gas.species_names)
+    W_k = gas.molecular_weights
+
+    all_rows = []
+
+    for case_idx, case in enumerate(BENCHMARK_CASES):
+        sid = 100 + case_idx
+        T0, Patm, X, tmax = case["T0"], case["P"], case["X"], case["tmax"]
+        gas.TPX = T0, Patm * ct.one_atm, X
+        phi_calc = compute_phi_from_mole_fractions(X, gas)
+
+        reactor = ct.IdealGasReactor(gas)
+        sim = ct.ReactorNet([reactor])
+
+        n_steps = 160
+        dt_fixed = tmax / n_steps
+        rng = np.random.default_rng(2026 + case_idx)
+
+        t_curr = 0.0
+        case_records = []
+
+        for step in range(n_steps):
+            dt = dt_fixed * rng.uniform(0.7, 1.3)
+
+            T_start = float(reactor.T)
+            P_start = float(reactor.thermo.P)
+            Y_start = reactor.thermo.Y.copy()
+            rho_start = reactor.thermo.density
+
+            C_start = gas.creation_rates * W_k / rho_start
+            D_rate_start = gas.destruction_rates * W_k / rho_start
+            D_coef_start = D_rate_start / np.maximum(Y_start, 1e-300)
+
+            sim.advance(t_curr + dt)
+
+            T_end = float(reactor.T)
+            P_end = float(reactor.thermo.P)
+            Y_end = reactor.thermo.Y.copy()
+            rho_end = reactor.thermo.density
+
+            C_end = gas.creation_rates * W_k / rho_end
+            D_rate_end = gas.destruction_rates * W_k / rho_end
+            D_coef_end = D_rate_end / np.maximum(Y_end, 1e-300)
+
+            P_candidate = (C_start + C_end) / 2.0
+            D_candidate = (D_coef_start + D_coef_end) / 2.0
+
+            P_eff, D_eff = r21._solve_exact_qssa_params(
+                Y0=Y_start,
+                Y_next=Y_end,
+                dt=dt,
+                P_raw=P_candidate,
+                D_raw_init=D_candidate,
+            )
+
+            rec = {
+                "sample_id": sid,
+                "condition_group_id": f"bench_{case['name']}",
+                "mechanism_name": "nuig_2024",
+                "phi": phi_calc,
+                "phi_actual": phi_calc,
+                "initial_radical_total": 0.0,
+                "time": t_curr,
+                "dt": dt,
+                "T": T_start,
+                "P": P_start / ct.one_atm,
+                "T_next": T_end,
+                "P_next": P_end / ct.one_atm,
+                "dTdt_avg": (T_end - T_start) / dt,
+                "termination_reason": "normal",
+                "n_intervals_in_trajectory": n_steps,
+            }
+
+            for i, sp in enumerate(names):
+                rec[f"Y_{sp}"] = float(Y_start[i])
+                rec[f"dYdt_{sp}"] = float((Y_end[i] - Y_start[i]) / dt)
+                rec[f"Y_next_{sp}"] = float(Y_end[i])
+                rec[f"P_avg_{sp}"] = float(P_eff[i])
+                rec[f"D_coef_avg_{sp}"] = float(D_eff[i])
+
+            case_records.append(rec)
+            t_curr += dt
+
+        all_rows.extend(case_records)
+        print(f"  [{case_idx+1}/24] {case['name']}: {len(case_records)} steps (T_final = {T_end:.0f} K)")
+
+    df = pd.DataFrame(all_rows)
+    out_path = target_dir / "part-000002.parquet"
+    tmp_path = out_path.with_suffix(".tmp")
+    df.to_parquet(tmp_path, index=False)
+    tmp_path.replace(out_path)
+    print(f"Saved {len(df)} rows (24 benchmark trajectories) to {out_path}")
+    return df
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Dataset Builder for V72")
+    parser.add_argument("--target_dir", type=str, default=str(DEFAULT_TARGET_DIR))
+    parser.add_argument("--mini_only", action="store_true")
+    args = parser.parse_args()
+
+    t0 = time.time()
+    convert_mini_ds(target_dir=args.target_dir)
+    if not args.mini_only:
+        generate_benchmark_trajectories(target_dir=args.target_dir)
+    print(f"\nAll datasets generated in {time.time() - t0:.2f} s")

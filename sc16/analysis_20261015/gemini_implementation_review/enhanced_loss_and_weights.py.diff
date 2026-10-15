@@ -1,0 +1,79 @@
+--- before/enhanced_loss_and_weights.py
++++ after/enhanced_loss_and_weights.py
+@@ -145,20 +145,22 @@
+         pred_log_micro = pred_state.get("logY_micro_next_constrained")
+ 
+     true_X_unscaled = true_next_X_scaled * tools.scale_X + tools.mean_X
+ 
+     if "NO" in tools.micro_species:
++        is_micro = True
+         idx = tools.micro_species.index("NO")
+         if pred_log_micro is not None:
+             pred_logy = pred_log_micro[:, idx]
+         else:
+             pred_y = pred_micro[:, idx].clamp_min(1e-12)
+             pred_logy = torch.log10(pred_y)
+         col_idx = tools.micro_idx[idx]
+         true_logy = true_X_unscaled[:, col_idx]
+         active_mask = (true_logy > active_threshold)
+     else:
++        is_micro = False
+         idx = tools.macro_species.index("NO")
+         pred_y = pred_macro[:, idx]
+         col_idx = tools.macro_idx[idx]
+         true_y = true_X_unscaled[:, col_idx]
+ 
+@@ -172,28 +174,36 @@
+         ln10 = 2.302585092994046
+         pred_logy = torch.asinh(pred_y / s_no) / ln10
+         true_logy = torch.asinh(torch.clamp_min(true_y, 0.0) / s_no) / ln10
+         active_mask = (true_y > 1e-7)
+ 
+-    if active_mask.sum() == 0:
+-        return torch.tensor(0.0, device=true_next_X_scaled.device, dtype=true_next_X_scaled.dtype)
+-
+-    diff = pred_logy[active_mask] - true_logy[active_mask]
+-    if loss_type == "l1":
+-        loss = diff.abs().mean()
+-    elif loss_type == "huber":
+-        loss = F.smooth_l1_loss(diff, torch.zeros_like(diff), beta=huber_beta)
+-    else:
+-        loss = diff.pow(2).mean()
+-
+-    # Small penalty against cold false-positives (pred NO > 10 ppm when true NO <= 0.1 ppm)
++    active_count = active_mask.sum()
++    if active_count > 0:
++        diff = pred_logy[active_mask] - true_logy[active_mask]
++        if loss_type == "l1":
++            active_loss = diff.abs().mean()
++        elif loss_type == "huber":
++            active_loss = F.smooth_l1_loss(diff, torch.zeros_like(diff), beta=huber_beta)
++        else:
++            active_loss = diff.pow(2).mean()
++    else:
++        active_loss = 0.0 * pred_logy.sum()
++
++    # Small penalty against cold false-positives
+     cold_mask = ~active_mask
+-    if cold_mask.sum() > 0:
+-        cold_penalty = F.relu(pred_logy[cold_mask] - 0.5).pow(2).mean() * 0.05
+-        loss = loss + cold_penalty
+-
+-    return loss
++    cold_count = cold_mask.sum()
++    if cold_count > 0:
++        cold_threshold = -6.0 if is_micro else 0.2
++        cold_diff = F.relu(pred_logy[cold_mask] - cold_threshold)
++        if loss_type == "huber":
++            cold_penalty = F.smooth_l1_loss(cold_diff, torch.zeros_like(cold_diff), beta=huber_beta) * 0.1
++        else:
++            cold_penalty = cold_diff.pow(2).mean() * 0.05
++    else:
++        cold_penalty = 0.0
++
++    return active_loss + cold_penalty
+ 
+ 
+ def compute_induction_sample_weights(
+     current_X_unscaled: torch.Tensor,
+     next_X_unscaled: torch.Tensor,

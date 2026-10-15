@@ -1,0 +1,235 @@
+{
+  "source_root": "C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc16",
+  "python": "C:\\Users\\123\\.conda\\envs\\cantera\\python.exe",
+  "versions": {
+    "torch": "2.11.0.dev20260120+cu130",
+    "cantera": "3.0.1"
+  },
+  "source_sha256": {
+    "compute_physical_metrics.py": "d58e8b68100d2a2eb63d768333b98a3ca77d7089c214ba53d50e31ca6dea6bdd",
+    "dual_branch_network.py": "7f7324e200340cd782c58898ab9b5fa7c55dc554e233e2c663da02955f66c17a",
+    "enhanced_loss_and_weights.py": "deaa1ffe8ed2324bb8b0cde7e527f4c020f38f4efd8924dfa20d14025808581f",
+    "thermo_nasa7_layer.py": "b127ff7642f7199af61306241e19c98dfc798386e7c6c63fd87f2bc7789e415b",
+    "train_all_v68.py": "c046c29cd78909d64a15b0a1f93d77545f5fc7011ebffbe8964350c293e395a1",
+    "train_sc_v68.py": "65ed633f31b2bde5a4642d726ed895114f83d082b515fe4caaf9c853f234fed8",
+    "validate_all_best_models_v68.py": "f507cf0b23d2d0d9175bd72a6c1355b244163b9dd22f68e52f57eb42e800260e",
+    "validate_sc_v68.py": "c5ab12c2122cdd3841d8ddd29c122c3e23f2541c4df6e6ab36e13e372dea30ae",
+    "data_pipeline\\audit_generated_database.py": "d43da8f1f1aa90697ac590be893d3b2fbfdd08d4520a0e2c757100172ae9619f",
+    "data_pipeline\\audit_initial_conditions_v67.py": "e2f2d0c206d6e9829160e3b8b28fd17c1674ec0e0f7ee7086a4c34469254cf1e",
+    "data_pipeline\\build_training_dataset_v72.py": "385be2fb75eab4c6534ffc91d793c3e5aa19dc66343c615d15fa77d6beeca2fa",
+    "data_pipeline\\generate_augmented_trajectories.py": "8ada06c3029ff7d17a918a0c65b2805a9d94ac4040a536aa541b832d8b5ca17a",
+    "data_pipeline\\lhs_sampler_sc_v11.py": "e6c5a73268ccbce035a68105ef8914d53d69c822e5da402ead93b0026bc83260",
+    "data_pipeline\\runner_sc_v21_qssa.py": "4c520242f54083d6ee9884ac767acf51612a9ea9d8c98ffce0df7dc4c5c69970",
+    "data_pipeline\\split_trajectories_v21.py": "d890d13ddca64ed1c4acc1c26fedbce1ce1d406f9c3e604ba2f8d3b0e25f6461",
+    "data_pipeline\\trajectory_conditions_v67.py": "24eed3ec3a1df7cba5e598223829315091edd4be2f8a8ea431a71f2c1d482880",
+    "data_pipeline\\__init__.py": "dfcd5b4d75934f8bd75ebfe36d9934399ad15f39ac02405909c7149bd8ab27be"
+  },
+  "sentinel_boundary": {
+    "z2": [
+      -40.0001,
+      -39.9999
+    ],
+    "log10_Y_next": [
+      -11.0,
+      -39.99999999999566
+    ],
+    "jump_dex": 28.99999999999566
+  },
+  "destruction_mask": {
+    "target_macro_z_logYqssa_logD": [
+      [
+        0.0,
+        -16.0,
+        8.0
+      ]
+    ],
+    "mask": [
+      [
+        1.0,
+        1.0,
+        0.0
+      ]
+    ],
+    "Y_old": 0.0001,
+    "dt": 1e-06,
+    "Y_next_D_1e8": 1e-16,
+    "Y_next_D_1": 9.999990000004994e-05
+  },
+  "no_cold_batch": {
+    "true_Y_NO": 0.0,
+    "pred_Y_NO": 0.001,
+    "dedicated_NO_loss": 0.0,
+    "has_gradient": false
+  },
+  "masked_scaler_constant_active": {
+    "mean": [
+      -5.0
+    ],
+    "std": [
+      0.0001
+    ],
+    "n_active": [
+      3
+    ],
+    "standardized_sentinel": [
+      -400000.0
+    ]
+  },
+  "dt_clipping": {
+    "actual_dt": 0.00015,
+    "encoded_dt": 0.0001,
+    "augmented_possible_dt_max": 0.00016250000000000002
+  },
+  "mechanism_path": "C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc15\\NUIG2024.yaml",
+  "autonomous_pressure": {
+    "original_P_atm": 40.0,
+    "provided_reference_next_P_atm": 123.0,
+    "returned_P_atm": 123.0,
+    "returned_T_K": 1200.0,
+    "expected_P_for_unchanged_T_Y_constV_atm": 40.0
+  },
+  "temperature_clipping": {
+    "true_UV_equilibrium_T_K": 3039.786072226763,
+    "returned_T_K": 1700.0,
+    "energy_residual_J_per_kg": -1804134.6248210678,
+    "note": "Large-jump counterexample, not a measured frequency in training."
+  },
+  "projection_floor": {
+    "raw_Y": 1e-40,
+    "projected_Y": 1e-30,
+    "factor": 10000000000.000002
+  },
+  "mini_dataset": {
+    "rows": 4800,
+    "trajectories": 30,
+    "species": 39,
+    "rows_per_trajectory_min_max": [
+      160,
+      160
+    ],
+    "initial_T_range": [
+      335.6578475151778,
+      2340.1750630360148
+    ],
+    "initial_phi_simple_fuel_O2_range": [
+      0.06335450812252147,
+      2.7695864052815318
+    ],
+    "dt_range": [
+      1.0024391415694098e-08,
+      9.98187468086581e-05
+    ],
+    "micro_mask_summary": {
+      "H": {
+        "mask_fraction": 0.31916666666666665,
+        "masked_with_halving_above_1e_20": 0,
+        "exact_D_zero_fraction": 0.014166666666666666
+      },
+      "O": {
+        "mask_fraction": 0.30291666666666667,
+        "masked_with_halving_above_1e_20": 0,
+        "exact_D_zero_fraction": 0.030416666666666668
+      },
+      "OH": {
+        "mask_fraction": 0.30125,
+        "masked_with_halving_above_1e_20": 0,
+        "exact_D_zero_fraction": 0.032916666666666664
+      },
+      "HO2": {
+        "mask_fraction": 0.0,
+        "masked_with_halving_above_1e_20": 0,
+        "exact_D_zero_fraction": 0.17895833333333333
+      },
+      "NH2": {
+        "mask_fraction": 0.16833333333333333,
+        "masked_with_halving_above_1e_20": 1,
+        "exact_D_zero_fraction": 0.03333333333333333
+      },
+      "HNO": {
+        "mask_fraction": 0.27875,
+        "masked_with_halving_above_1e_20": 0,
+        "exact_D_zero_fraction": 0.121875
+      },
+      "NO": {
+        "mask_fraction": 0.003958333333333334,
+        "masked_with_halving_above_1e_20": 0,
+        "exact_D_zero_fraction": 0.326875
+      },
+      "N2O": {
+        "mask_fraction": 0.034166666666666665,
+        "masked_with_halving_above_1e_20": 0,
+        "exact_D_zero_fraction": 0.37041666666666667
+      }
+    },
+    "converter_Pnext_equal_P_error_max_atm": 130.51681766575587,
+    "warning": "mini_ds is a small diagnostic sample; its statistics do not describe the unavailable full current training corpus.",
+    "durations_min_median_max_s": [
+      0.001180236749901644,
+      0.001711894764365235,
+      0.0022588263916742033
+    ],
+    "trajectories_with_200K_rise": 15
+  },
+  "builder_import_target_exists": false,
+  "N2O_classified_as": "micro",
+  "exact_label_roundtrip_fp32": {
+    "dual_branch": {
+      "max_abs_raw_error": 1.946862465758599e-07,
+      "max_abs_constrained_error": 5.226598988744557e-06,
+      "raw_active_log_error_p95_max_dex": [
+        6.788544273828013e-07,
+        0.7687976185487759
+      ],
+      "constrained_active_log_error_p95_max_dex": [
+        7.4130979230702e-07,
+        0.7688853565858853
+      ],
+      "projection_element_residual_p95_max": [
+        1.1920928955078125e-07,
+        7.301568984985352e-07
+      ],
+      "projection_failure_fraction_above_1e_6": 0.0,
+      "worst_active_log_error_example": {
+        "row": 3497,
+        "species": "NH3",
+        "Y_old": 0.002586154434781535,
+        "true_next": 1.1894971753727953e-10,
+        "decoded_next": 6.984919309616089e-10,
+        "dt": 9.621200506790381e-05
+      },
+      "max_abs_constrained_error_with_mechanism_A": 1.9422058528855216e-07
+    },
+    "qssa_asymptotic": {
+      "max_abs_raw_error": 9.489329377831979e-07,
+      "max_abs_constrained_error": 5.223777563762022e-06,
+      "raw_active_log_error_p95_max_dex": [
+        4.6207885935345415e-07,
+        0.000263790166584954
+      ],
+      "constrained_active_log_error_p95_max_dex": [
+        5.294424435309246e-07,
+        0.0004944301352383107
+      ],
+      "projection_element_residual_p95_max": [
+        1.1920928955078125e-07,
+        7.152557373046875e-07
+      ],
+      "projection_failure_fraction_above_1e_6": 0.0,
+      "worst_active_log_error_example": {
+        "row": 3370,
+        "species": "N2O",
+        "Y_old": 3.0703631304976607e-15,
+        "true_next": 3.2154222335969877e-15,
+        "decoded_next": 3.2134712659527597e-15,
+        "dt": 1.0623657633426593e-06
+      },
+      "max_abs_constrained_error_with_mechanism_A": 2.93281845253901e-07
+    }
+  },
+  "element_matrix_max_abs_difference_from_mechanism": 2.0055529809631656e-05,
+  "parameter_counts_for_39_species": {
+    "mlp_qssa_asymptotic": 981834,
+    "resmlp_qssa_asymptotic": 4377930,
+    "dual_branch_actual_partition": 4507716
+  }
+}

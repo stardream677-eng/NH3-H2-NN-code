@@ -1,0 +1,147 @@
+C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc16\training_diagnostics.py:116: UserWarning: Anomaly Detection has been enabled. This mode will increase the runtime and should only be enabled for debugging.
+  with torch.autograd.detect_anomaly(check_nan=True):
+Using device: cuda
+[DIAGNOSTICS] Non-finite batch recorded to failure_snapshot_epoch0_batch1.pt (Attempted #1, Total Skipped: 1)
+{
+  "validation_file_membership_default_shuffle": {
+    "0": [
+      "part-00000.parquet",
+      "part-00007.parquet",
+      "part-00006.parquet",
+      "part-00009.parquet",
+      "part-00011.parquet",
+      "part-00003.parquet",
+      "part-00005.parquet",
+      "part-00002.parquet",
+      "part-00004.parquet"
+    ],
+    "1": [
+      "part-00008.parquet",
+      "part-00002.parquet",
+      "part-00005.parquet",
+      "part-00006.parquet",
+      "part-00000.parquet",
+      "part-00010.parquet",
+      "part-00007.parquet",
+      "part-00001.parquet",
+      "part-00004.parquet"
+    ],
+    "2": [
+      "part-00010.parquet",
+      "part-00003.parquet",
+      "part-00005.parquet",
+      "part-00008.parquet",
+      "part-00002.parquet",
+      "part-00004.parquet",
+      "part-00009.parquet",
+      "part-00006.parquet",
+      "part-00000.parquet"
+    ]
+  },
+  "perfect_prediction_with_inert": {
+    "protocol_id": "v68_species_sentinel_protocol_v1",
+    "composite_score": 0.0,
+    "mean_major_nmae": 0.0,
+    "mean_radical_log_rmse": 0.0,
+    "mean_pollutant_nmae": 0.0,
+    "cold_fp_rate": 0.0,
+    "nonfinite_count": 0,
+    "negative_count": 0,
+    "is_valid_candidate": true,
+    "mass_closure": {
+      "mean_mass_sum": 0.8999999761581421,
+      "max_unity_error": 0.10000002384185791,
+      "rmse_unity_error": 0.10000002384185791
+    },
+    "element_closure": {
+      "max_element_error": 4.362085261510107e-26,
+      "rmse_element_error": 4.362085261510107e-26
+    },
+    "timing_metrics": {},
+    "per_species": {
+      "H2": {
+        "n": 1,
+        "mae": 0.0,
+        "rmse": 0.0,
+        "nmae": 0.0,
+        "peak_true": 0.8999999761581421,
+        "peak_pred": 0.8999999761581421,
+        "peak_error": 0.0,
+        "active_log_rmse": 0.0,
+        "cold_fp_count": 0,
+        "cold_fp_ratio": 0.0
+      },
+      "H": {
+        "n": 1,
+        "mae": 4.362085261510107e-26,
+        "rmse": 4.362085261510107e-26,
+        "nmae": 4.362085261510107e-20,
+        "peak_true": 9.999999682655225e-21,
+        "peak_pred": 9.99995606180261e-21,
+        "peak_error": 4.362085261510107e-26,
+        "active_log_rmse": 0.0,
+        "cold_fp_count": 0,
+        "cold_fp_ratio": 0.0
+      }
+    }
+  },
+  "float32_full_decoder_gradient_sweep": {
+    "cases": 168,
+    "nonfinite_gradient_cases": 0,
+    "bad_inputs": []
+  },
+  "finite_gradient_clipping": {
+    "finite_check_passed": true,
+    "float64_norm": 1.4142135907151756e+20,
+    "clipping_norm": "inf",
+    "after_clip": [
+      [
+        0.0,
+        0.0
+      ]
+    ]
+  },
+  "failure_snapshot_rng_replay": {
+    "exact_replay": false,
+    "max_absolute_difference": 1.4914599657058716,
+    "replay": {
+      "anomaly_detected": false,
+      "anomaly_msg": null,
+      "attempted_batch_idx": 1,
+      "epoch": 0
+    }
+  },
+  "missing_explicit_mechanism_path_accepted": {
+    "matrix": [
+      [
+        0.8224614858627319,
+        0.0
+      ],
+      [
+        0.17753851413726807,
+        0.11189097166061401
+      ],
+      [
+        0.0,
+        0.888109028339386
+      ]
+    ]
+  },
+  "unchanged_since_previous_review": [
+    "chemistry_contract.py",
+    "compute_physical_metrics.py",
+    "dual_branch_network.py",
+    "enhanced_loss_and_weights.py",
+    "thermo_nasa7_layer.py",
+    "training_diagnostics.py",
+    "validate_all_best_models_v68.py",
+    "data_pipeline\\audit_generated_database.py",
+    "data_pipeline\\audit_initial_conditions_v67.py",
+    "data_pipeline\\build_training_dataset_v72.py",
+    "data_pipeline\\generate_augmented_trajectories.py",
+    "data_pipeline\\lhs_sampler_sc_v11.py",
+    "data_pipeline\\runner_sc_v21_qssa.py",
+    "data_pipeline\\trajectory_conditions_v67.py",
+    "data_pipeline\\__init__.py"
+  ]
+}

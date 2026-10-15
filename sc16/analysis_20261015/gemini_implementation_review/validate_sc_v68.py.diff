@@ -1,0 +1,47 @@
+--- before/validate_sc_v68.py
++++ after/validate_sc_v68.py
+@@ -942,11 +942,11 @@
+ 
+     Direct-rate targets already contain rates and are decoded through the
+     model's inverse transform. QSSA targets contain ``P,D`` coefficients, so
+     the measured rate comes from the two endpoint states of this transition.
+     """
+-    if getattr(tools, "rate_decode_mode", "direct_rate") not in ("qssa", "qssa_asymptotic", "dual_branch"):
++    if getattr(tools, "rate_decode_mode", "direct_rate") not in ("qssa", "qssa_asymptotic", "dual_branch", "dual_branch_pd_v1"):
+         return tools.inverse_rate(target_scaled, bound_macro=False)
+ 
+     current = tools.inverse_state(current_x_scaled)
+     endpoint = tools.inverse_state(next_x_scaled)
+     dt = tools.get_current_dt(current_x_scaled).reshape(-1, 1).clamp_min(1e-12)
+@@ -1283,26 +1283,24 @@
+ 
+ 
+ def load_physical_element_matrix(data_dir: Path, mechanism: str, names: list[str]):
+     """Resolve the actual Cantera mechanism, including inert species."""
+     import cantera as ct
++    import chemistry_contract as cc
+ 
+     metadata = tr.load_metadata(str(data_dir), mechanism)
+     path = tr.resolve_temperature_mechanism_path(metadata, data_dir, mechanism)
+     gas = ct.Solution(str(path))
+     missing = sorted(set(names) - set(gas.species_names))
+     if missing:
+         raise ValueError(f"Physical metric mechanism is missing species: {missing}")
+-    matrix = np.asarray([
+-        [gas.n_atoms(gas.species_index(name), element) * gas.atomic_weights[element]
+-         / gas.molecular_weights[gas.species_index(name)] for name in names]
+-        for element in range(gas.n_elements)
+-    ], dtype=np.float64)
+-    return matrix, list(gas.element_names), {
++    elements, matrix = cc.compute_element_mass_matrix(gas, names, preferred_elements=None)
++    return matrix, elements, {
+         "path": str(path), "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+-        "elements": list(gas.element_names), "species": names,
++        "elements": elements, "species": names,
+     }
++
+ 
+ 
+ def _build_checkpoint_model(checkpoint, feature_info, device=None):
+     model_config = checkpoint.get("training_config") or {}
+     state_dict = checkpoint["model_state_dict"]
