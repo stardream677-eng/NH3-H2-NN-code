@@ -179,6 +179,28 @@ def test_autonomous_feedback_replaces_both_recorded_temperature_and_pressure(
         )
 
 
+def test_autonomous_feedback_is_independent_of_recorded_future_T_and_P(cantera_tools):
+    tools, closure = cantera_tools
+    current = torch.tensor([[1150., 12., .75, .04, .20, .01, -20., -6.]])
+    teacher_a = torch.tensor([[1300., 20., .75, .0, .1, .15, -6., -5.5]])
+    teacher_b = teacher_a.clone()
+    teacher_b[0, 0] = 2700.
+    teacher_b[0, 1] = 450.
+    macro = torch.tensor([[.039, .199, .012]])
+    micro = torch.tensor([[-20.]])
+    a = tools.state_to_input_scaled(
+        teacher_a, macro, micro,
+        temperature_mode="autonomous", thermo_closure=closure,
+        current_X_scaled=current,
+    )
+    b = tools.state_to_input_scaled(
+        teacher_b, macro, micro,
+        temperature_mode="autonomous", thermo_closure=closure,
+        current_X_scaled=current,
+    )
+    torch.testing.assert_close(a, b, rtol=0.0, atol=0.0)
+
+
 def test_scheduled_sampling_blend_recloses_selected_rows_only(cantera_tools):
     import cantera as ct
     import train_sc_v68 as train
