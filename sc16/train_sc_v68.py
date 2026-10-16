@@ -567,8 +567,13 @@ def project_physical_state(
                 scaled_dyn[bad_rows], element_matrix, target_elements[bad_rows],
                 target_sum[bad_rows],
             )
+            # Dykstra is a feasibility safeguard, not a differentiable KL
+            # Jacobian. Return its exact forward state with an explicit STE
+            # rather than retaining hundreds of recovery iterations in BPTT.
+            failed_candidate = scaled_dyn[bad_rows]
+            repaired_ste = failed_candidate + (repaired - failed_candidate).detach()
             projected_dyn = projected_dyn.index_copy(
-                0, bad_rows.nonzero(as_tuple=False).reshape(-1), repaired
+                0, bad_rows.nonzero(as_tuple=False).reshape(-1), repaired_ste
             )
         except Exception as exc:
             indices = bad_rows.nonzero(as_tuple=False).reshape(-1).cpu().tolist()
