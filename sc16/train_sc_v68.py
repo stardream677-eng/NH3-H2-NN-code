@@ -3592,7 +3592,18 @@ class CoarseOperatorTools:
         if inert_sum is None:
             if hasattr(self, "inert_idx") and len(self.inert_idx) > 0:
                 inert_idx_dev = self.inert_idx.to(current_X.device)
-                inert_sum_eff = torch.clamp_min(current_X[:, inert_idx_dev], 0.0).sum(dim=-1, keepdim=True)
+                inert_values = current_X[:, inert_idx_dev]
+                invalid_inert_rows = (
+                    (~torch.isfinite(inert_values)) | (inert_values < 0.0)
+                ).any(dim=1)
+                if bool(invalid_inert_rows.any()):
+                    raise ppc.ProjectionConstraintError(
+                        "invalid_inert_mass",
+                        invalid_inert_rows.nonzero(as_tuple=False).reshape(-1).cpu().tolist(),
+                        "inert species cannot be negative or non-finite; do not hide "
+                        "them by clamping before projection",
+                    )
+                inert_sum_eff = inert_values.sum(dim=-1, keepdim=True)
             else:
                 inert_sum_eff = 0.0
         else:
