@@ -91,6 +91,8 @@ def compare_complete_trajectories(
     yn = np.asarray(predicted_mass_fractions, dtype=np.float64)
     if t.ndim != 1 or t.size < 2 or not (np.isfinite(t).all() and (np.diff(t) > 0).all()):
         raise ValueError("Benchmark times must be finite and strictly increasing")
+    if any(arr.shape != t.shape for arr in (rt, nt, rp, np_)):
+        raise ValueError("Physical traces must use the same time grid")
     if yr.shape != yn.shape or yr.shape != (t.size, len(species_names)):
         raise ValueError("Both mass-fraction trajectories must be (n_times, n_species)")
     if len(species_names) != len(set(species_names)):

@@ -24,8 +24,11 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import os
 import sys
 import traceback
+
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
 import cantera as ct
 import numpy as np
@@ -264,10 +267,17 @@ def audit_neural_state(
 
 
 def run_case(
-    case: dict, model, tools, mechanism_path: Path, names: list[str],
-    idt_rise_K: float,
+    case: dict, model, tools, mechanism_path: Path, names: list[str] | None = None,
+    idt_rise_K: float = protocol.DEFAULT_IDT_RISE_K,
 ) -> tuple[dict, dict[str, np.ndarray]]:
     name = case["name"]
+    expected_species = (
+        list(tools.feature_info["inert_species"])
+        + list(tools.feature_info["macro_species"])
+        + list(tools.feature_info["micro_species"])
+    )
+    if names is None or (set(names) == set(expected_species) and list(names) != expected_species):
+        names = expected_species
     gas_initial = ct.Solution(str(mechanism_path))
     gas_initial.TPX = (
         float(case["T0_K"]), float(case["P0_atm"]) * ct.one_atm,

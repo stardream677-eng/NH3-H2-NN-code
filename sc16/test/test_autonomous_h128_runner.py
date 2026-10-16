@@ -5,8 +5,11 @@ does not claim to measure the learned model's H128 accuracy or IDT quality.
 """
 import importlib.util
 import json
+import os
 from pathlib import Path
 import sys
+
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
 import numpy as np
 import pytest
@@ -170,8 +173,9 @@ def test_three_step_zero_kinetics_rollout_has_no_cantera_temperature_feedback(
         "h2_fraction": 0.2, "dt_s": 1e-6, "steps": 3,
         "reactor_type": reactor_type,
     }
+    ordered_species = inert + macro
     record, trace = bench.run_case(
-        case, ZeroRateModel(), tools, ROOT / "NUIG2024.yaml", species,
+        case, ZeroRateModel(), tools, ROOT / "NUIG2024.yaml", ordered_species,
         idt_rise_K=400.0,
     )
     assert record["status"] == "completed", record.get("failure_message")
