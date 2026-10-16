@@ -14,6 +14,7 @@ used by the NASA7 layer, in the same order as its molecular weight buffer.
 """
 from __future__ import annotations
 
+import math
 import torch
 
 
@@ -55,8 +56,14 @@ def autonomous_pressure_next(
     weights = molecular_weights.reshape(-1)
     if weights.numel() != Y_old.shape[1]:
         raise ValueError("Molecular-weight count must equal full species count")
-    if not 0.0 < mass_tolerance < 1.0:
+    if not math.isfinite(mass_tolerance) or not 0.0 < mass_tolerance < 1.0:
         raise ValueError("mass_tolerance must lie between 0 and 1")
+    if not (
+        math.isfinite(min_pressure_atm)
+        and math.isfinite(max_pressure_atm)
+        and 0.0 < min_pressure_atm < max_pressure_atm
+    ):
+        raise ValueError("Pressure bounds must be finite, positive and increasing")
 
     P = P_old.to(torch.float64)
     T0 = T_old.to(torch.float64)
