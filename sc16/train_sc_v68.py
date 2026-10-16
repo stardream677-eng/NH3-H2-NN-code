@@ -3818,6 +3818,11 @@ class CoarseOperatorTools:
                     "inert + macro + micro features; never omit inert gas from EOS"
                 )
             Y_inert = current_X[:, self.inert_idx]
+            # Inerts are constant in this adiabatic closed-reactor model.
+            # The base_next input is allowed to supply only the *future dt*:
+            # never copy next-time reference inert concentrations into an
+            # otherwise autonomous T/P/Y feedback state.
+            current_unscaled[:, self.inert_idx] = Y_inert
             Y_old_full = torch.cat([Y_inert, Y_macro_old, Y_micro_old], dim=1)
             Y_next_full = torch.cat(
                 [Y_inert, Y_macro_next, torch.pow(
