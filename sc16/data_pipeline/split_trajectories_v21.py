@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-"""Create trajectory-level train/validation/test split manifests.
+"""Create leakage-safe trajectory train/validation/test split manifests.
 
-The historical default remains a seeded trajectory shuffle.  The optional
-``--stratify`` mode adds deterministic T/P/phi/H2 condition strata and
-``--extrapolation-fraction`` reserves an independent tail set.  Both options
-are opt-in so an existing ``trajectory_splits_v1`` manifest keeps its exact
-sample IDs and checkpoint signatures.
+Trajectories sharing condition_group_id are always kept together. Optional
+stratification balances physical conditions; optional extrapolation reserves
+whole condition groups. Generated split manifests are new experiment artifacts:
+never silently reuse earlier checkpoint/scaler signatures.
 """
 
 import argparse
@@ -211,10 +210,12 @@ def _collect_trajectory_metadata(folder: Path, gas=None, mechanism_error=None) -
                     if pd.notna(stratum_name) and str(stratum_name).strip()
                     else "unknown"
                 )
-                if "condition_group_id" in row and pd.notna(row["condition_group_id"]):
-                    values["condition_group_id"] = str(row["condition_group_id"]).strip()
-                else:
-                    values["condition_group_id"] = str(key)
+                condition_group_id = row.get("condition_group_id")
+                values["condition_group_id"] = (
+                    str(condition_group_id).strip()
+                    if pd.notna(condition_group_id) and str(condition_group_id).strip()
+                    else str(key)
+                )
                 actual, reason, _ = _conditions.actual_phi(row.to_dict(), gas, mechanism_error)
                 if actual is not None:
                     values["phi"] = actual
@@ -294,7 +295,8 @@ def _split_ids(ids: np.ndarray, rng: np.random.Generator, train: float, val: flo
 
     if "condition_group_id" in metadata:
         meta_ids = metadata.loc[ids]
-        cg = meta_ids["condition_group_id"].fillna(pd.Series(ids, index=ids)).astype(str)
+        cg = meta_ids["condition_group_id"].fillna(pd.Series(ids, index=ids)).astype(str).str.strip()
+        cg = cg.mask(cg.eq(""), ids.astype(str))
         if cg.nunique() < len(ids):
             group_to_ids: dict[str, list] = {}
             group_first_row: dict[str, pd.Series] = {}
@@ -307,7 +309,8 @@ def _split_ids(ids: np.ndarray, rng: np.random.Generator, train: float, val: flo
             group_meta = pd.DataFrame.from_dict(group_first_row, orient="index")
 
             group_splits = _split_ids(
-                group_keys, rng, train, val, metadata=group_meta, strata_bins=strata_bins
+                group_keys, rng, train, val, metadata=group_meta if stratify else None,
+                strata_bins=strata_bins, stratify=stratify
             )
             result = {}
             for split_name, g_keys in group_splits.items():
@@ -316,6 +319,10 @@ def _split_ids(ids: np.ndarray, rng: np.random.Generator, train: float, val: flo
                     split_sids.extend(group_to_ids[gk])
                 result[split_name] = np.asarray(split_sids, dtype=object)
             return result
+
+    if not stratify:
+        # Randomize whole condition groups, not their member trajectories.
+        return _split_ids(ids, rng, train, val, metadata=None)
 
     strata = _condition_strata(metadata.loc[ids], strata_bins)
     groups = {label: group.to_numpy(dtype=object) for label, group in strata.groupby(strata).groups.items()}
@@ -376,8 +383,29 @@ def split_database(database, out, seed=20260912, train=0.7, val=0.15,
         }
         all_ids=np.array(sorted(counts), dtype=object)
         extrapolation = _select_extrapolation(metadata, float(extrapolation_fraction), tuple(extrapolation_axes))
+        # A single selected trajectory must reserve its entire physical condition group.
+        if extrapolation and "condition_group_id" in metadata:
+            group_labels = metadata["condition_group_id"].fillna(
+                pd.Series(metadata.index.astype(str), index=metadata.index)
+            ).astype(str).str.strip()
+            group_labels = group_labels.mask(group_labels.eq(""), metadata.index.astype(str))
+            selected_groups = set(group_labels.loc[list(extrapolation)])
+            extrapolation = set(group_labels.index[group_labels.isin(selected_groups)].astype(str))
         remaining = np.asarray([sample_id for sample_id in all_ids if str(sample_id) not in extrapolation], dtype=object)
-        split_ids = _split_ids(remaining, rng, train, val, metadata if stratify else None, strata_bins)
+        split_ids = _split_ids(remaining, rng, train, val, metadata=metadata,
+                               strata_bins=strata_bins, stratify=stratify)
+        # Fail closed rather than writing a manifest with shared trajectories or groups.
+        groups = metadata["condition_group_id"].fillna(
+            pd.Series(metadata.index.astype(str), index=metadata.index)
+        ).astype(str).str.strip()
+        groups = groups.mask(groups.eq(""), metadata.index.astype(str))
+        split_groups = {name: set(groups.loc[list(vals)]) for name, vals in split_ids.items()}
+        if extrapolation:
+            split_groups["extrapolation"] = set(groups.loc[list(extrapolation)])
+        for i, name in enumerate(split_groups):
+            for other in list(split_groups)[i + 1:]:
+                if split_groups[name] & split_groups[other]:
+                    raise RuntimeError(f"Condition groups overlap: {name}/{other}")
         if extrapolation:
             split_ids["extrapolation"] = np.asarray(sorted(extrapolation), dtype=object)
         for split, vals in split_ids.items():

@@ -1597,6 +1597,16 @@ def load_trajectory_sample_ids(split_dir, mechanism: str, split: str) -> set[str
     return values
 
 
+def require_disjoint_split_ids(train_ids, validation_ids):
+    """Reject trajectory IDs shared between train and validation manifests."""
+    overlap = {str(s) for s in train_ids} & {str(s) for s in validation_ids}
+    if overlap:
+        raise ValueError(
+            f"Train/validation trajectory splits overlap ({len(overlap)} IDs); "
+            f"examples: {sorted(overlap)[:5]}"
+        )
+
+
 def trajectory_split_signature(split_dir, mechanism: str, split: str = "train") -> str:
     """Return a content-based signature for a split list."""
     path = Path(split_dir) / f"{mechanism}_{split}_sample_ids.csv"
@@ -5893,6 +5903,7 @@ def train_model_v68(
         )
         train_parts = list(parquet_files)
         val_parts = list(parquet_files)
+        require_disjoint_split_ids(train_sample_ids, val_sample_ids)
         print(
             f"\n[Split] Trajectory manifest: {resolved_split_dir}\n"
             f"  train sample_ids = {len(train_sample_ids):,}\n"
@@ -5907,18 +5918,17 @@ def train_model_v68(
         )
     else:
         print("\n[Split] Verifying that sample_id does not cross parquet parts...")
-        try:
-            validate_part_sample_isolation(parquet_files)
-        except Exception as exc:
-            print(f"  [Split Notice] {exc}")
+        # Cross-part trajectories make part-level splitting unsafe: never continue.
+        validate_part_sample_isolation(parquet_files)
 
         rng = np.random.default_rng(SEED)
         shuffled = list(parquet_files)
         rng.shuffle(shuffled)
         if len(shuffled) == 1:
-            val_parts = list(shuffled)
-            train_parts = list(shuffled)
-            print("  [Split Notice] 仅发现 1 个 parquet 分卷且未指定 split_dir；复用该分卷兼作训练与验证。")
+            raise ValueError(
+                "Only one parquet part is available without a trajectory split manifest. "
+                "Create train/validation sample-ID manifests; refusing data leakage."
+            )
         else:
             n_val = max(1, int(len(shuffled) * val_ratio)) if val_ratio > 0 else 0
             if n_val >= len(shuffled):
