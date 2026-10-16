@@ -3599,9 +3599,42 @@ class CoarseOperatorTools:
             inert_sum_eff = inert_sum
 
         eff_element_matrix = element_matrix if element_matrix is not None else getattr(self, "A", None)
+        projection_reference_mode = "current_physical_state"
+        projection_reference_mass_correction = None
         if target_elements is None and eff_element_matrix is not None:
             dyn_old = torch.cat([Y_macro_old, Y_micro_old], dim=-1)
-            eff_target_elements = torch.matmul(dyn_old, eff_element_matrix.to(dyn_old.device).T)
+            old_for_target = dyn_old
+            if not safe_for_rollout:
+                # In explicitly raw-feedback experiments the prior predicted Y
+                # may *deliberately* lie off the mass simplex. It is not a
+                # feasible elemental target for a normalized constrained
+                # diagnostic candidate. Reanchor this diagnostic only to a
+                # nonnegative unit-mass *reference*; the raw trajectory and
+                # raw conservation loss remain untouched. Actual constrained
+                # rollout feedback always uses the unmodified physical target.
+                inert_fraction = torch.as_tensor(
+                    inert_sum_eff, dtype=dyn_old.dtype, device=dyn_old.device
+                )
+                if inert_fraction.ndim == 0:
+                    inert_fraction = inert_fraction.expand(dyn_old.shape[0], 1)
+                elif inert_fraction.ndim == 1:
+                    inert_fraction = inert_fraction.unsqueeze(1)
+                mass_budget = 1.0 - inert_fraction
+                positive_old = dyn_old.clamp_min(0.0)
+                positive_total = positive_old.sum(dim=-1, keepdim=True)
+                normalized_old = torch.where(
+                    positive_total > 0.0,
+                    positive_old * (mass_budget / positive_total.clamp_min(1e-40)),
+                    torch.full_like(positive_old, 1.0 / positive_old.shape[1]) * mass_budget,
+                )
+                old_for_target = normalized_old
+                projection_reference_mode = "renormalized_raw_diagnostic"
+                projection_reference_mass_correction = (
+                    normalized_old - dyn_old
+                ).abs().sum(dim=-1).detach()
+            eff_target_elements = torch.matmul(
+                old_for_target, eff_element_matrix.to(dyn_old.device).T
+            )
         else:
             eff_target_elements = target_elements
 
@@ -3615,6 +3648,11 @@ class CoarseOperatorTools:
                 iterations=iterations,
                 projection_mode=eff_proj_mode,
             )
+        # Preserve diagnostic provenance: raw-feedback reference renormalization
+        # is not equivalent to conserving the original off-manifold raw state.
+        proj_diag["projection_reference_mode"] = projection_reference_mode
+        proj_diag["projection_reference_mass_correction"] = projection_reference_mass_correction
+
         # Straight-Through Estimator (STE): forward value is exact physical projection,
         # backward gradient flows cleanly via identity d(Y_proj)/d(Y_raw) = I.
         Y_macro_next_constrained = Y_macro_next_raw + (Y_macro_proj - Y_macro_next_raw).detach()
