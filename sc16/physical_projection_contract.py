@@ -14,7 +14,7 @@ import torch
 
 MASS_ATOL = 5e-6
 ELEMENT_ATOL = 1e-6
-NEGATIVE_ATOL = 1e-12
+NEGATIVE_ATOL = 0.0
 
 
 class ProjectionConstraintError(RuntimeError):
@@ -147,8 +147,9 @@ def recover_nonnegative_affine(
 
     Solve in float64 to reduce loss of trace-species significance. The returned
     tensor still requires a separate physical residual check in caller dtype.
-    No clipping or renormalization is applied *after* the final affine/orthant
-    feasibility check; callers may not accept an infeasible fallback.
+    Tiny negative roundoff is truncated before each residual test; the caller
+    then rechecks *all* constraints in its actual feedback dtype. There is no
+    unverified normalization after that final check.
     """
     y = candidate.double()
     batch, _ = y.shape
@@ -174,14 +175,18 @@ def recover_nonnegative_affine(
         correction_affine = before_affine - affine
         x = affine
         if (index + 1) % 8 == 0:
+            # The affine step may leave roundoff-sized negative entries.
+            # Clamp to enforce exact nonnegativity and recheck the resulting
+            # elemental/mass errors instead of accepting a tiny negative Y.
+            nonnegative_candidate = x.clamp_min(0.0)
             result = projection_residuals(
-                x, torch.ones_like(target_sum) - target_sum,
+                nonnegative_candidate, torch.ones_like(target_sum) - target_sum,
                 A, target_elements.double(),
             )
             if bool(result["valid"].all()):
-                return x.to(candidate.dtype), index + 1
+                return nonnegative_candidate.to(candidate.dtype), index + 1
 
-    return x.to(candidate.dtype), iterations
+    return x.clamp_min(0.0).to(candidate.dtype), iterations
 
 
 def require_projection_valid(
