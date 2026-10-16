@@ -82,6 +82,23 @@ def test_full_trajectory_metrics_include_peaks_timing_and_radicals():
     assert m["idt_abs_error_s"] > 0
 
 
+def test_nox_is_no_plus_no2_not_no_alone():
+    t = np.array([0.0, 1e-3, 2e-3])
+    T = np.array([1000.0, 1200.0, 1500.0])
+    P = np.ones(3)
+    names = ["NO", "NO2", "O2"]
+    true = np.array([[0.01, 0.002, .988], [.02, .003, .977], [.03, .004, .966]])
+    pred = np.array([[0.01, 0.002, .988], [.022, .002, .976], [.025, .006, .969]])
+    result = ab.compare_complete_trajectories(t, T, T, P, P, true, pred, names)
+    nox = result["species"]["NOx_mass_fraction"]
+    assert nox["endpoint_abs_error"] == pytest.approx(abs((.025 + .006) - (.03 + .004)))
+
+    no_no2 = ab.compare_complete_trajectories(
+        t, T, T, P, P, true[:, [0, 2]], pred[:, [0, 2]], ["NO", "O2"]
+    )
+    assert "NOx_mass_fraction" not in no_no2["species"]
+
+
 def test_nonfinite_species_trajectory_is_hard_failure():
     t, rt, nt, rp, np_, yr, yn, names = _traces()
     yn[2, 0] = float("nan")
