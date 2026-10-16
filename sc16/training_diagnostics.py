@@ -1,7 +1,7 @@
 """Training diagnostics, failure snapshot recorder, and gradient anomaly isolation.
 
-This module guarantees that any non-finite gradient (NaN/Inf) or forward/backward anomaly
-is immediately captured with full replay context (exact inputs, targets, model weights,
+This module records non-finite gradients, forward/backward exceptions and failed
+thermochemical rollout states with replay context (exact inputs, targets, model weights,
 RNG state, optimizer state, and monotonic attempted_batch_idx) without silent skipping.
 """
 
@@ -214,6 +214,7 @@ def capture_rollout_failure_state(
             # Save the exact candidates used by the selected feedback policy.
             for key in (
                 "Y_macro_next", "Y_macro_next_raw",
+                "Y_micro_next", "Y_micro_next_raw",
                 "logY_micro_next", "logY_micro_next_raw",
                 "Y_next_constrained_full", "Y_next_raw_full",
             ):
@@ -293,7 +294,7 @@ class TrainingDiagnosticTracker:
 
         saved_path = save_failure_snapshot(snapshot, self.snapshot_dir)
         print(
-            f"[DIAGNOSTICS] Non-finite batch recorded to {saved_path.name} "
+            f"[DIAGNOSTICS] Failed batch recorded to {saved_path.name} "
             f"(Attempted #{self.attempted_batch_idx}, Total Skipped: {self.skipped_batches})"
         )
 
