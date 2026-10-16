@@ -5339,6 +5339,8 @@ def build_temperature_closure(
     molecular_weights = gas.molecular_weights[species_indices]
     gas_constant = ct.gas_constant
     reactor_type = metadata.get("reactor_type", "IdealGasReactor")
+    if reactor_type not in {"IdealGasReactor", "IdealGasConstPressureReactor"}:
+        raise ValueError(f"Unsupported autonomous reactor type: {reactor_type!r}")
     if reactor_type == "IdealGasConstPressureReactor":
         energy_molar = gas.standard_enthalpies_RT[species_indices] * gas_constant * reference_temperature
         heat_capacity = gas.standard_cp_R[species_indices] * gas_constant / molecular_weights
@@ -6378,9 +6380,12 @@ def train_model_v68(
                     "detach_rollout",
                     "weight_decay",
                     "temperature_mode",
-                    "pressure_feedback_contract",
                 )
             }
+            if effective_temperature_mode == "autonomous":
+                # Old autonomous runs used *recorded* P even when T was predicted.
+                # Their optimizer history must not be reused under new EOS semantics.
+                resume_config_keys["pressure_feedback_contract"] = ap.PRESSURE_FEEDBACK_CONTRACT
             if not checkpoint_compatible(
                 ckpt,
                 VERSION,
@@ -7122,7 +7127,7 @@ def train_model_v68(
                                 [
                                     species_idx,
                                     torch.tensor(
-                                        [tools.temperature_idx],
+                                        [tools.temperature_idx, tools.pressure_idx],
                                         device=species_idx.device,
                                         dtype=species_idx.dtype,
                                     ),
