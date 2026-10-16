@@ -6640,11 +6640,20 @@ def train_model_v68(
             def record_batch_failure(reason, diagnostics=None):
                 diagnostic_payload = dict(diagnostics or {})
                 try:
+                    # The auxiliary loss helper has its own internal step loop:
+                    # do not mislabel the last primary state as its failing step.
+                    auxiliary = rollout_failure_phase == "auxiliary_rollout"
+                    state_for_capture = batch_X[:, 0, :] if auxiliary else current_X
                     diagnostic_payload["failed_rollout_state"] = td.capture_rollout_failure_state(
-                        tools, current_X, step=rollout_failure_step,
+                        tools, state_for_capture,
+                        step=None if auxiliary else rollout_failure_step,
                         phase=rollout_failure_phase,
-                        predicted_rate_scaled=latest_pred_rate_scaled,
-                        predicted_state=latest_pred_state,
+                        predicted_rate_scaled=None if auxiliary else latest_pred_rate_scaled,
+                        predicted_state=None if auxiliary else latest_pred_state,
+                    )
+                    diagnostic_payload["failure_state_semantics"] = (
+                        "auxiliary_initial_reference; internal failing step not available"
+                        if auxiliary else "current_predicted_rollout_input"
                     )
                 except Exception as capture_error:
                     # Never mask the original physics/gradient failure.
@@ -7063,7 +7072,11 @@ def train_model_v68(
                         feed_macro, feed_micro_log = select_feedback_state(
                             pred_state, feedback_state_source
                         )
-                        rollout_failure_phase = "autonomous_feedback_state"
+                        rollout_failure_phase = (
+                            "autonomous_feedback_state"
+                            if effective_temperature_mode == "autonomous"
+                            else "feedback_state_reconstruction"
+                        )
                         predicted_next_X = (
                             tools.state_to_input_scaled(
                                 base_next_X,
@@ -7204,6 +7217,10 @@ def train_model_v68(
                     float(lambda_stability) * rollout_breakdown.get("stability", 0.0)
                 )
 
+            rollout_failure_phase = "gradient_validation"
+            rollout_failure_step = None
+            latest_pred_state = None
+            latest_pred_rate_scaled = None
             is_finite, grad_norm_f64, grad_diag = td.check_gradient_finite_and_norm(model)
             if not is_finite:
                 print(
