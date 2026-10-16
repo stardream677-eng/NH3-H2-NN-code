@@ -46,6 +46,41 @@ def test_case_manifest_requires_named_explicit_128_step_reactor(tmp_path):
         bench.load_cases(target)
 
 
+def test_benchmark_rejects_short_horizon_checkpoint_even_if_max_horizon_is_128(
+    tmp_path, monkeypatch,
+):
+    from autonomous_pressure import PRESSURE_FEEDBACK_CONTRACT
+    from physical_projection_contract import PROJECTION_VALIDATION_CONTRACT
+
+    checkpoint_path = tmp_path / "dummy_H32.pth"
+    mechanism_path = ROOT / "NUIG2024.yaml"
+    checkpoint_path.write_bytes(b"fake_checkpoint_for_gate_test")
+
+    fake = {
+        "training_config": {
+            "temperature_mode": "autonomous",
+            "feedback_state_source": "constrained",
+            "max_horizon": 128,
+        },
+        "horizon": 32,
+        "sentinel_metrics": {"is_valid_candidate": True},
+    }
+    monkeypatch.setattr(bench.validator, "load_checkpoint", lambda *args, **kwargs: fake)
+    monkeypatch.setattr(
+        bench.validator, "checkpoint_rollout_config",
+        lambda _: {
+            "temperature_mode": "autonomous",
+            "pressure_feedback_contract": PRESSURE_FEEDBACK_CONTRACT,
+            "projection_validation_contract": PROJECTION_VALIDATION_CONTRACT,
+        },
+    )
+    with pytest.raises(ValueError, match="not an explicitly selected H=128"):
+        bench.load_model_components(
+            checkpoint_path, tmp_path, "nuig_2024",
+            mechanism_path, torch.device("cpu"),
+        )
+
+
 def test_independent_cantera_energy_eos_audit_cannot_correct_wrong_pressure():
     gas = ct.Solution(str(ROOT / "NUIG2024.yaml"))
     gas.TPX = 1220., 24. * ct.one_atm, bench.fuel_air_mole_fractions(0.9, 0.25)
