@@ -56,8 +56,8 @@ def test_qssa_manifold_projection():
         device=tr.DEVICE,
     )
     
-    # Input state with N2 = 0.70
-    current_row = [1500.0, 40.0, 0.70, 0.10, 0.20, -4.0, np.log10(1e-4)]
+    # Mass-normalized physical state: N2 + H2 + O2 + OH = 1.
+    current_row = [1500.0, 40.0, 0.70, 0.10, 0.1999, -4.0, np.log10(1e-4)]
     current_X_scaled = torch.tensor([current_row], dtype=torch.float32, device=tr.DEVICE)
     
     # 1. Test with safe_for_rollout=True (Feedback mode: must project to exact mass 1.0)
@@ -107,7 +107,8 @@ def test_trust_region_bounding():
     tools = tr.CoarseOperatorTools(fi, sx, sy, rate_decode_mode="qssa_asymptotic")
     
     # Initial H2 = 0.10, rate predicts jump to 0.80
-    current_row = [1500.0, 40.0, 0.70, 0.10, 0.20, -5.0, np.log10(1e-4)]
+    # Include the 1e-5 OH trace in the total mass budget.
+    current_row = [1500.0, 40.0, 0.70, 0.10, 0.19999, -5.0, np.log10(1e-4)]
     current_X_scaled = torch.tensor([current_row], dtype=torch.float32, device=tr.DEVICE)
     rate_pred_scaled = torch.tensor([[-0.1, 6.0, -0.7, 6.0, -2.0, 6.0]], dtype=torch.float32, device=tr.DEVICE)
     
