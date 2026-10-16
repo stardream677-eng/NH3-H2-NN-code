@@ -200,6 +200,16 @@ def checkpoint_rollout_config(checkpoint: dict) -> dict:
             "refusing to reinterpret it as fully EOS-coupled T/P. "
             "Start a new experiment with the current pressure feedback contract."
         )
+    if (
+        mode == "autonomous"
+        and config.get("autonomous_input_contract")
+        != tr.ap.AUTONOMOUS_INPUT_CONTRACT
+    ):
+        raise ValueError(
+            "Legacy autonomous checkpoint has unverified or teacher-dependent "
+            "inert-species feedback. Use the original experiment semantics, or "
+            "retrain after the leak-free autonomous input contract was introduced."
+        )
     return {
         "experiment_mode": config.get("experiment_mode", "baseline"),
         "state_update_mode": config.get("state_update_mode", "legacy"),
@@ -210,6 +220,9 @@ def checkpoint_rollout_config(checkpoint: dict) -> dict:
         ),
         "projection_validation_contract": config.get(
             "projection_validation_contract", "legacy_unverified"
+        ),
+        "autonomous_input_contract": config.get(
+            "autonomous_input_contract", "legacy_unverified"
         ),
         "max_delta_temperature": float(config.get("max_delta_temperature", 1000.0) or 1000.0),
         "feedback_blend_start": float(config.get("feedback_blend_start", 1.0) or 1.0),
