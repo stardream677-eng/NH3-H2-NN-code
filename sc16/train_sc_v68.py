@@ -7294,7 +7294,14 @@ def train_model_v68(
                         previous_pred_rate_scaled = pred_rate_scaled
                         previous_true_rate_scaled = true_rate_scaled.detach()
             except Exception as exc:
-                record_batch_failure(f"Forward/backward exception: {type(exc).__name__}: {exc}")
+                projection_diagnostics = (
+                    {"projection_reason": exc.reason, "projection_rows": list(exc.rows)}
+                    if isinstance(exc, ppc.ProjectionConstraintError) else None
+                )
+                record_batch_failure(
+                    f"Forward/backward exception: {type(exc).__name__}: {exc}",
+                    diagnostics=projection_diagnostics,
+                )
                 raise
 
             # ----------------------------------------------------
@@ -7337,7 +7344,14 @@ def train_model_v68(
                         ).backward(),
                     )
                 except Exception as exc:
-                    record_batch_failure(f"Auxiliary rollout exception: {type(exc).__name__}: {exc}")
+                    projection_diagnostics = (
+                        {"projection_reason": exc.reason, "projection_rows": list(exc.rows)}
+                        if isinstance(exc, ppc.ProjectionConstraintError) else None
+                    )
+                    record_batch_failure(
+                        f"Auxiliary rollout exception: {type(exc).__name__}: {exc}",
+                        diagnostics=projection_diagnostics,
+                    )
                     raise
                 if not torch.isfinite(rollout_loss):
                     record_batch_failure("Non-finite auxiliary rollout loss")
