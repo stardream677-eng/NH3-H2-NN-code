@@ -6,10 +6,11 @@ Macro targets use a complete, invertible representation:
     z_i = asinh(dYdt_i / rate_scale_i)
     target_i = standardize(z_i)
 
-Rollout uses external recorded T/P/dt sequence from the trajectory; only species
-states are predicted autoregressively. Training uses continuous prediction-tail
-scheduled sampling over dynamic horizons up to 128 steps. Validation reports
-both oracle one-step and pure species-AR metrics at multiple horizons.
+In recorded mode rollout conditions on external reference T/P/dt. In autonomous
+mode NASA7 supplies energy-closed T, the ideal-gas EOS supplies constant-volume
+pressure (or holds P constant for a constant-pressure reactor), and only dt is
+externally prescribed. Training supports continuous prediction-tail scheduled
+sampling up to H=128; validation reports oracle and pure-AR modes separately.
 """
 
 from __future__ import annotations
@@ -4545,7 +4546,8 @@ def validate_model_v68(
     """
     V68 双模式验证：
     - mode="oracle": Oracle one-step，每步用真实物种，验证单步准确性
-    - mode="pure_ar": Pure species-AR，完全自回归，T/P/dt 保持真实
+    - mode="pure_ar": species-AR；recorded 时真实 T/P/dt，
+      autonomous 时仅 dt 取记录值，T/P 使用 NASA7/EOS 闭环
 
     返回：
     - mode="oracle": 标准 loss dict + per-horizon oracle metrics
@@ -5664,7 +5666,8 @@ def train_model_v68(
     curriculum_warmup_epochs: int | None = None,
 ):
     """
-    V68 训练入口：长 horizon 物种自回归，外部真实 T/P/dt。
+    V68 训练入口：长 horizon 物种自回归；
+    recorded 使用真实 T/P/dt，autonomous 使用 NASA7/EOS T/P 和真实 dt。
 
     核心改进：
     - 连续预测尾段 scheduled sampling（vs V68 独立步 teacher forcing）
