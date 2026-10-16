@@ -5167,41 +5167,68 @@ def update_temperature_autonomous(
     Y_old_full: torch.Tensor | None = None,
     Y_next_full: torch.Tensor | None = None,
 ) -> torch.Tensor:
-    """Update temperature from composition energy change.
+    """Update temperature via an energy-conserving NASA7 solve when configured.
 
-    When thermo_closure provides 'nasa7_layer' and full species mass fractions,
-    evaluates exact mixture internal energy (or enthalpy) and inverts for T_next
-    via differentiable Newton-Raphson with NASA-7 polynomials.
-    Falls back to first-order linear approximation around reference temperature if needed.
+    A NASA7 solve must converge and its final energy residual must pass. A
+    temperature jump above max_delta_temperature is a rejected integration
+    interval, *not* a reason to clip the physical solution. The legacy linear
+    approximation remains available only when no thermo_closure is requested.
     """
-    if (
-        thermo_closure is not None
-        and thermo_closure.get("nasa7_layer") is not None
-        and Y_old_full is not None
-        and Y_next_full is not None
-    ):
-        try:
-            layer = thermo_closure["nasa7_layer"]
-            reactor_type = thermo_closure.get("reactor_type", "IdealGasReactor")
-            if reactor_type == "IdealGasConstPressureReactor":
-                _, _, h_old, _ = layer.compute_mixture_properties(temperature, Y_old_full)
-                T_solved = layer.solve_temperature_hp(h_old, Y_next_full, temperature)
-            else:
-                _, _, _, u_old = layer.compute_mixture_properties(temperature, Y_old_full)
-                T_solved = layer.solve_temperature_uv(u_old, Y_next_full, temperature)
-
-            dT = torch.clamp(
-                T_solved - temperature,
-                -float(max_delta_temperature),
-                float(max_delta_temperature),
+    if not math.isfinite(float(max_delta_temperature)) or max_delta_temperature <= 0.0:
+        raise ValueError("max_delta_temperature must be finite and positive")
+    if thermo_closure is not None:
+        layer = thermo_closure.get("nasa7_layer")
+        if layer is None or Y_old_full is None or Y_next_full is None:
+            raise RuntimeError(
+                "Autonomous NASA7 closure requires an initialized layer and both compositions"
             )
-            return torch.clamp(temperature + dT, min=200.0, max=5000.0)
-        except Exception:
-            pass  # Fall through to linear fallback
+        reactor_type = thermo_closure.get("reactor_type", "IdealGasReactor")
+        work_dtype = layer.Ru.dtype
+        current_T = temperature.to(dtype=work_dtype)
+        old_Y = Y_old_full.to(dtype=work_dtype)
+        next_Y = Y_next_full.to(dtype=work_dtype)
+        if reactor_type == "IdealGasConstPressureReactor":
+            _, _, h_old, _ = layer.compute_mixture_properties(current_T, old_Y)
+            T_solved = layer.solve_temperature_hp(h_old, next_Y, current_T)
+            target_energy = h_old
+            energy_index, capacity_index = 2, 0
+        elif reactor_type == "IdealGasReactor":
+            _, _, _, u_old = layer.compute_mixture_properties(current_T, old_Y)
+            T_solved = layer.solve_temperature_uv(u_old, next_Y, current_T)
+            target_energy = u_old
+            energy_index, capacity_index = 3, 1
+        else:
+            raise ValueError(f"Unsupported autonomous reactor type: {reactor_type!r}")
 
+        # Never hide a failed energy solve by returning a clipped temperature
+        # or silently changing the experiment to constant-heat-capacity mode.
+        dT = (T_solved - current_T).abs()
+        if not torch.isfinite(T_solved).all() or bool((dT > float(max_delta_temperature)).any()):
+            raise RuntimeError(
+                "Autonomous energy-closed temperature exceeds the configured "
+                "max_delta_temperature; reduce dt or use smaller integration substeps"
+            )
+        returned_T = T_solved.to(dtype=temperature.dtype)
+        # Check the actual feedback dtype as well as the Newton work dtype.
+        end_properties = layer.compute_mixture_properties(returned_T.to(work_dtype), next_Y)
+        end_energy = end_properties[energy_index]
+        heat_capacity_final = end_properties[capacity_index].abs()
+        energy_residual = (end_energy - target_energy).abs()
+        rounding_K = 2.0 * torch.finfo(returned_T.dtype).eps * returned_T.to(work_dtype).abs()
+        residual_tol = torch.maximum(
+            0.1 + 1e-8 * torch.maximum(end_energy.abs(), target_energy.abs()),
+            heat_capacity_final * (1e-4 + rounding_K),
+        )
+        if not torch.isfinite(energy_residual).all() or bool((energy_residual > residual_tol).any()):
+            raise RuntimeError(
+                "Autonomous temperature feedback violates the NASA7 energy residual "
+                "tolerance after dtype conversion"
+            )
+        return returned_T
+
+    # Explicit legacy approximation, not the NASA7 autonomous mode.
     if energy_coeff is None or heat_capacity is None:
         return temperature
-
     coeff = energy_coeff.to(device=delta_y.device, dtype=delta_y.dtype).reshape(1, -1)
     capacity = heat_capacity.to(device=delta_y.device, dtype=delta_y.dtype)
     if capacity.ndim == 1:
@@ -5313,16 +5340,18 @@ def build_temperature_closure(
         heat_capacity = (gas.standard_cp_R[species_indices] - 1.0) * gas_constant / molecular_weights
         energy_kind = "internal_energy/cv"
 
-    nasa7_layer = None
     try:
         from thermo_nasa7_layer import ThermoNASA7Layer
         nasa7_layer = ThermoNASA7Layer(
             mechanism_path=str(mechanism_path),
             species_order=species_order,
         )
-        print(f"[THERMO] Exact ThermoNASA7Layer initialized successfully ({len(species_order)} species).")
+        print(f"[THERMO] ThermoNASA7Layer initialized ({len(species_order)} species).")
     except Exception as exc:
-        print(f"[THERMO] Warning: ThermoNASA7Layer init note: {exc}, using linear fallback.")
+        raise RuntimeError(
+            "Autonomous energy closure requires a valid NASA7 mechanism; "
+            "refusing silent linear-temperature fallback"
+        ) from exc
 
     return {
         "energy_coeff": (energy_molar / molecular_weights).astype(np.float32),
@@ -5840,30 +5869,23 @@ def train_model_v68(
     expected_feature_info.update(mechanism=mechanism, mechanism_path=str(chemical_mechanism_path))
     training_config["weight_decay"] = float(weight_decay)
 
-    # V3.5 uses a fixed, differentiable thermodynamic closure.  If metadata
-    # or Cantera is unavailable, remain finite and use recorded temperature.
+    # Fail closed: an explicitly requested autonomous experiment may not
+    # silently change into one driven by the recorded reference temperature.
     thermo_closure = None
     effective_temperature_mode = temperature_mode
     if temperature_mode == "autonomous":
-        try:
-            thermo_closure = build_temperature_closure(
-                metadata,
-                feature_info.get("inert_species", []) + feature_info["macro_species"] + feature_info["micro_species"],
-                data_dir=data_dir,
-                mechanism=mechanism,
-            )
-            print(
-                "[THERMO] Autonomous temperature enabled "
-                f"({thermo_closure['energy_kind']}, "
-                f"reactor={thermo_closure['reactor_type']}, "
-                f"{len(thermo_closure['species_order'])} species incl inert)"
-            )
-        except Exception as exc:
-            effective_temperature_mode = "recorded"
-            print(
-                "[THERMO] Autonomous temperature unavailable; "
-                f"falling back to recorded T: {exc}"
-            )
+        thermo_closure = build_temperature_closure(
+            metadata,
+            feature_info.get("inert_species", []) + feature_info["macro_species"] + feature_info["micro_species"],
+            data_dir=data_dir,
+            mechanism=mechanism,
+        )
+        print(
+            "[THERMO] Autonomous temperature enabled "
+            f"({thermo_closure['energy_kind']}, "
+            f"reactor={thermo_closure['reactor_type']}, "
+            f"{len(thermo_closure['species_order'])} species incl inert)"
+        )
     training_config["effective_temperature_mode"] = effective_temperature_mode
 
     print(
