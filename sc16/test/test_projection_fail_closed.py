@@ -280,3 +280,35 @@ def test_autonomous_rejects_unprojected_noise_at_startup():
             temperature_mode="autonomous", feedback_state_source="constrained",
             feedback_noise_std=0.01,
         )
+
+
+def test_task8_default_projection_counts_inert_and_preserves_elements():
+    tools = _tools_fixture()
+    current = torch.tensor(
+        [[1200.0, 12.0, .7, .1, .19999, -5.0, -6.0]],
+        dtype=torch.float32,
+    )
+    rate = torch.zeros(1, 3)
+    predicted = tools.predict_next_state(
+        current, rate, safe_for_rollout=True,
+        state_update_mode="task8_conservative_state",
+    )
+    constrained = predicted["Y_next_constrained_full"]
+    assert abs(constrained.sum().item() + 0.7 - 1.0) < ppc.MASS_ATOL
+    target = torch.tensor([[.1, .19999, 1e-5]]) @ tools.A.T
+    actual = constrained @ tools.A.T
+    assert (actual - target).abs().max().item() < ppc.ELEMENT_ATOL
+    assert not predicted["task8_diagnostics"]["projection_failed"]
+
+
+def test_task8_invalid_inert_mass_is_not_silently_discarded():
+    tools = _tools_fixture()
+    current = torch.tensor(
+        [[1200.0, 12.0, 1.1, .1, .1, -5.0, -6.0]],
+        dtype=torch.float32,
+    )
+    with pytest.raises(ppc.ProjectionConstraintError, match="invalid_inert_mass"):
+        tools.predict_next_state(
+            current, torch.zeros(1, 3), safe_for_rollout=True,
+            state_update_mode="task8_conservative_state",
+        )
