@@ -173,3 +173,64 @@ def test_existing_trace_radicals_are_positive_on_success():
     assert out_micro[0, 0] > 0.0
     assert not diag["projection_failed"]
     assert diag["element_residual_max"].max() <= ppc.ELEMENT_ATOL
+
+
+def _tools_fixture():
+    import numpy as np
+
+    fi = tr.build_feature_info(
+        ["N2", "H2", "O2", "OH"],
+        ["N2"], ["H2", "O2"], ["OH"],
+        "direct_rate", "direct_rate",
+    )
+
+    class IdentityScaler:
+        def __init__(self, n):
+            self.mean_ = np.zeros(n, dtype=np.float32)
+            self.scale_ = np.ones(n, dtype=np.float32)
+
+    return tr.CoarseOperatorTools(
+        fi, IdentityScaler(len(fi["input_cols"])),
+        IdentityScaler(len(fi["output_cols"])),
+        rate_decode_mode="direct_rate", device="cpu",
+    )
+
+
+def test_unsafe_raw_feedback_reanchors_only_diagnostic_not_raw_prediction():
+    tools = _tools_fixture()
+    # Previous raw prediction has drifted far from a unit-mass state.
+    current = torch.tensor(
+        [[1200.0, 12.0, .7, .4, .2, -4.0, -6.0]]
+    )
+    rate = torch.zeros(1, 3)
+    result = tools.predict_next_state(
+        current, rate, safe_for_rollout=False, state_update_mode="legacy",
+    )
+    assert result["diagnostic"]["projection_reference_mode"] == "renormalized_raw_diagnostic"
+    assert result["diagnostic"]["projection_reference_mass_correction"][0] > .1
+    assert result["Y_next_raw_full"].sum() > .6
+    constrained = result["Y_next_constrained_full"]
+    assert (constrained >= 0).all()
+    assert abs(constrained.sum().item() + .7 - 1.0) < 1e-6
+    assert result["diagnostic"]["projection_fallback_used"].dtype == torch.bool
+
+
+def test_physical_feedback_rejects_same_infeasible_previous_mass():
+    tools = _tools_fixture()
+    current = torch.tensor(
+        [[1200.0, 12.0, .7, .4, .2, -4.0, -6.0]]
+    )
+    rate = torch.zeros(1, 3)
+    with pytest.raises(ppc.ProjectionConstraintError, match="infeasible_target"):
+        tools.predict_next_state(
+            current, rate, safe_for_rollout=True, state_update_mode="legacy",
+        )
+
+
+def test_projection_source_is_in_manifest_hashes():
+    import experiment_manifest as em
+    from pathlib import Path
+
+    hashes = em.compute_source_hashes(Path(tr.__file__).resolve().parent)
+    assert "physical_projection_contract.py" in hashes
+    assert len(hashes["physical_projection_contract.py"]) == 64
