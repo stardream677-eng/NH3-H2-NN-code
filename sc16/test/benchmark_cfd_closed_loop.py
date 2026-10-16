@@ -1,4 +1,11 @@
-"""CFD-grade Closed-loop Autonomous Benchmark Suite for NH3/H2 Combustion Surrogate.
+"""LEGACY Cantera-assisted CFD benchmark (not a fully neural autonomous benchmark).
+
+This historical exploratory script calls Cantera UVY/HPY to re-close the NN
+temperature and uses separate NumPy projection routines. It therefore does
+NOT measure independent production NASA7/EOS network rollout accuracy.
+For verified H=128 T/P/Y evaluation use test/benchmark_autonomous_h128.py.
+
+Original title: CFD-grade Closed-loop Autonomous Benchmark Suite for NH3/H2 Combustion Surrogate.
 
 Evaluates neural network surrogate against Cantera ground truth across realistic
 combustion conditions with:
@@ -463,6 +470,11 @@ def run_benchmark(root=DEFAULT_ROOT, ckpt_name=DEFAULT_CKPT, dt=1e-6, closure="U
 
 
 if __name__ == "__main__":
+    print(
+        "[LEGACY] Cantera corrects neural temperature after each step here. "
+        "Use benchmark_autonomous_h128.py for independent neural T/P/Y rollouts.",
+        file=sys.stderr, flush=True,
+    )
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", default=DEFAULT_ROOT)
     parser.add_argument("--ckpt", default=DEFAULT_CKPT)
