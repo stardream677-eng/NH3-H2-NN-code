@@ -284,6 +284,9 @@ def run_case(
         "initial_P_atm": float(case["P0_atm"]),
         "phi": float(case["phi"]),
         "h2_fraction": float(case["h2_fraction"]),
+        "initial_density_kg_per_m3": initial_density,
+        "initial_energy_J_per_kg": energy0,
+        "energy_constraint": "UV" if reactor_type == "IdealGasReactor" else "HP",
         "failure_phase": None, "failure_message": None,
     }
     traces = {"time_s": times}
@@ -449,9 +452,9 @@ def main(argv=None) -> int:
         "species_order": list(names),
         "source_hashes": {
             file: sha256(ROOT / file) for file in (
-                "train_sc_v68.py", "thermo_nasa7_layer.py",
-                "autonomous_pressure.py", "physical_projection_contract.py",
-                "autonomous_benchmark_protocol.py",
+                "train_sc_v68.py", "validate_sc_v68.py",
+                "thermo_nasa7_layer.py", "autonomous_pressure.py",
+                "physical_projection_contract.py", "autonomous_benchmark_protocol.py",
             )
         },
         "benchmark_runner_sha256": sha256(Path(__file__)),
