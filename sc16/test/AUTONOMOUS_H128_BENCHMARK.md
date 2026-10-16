@@ -11,7 +11,7 @@
 ## 运行准备
 
 - 要求 `NUIG2024.yaml`（或与检查点相匹配的 TH/UCF 机理）、保存于训练目录的 **原始** Scaler 与 `best_v68_net_*_H128.pth`。
-- 验证器会严格检查机理 SHA-256、Scaler Hash、Checkpoint Feature Contract、`pressure_feedback_contract` 和 `projection_validation_contract`。不允许自动重建 Scaler。
+- 验证器会严格检查机理 SHA-256、Scaler Hash、Checkpoint Feature Contract、`pressure_feedback_contract`、`projection_validation_contract` 和新的 `autonomous_input_contract="autonomous_tpy_inert_current_v1"`。不允许自动重建 Scaler。该新契约用于阻断上一版本自主训练曾从下一时刻参考行继承惰性组分的潜在泄漏；旧版自主权重**需要重新训练**后，才可以按新契约声明完整自主泛化精度。
 - 例子文件 `benchmark_autonomous_cases.example.json` 提供四个 UV/HP 场景，每个固定 128 步。它们**只是探索性案例**，并没有证明与训练的 `condition_group_id` 严格隔离。若要报告独立泛化精度，需自行检查工况分组并提供被冻结的真正外推集。
 
 示例（PowerShell，工作目录为 `sc16`）：
