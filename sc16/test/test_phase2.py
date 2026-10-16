@@ -159,7 +159,12 @@ def test_dead_zone_mask():
         device=tr.DEVICE,
     )
     
-    mask = tr.compute_qssa_rate_mask(tools, true_rate_scaled)
+    assert tr.compute_qssa_rate_mask(tools, true_rate_scaled) is None
+    state = torch.tensor([
+        [1500., 1., .5, .1, .4, -4., -6.],
+        [1000., 1., 1., 1e-20, 1e-20, -20., -6.],
+    ], device=tr.DEVICE)
+    mask = tr.compute_qssa_rate_mask(tools, true_rate_scaled, state, state)
     assert mask is not None
     assert torch.all(mask[0] == 1.0), "Active sample should have full 1.0 mask"
     assert torch.all(mask[1, 0::2] == 1.0), "Dormant creation heads must remain supervised (1.0)"

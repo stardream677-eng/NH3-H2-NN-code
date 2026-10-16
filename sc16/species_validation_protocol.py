@@ -1,7 +1,7 @@
 """Species Validation Protocol and Sentinel Suite for Ammonia-Hydrogen Combustion.
 
 Standardizes model evaluation, validation metrics, and model selection:
-1. Frozen Protocol ID: v68_species_sentinel_protocol_v1
+1. Frozen Protocol ID: v68_species_sentinel_protocol_v2
 2. Fixed horizons: H in (1, 8, 32, 128) evaluated independently
 3. Comprehensive metrics:
    - Per-species MAE and peak-normalized MAE (NMAE)
@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 import numpy as np
 import torch
 
-PROTOCOL_ID = "v68_species_sentinel_protocol_v1"
+PROTOCOL_ID = "v68_species_sentinel_protocol_v2"
 STANDARD_HORIZONS = (1, 8, 32, 128)
 
 MAJOR_SPECIES = ("NH3", "H2", "O2", "N2", "H2O")
@@ -37,6 +37,55 @@ COLD_TRUE_THRESHOLD = 1e-12
 COLD_FALSE_POSITIVE_THRESHOLD = 1e-6
 # Active radical threshold for logarithmic tracking
 RADICAL_ACTIVE_THRESHOLD = 1e-12
+
+
+class TrajectoryDiagnosticAccumulator:
+    """Stream window peak/time/end errors; never retain the validation corpus.
+
+    Times have shape (B, T) in seconds, so each window can have different dt.
+    T includes the common initial state and all predicted endpoints. These are
+    window diagnostics, not full-reactor ignition delays or equilibrium values.
+    """
+
+    def __init__(self, species_names: Sequence[str]):
+        self.species_names = list(species_names)
+        self.sums = np.zeros((len(self.species_names), 4), dtype=np.float64)
+        self.counts = np.zeros(len(self.species_names), dtype=np.int64)
+        self.invalid = np.zeros(len(self.species_names), dtype=np.int64)
+
+    def update(self, true_states, pred_states, time_points) -> None:
+        true = np.asarray(true_states, dtype=np.float64)
+        pred = np.asarray(pred_states, dtype=np.float64)
+        times = np.asarray(time_points, dtype=np.float64)
+        if true.ndim != 3 or pred.shape != true.shape or true.shape[2] != len(self.species_names):
+            raise ValueError("Expected matching (B, T, species) trajectory arrays")
+        if times.shape != true.shape[:2] or not np.isfinite(times).all() or (np.diff(times, axis=1) < 0).any():
+            raise ValueError("Expected finite, increasing per-window physical times")
+        for i in range(len(self.species_names)):
+            valid = np.isfinite(true[:, :, i]).all(axis=1) & np.isfinite(pred[:, :, i]).all(axis=1)
+            self.invalid[i] += int((~valid).sum())
+            yt, yp, t = true[valid, :, i], pred[valid, :, i], times[valid]
+            n = len(yt)
+            if not n:
+                continue
+            rows = np.arange(n)
+            endpoint_error = np.abs(yp[:, -1] - yt[:, -1])
+            self.sums[i] += np.array([
+                np.abs(yp.max(axis=1) - yt.max(axis=1)).sum(),
+                np.abs(t[rows, yp.argmax(axis=1)] - t[rows, yt.argmax(axis=1)]).sum(),
+                endpoint_error.sum(),
+                (endpoint_error / np.maximum(np.abs(yt[:, -1]), 1e-12)).sum(),
+            ])
+            self.counts[i] += n
+
+    def finalize(self) -> Dict[str, Any]:
+        keys = ('peak_amplitude_mae', 'peak_time_mae_s', 'endpoint_mae', 'endpoint_relative_error')
+        return {
+            sp: dict(n_windows=int(self.counts[i]), invalid_windows=int(self.invalid[i]),
+                     **{key: float(self.sums[i, j] / self.counts[i]) if self.counts[i] else None
+                        for j, key in enumerate(keys)})
+            for i, sp in enumerate(self.species_names)
+        }
 
 
 def compute_species_trajectory_metrics(

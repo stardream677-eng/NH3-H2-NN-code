@@ -1,0 +1,21 @@
+[
+  "--data_dir", "D:/combustion_data",
+  "--split_dir", "D:/combustion_data/splits",
+  "--output_root", "D:/combustion_runs/pd_v1_sentinel_v2",
+  "--mechanism", "nuig_2024",
+  "--output_parameterization", "dual_branch_pd_v1",
+  "--rate_decode_mode", "dual_branch_pd_v1",
+  "--state_update_mode", "dual_branch_pd_v1",
+  "--network_arch", "resmlp",
+  "--temperature_mode", "recorded",
+  "--epochs", "30",
+  "--max_horizon", "128",
+  "--curriculum_horizons", "1", "8", "32", "128",
+  "--curriculum_start_epochs", "0", "5", "8", "11",
+  "--eval_horizons", "1", "8", "32", "128",
+  "--weight_decay", "1e-5",
+  "--full_val_every", "1",
+  "--backward_chunk_steps", "5",
+  "--num_workers", "0",
+  "--resume", "auto"
+]

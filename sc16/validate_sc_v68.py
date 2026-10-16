@@ -162,6 +162,12 @@ def load_checkpoint(path: Path, mechanism: str | None = None):
                     f"Checkpoint mechanism mismatch: {source} contains "
                     f"{value!r}, requested {mechanism!r}"
                 )
+    fi = checkpoint["feature_info"]
+    expected_signature = tr.transform_signature_for(fi.get("output_parameterization", "direct_rate"))
+    if checkpoint.get("transform_signature") != expected_signature or fi.get("transform_signature") != expected_signature:
+        raise ValueError("Transform signature differs between checkpoint, mode and feature_info")
+    import experiment_manifest as em
+    em.verify_runtime_artifacts(checkpoint, fi)
     return checkpoint
 
 
@@ -392,6 +398,11 @@ def load_scalers(
             max_parts=10, sample_rate=0.02, max_rows=2_000_000,
             sample_ids=train_sample_ids,
         )
+        _validate_scaler(scaler_x, "scaler_X", len(feature_info["input_cols"]))
+        _validate_scaler(scaler_y, "scaler_Y", len(feature_info["output_cols"]))
+        import experiment_manifest as em
+        em.verify_runtime_artifacts({"manifest": feature_info.get("manifest")}, feature_info,
+                                    scaler_x, scaler_y, (data_dir,))
         scaler_dir = output_root / tr.artifact_subdir("scalers")
         scaler_dir.mkdir(parents=True, exist_ok=True)
         joblib.dump(scaler_x, scaler_dir / f"scaler_X_{mechanism}_{sig_to_use}{scaler_suffix}.pkl")
@@ -399,8 +410,6 @@ def load_scalers(
         saved_info = dict(feature_info)
         saved_info["_scaler_source"] = f"rebuilt:{scaler_dir}"
         joblib.dump(saved_info, scaler_dir / f"feature_info_{mechanism}_{sig_to_use}{scaler_suffix}.pkl")
-        _validate_scaler(scaler_x, "scaler_X", len(feature_info["input_cols"]))
-        _validate_scaler(scaler_y, "scaler_Y", len(feature_info["output_cols"]))
         return scaler_x, scaler_y, saved_info
     sx_path = scaler_dir / f"scaler_X_{mechanism}_{matched_sig}{matched_suffix}.pkl"
     sy_path = scaler_dir / f"scaler_Y_{mechanism}_{matched_sig}{matched_suffix}.pkl"
@@ -442,6 +451,9 @@ def load_scalers(
     if not np.isclose(saved_rate_z_limit, checkpoint_rate_z_limit):
         raise ValueError("Checkpoint and scaler feature_info differ in rate_z_limit")
     saved_info["_scaler_source"] = str(scaler_dir)
+    import experiment_manifest as em
+    em.verify_runtime_artifacts({"manifest": feature_info.get("manifest")}, feature_info,
+                                scaler_x, scaler_y, (data_dir,) if data_dir is not None else ())
     return scaler_x, scaler_y, saved_info
 
 

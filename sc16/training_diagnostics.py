@@ -36,9 +36,9 @@ def restore_rng_state(state: Dict[str, Any]) -> None:
     if "numpy_rng" in state:
         np.random.set_state(state["numpy_rng"])
     if "torch_cpu_rng" in state:
-        torch.set_rng_state(state["torch_cpu_rng"])
+        torch.set_rng_state(state["torch_cpu_rng"].cpu())
     if "torch_cuda_rng" in state and torch.cuda.is_available():
-        torch.cuda.set_rng_state_all(state["torch_cuda_rng"])
+        torch.cuda.set_rng_state_all([value.cpu() for value in state["torch_cuda_rng"]])
 
 
 def check_gradient_finite_and_norm(model: nn.Module) -> Tuple[bool, float, Dict[str, Any]]:
@@ -115,8 +115,17 @@ def replay_snapshot_with_anomaly_detection(
     model: nn.Module,
     forward_fn: Any,
     device: torch.device | str = "cpu",
+    use_saved_context: bool = False,
 ) -> Dict[str, Any]:
-    """Replay a saved failure snapshot under torch.autograd.detect_anomaly to pinpoint failure operation."""
+    """Replay a loss callback under detect_anomaly.
+
+    Default callback: fn(model, X, Y), starting at the pre-batch RNG state.
+    With use_saved_context: fn(model, X, Y, context), starting immediately
+    before the forward pass. The callback must use the saved tail mask and
+    configuration, rather than drawing that mask again. It returns the loss;
+    this helper performs backward. Exact CUDA replay requires matching hardware
+    and deterministic operations; CPU stochastic replay is regression-tested.
+    """
     ckpt = torch.load(str(snapshot_path), map_location=device, weights_only=False)
     restore_rng_state(ckpt["rng_state"])
     model.load_state_dict(ckpt["model_state_dict"])
@@ -124,6 +133,11 @@ def replay_snapshot_with_anomaly_detection(
     for name, module in model.named_modules():
         module.training = ckpt.get("module_training", {}).get(name, module.training)
     model.zero_grad(set_to_none=True)
+    context = ckpt.get("replay_context", {})
+    if use_saved_context:
+        if "rng_before_forward" not in context:
+            raise ValueError("Snapshot has no pre-forward RNG for context replay")
+        restore_rng_state(context["rng_before_forward"])
 
     batch_X = ckpt["batch_X"].to(device)
     batch_Y = ckpt["batch_Y"].to(device) if ckpt.get("batch_Y") is not None else None
@@ -133,7 +147,7 @@ def replay_snapshot_with_anomaly_detection(
 
     try:
         with torch.autograd.detect_anomaly(check_nan=True):
-            loss = forward_fn(model, batch_X, batch_Y)
+            loss = forward_fn(model, batch_X, batch_Y, context) if use_saved_context else forward_fn(model, batch_X, batch_Y)
             loss.backward()
     except Exception as exc:
         anomaly_detected = True

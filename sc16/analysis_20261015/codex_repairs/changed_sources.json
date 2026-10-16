@@ -1,0 +1,68 @@
+[
+  {
+    "path": "chemistry_contract.py",
+    "change": "modified",
+    "before_sha256": "5a5c0e6c097d2dfc8b2fab0b785ea35a49da71211dc2dd3b5594404163c5eddf",
+    "after_sha256": "2dbc0f8044a2cf787c67eab663456067186ab8660357b999056dae870265388c"
+  },
+  {
+    "path": "data_pipeline\\build_training_dataset_v72.py",
+    "change": "modified",
+    "before_sha256": "9ea24233a17fd37f44b01faafb87450330e0f2871fd714966b65debd2dbdb5fd",
+    "after_sha256": "f80871f41662e29b4fa71f9f6cc706a1ebe3b5e305b2e6e61df22375370fd675"
+  },
+  {
+    "path": "experiment_manifest.py",
+    "change": "modified",
+    "before_sha256": "a5d9856981d11eefccc43ea1804e2892b5c350c6f9f30eed1704f3abf9ff8d98",
+    "after_sha256": "14d3c4eeddd3d8fea7af089a84a32c040566b5c64de2902a70ad202f5dc5bec0"
+  },
+  {
+    "path": "species_validation_protocol.py",
+    "change": "modified",
+    "before_sha256": "bc0ff5c9f0c47ea66a28fc02f4506efe0f05d41b08e2551208352d8f061b25e5",
+    "after_sha256": "8f3622b8adb30c4a3ce5c20ca8b0cb39117e917beda98f41ecb50144d8fe9fcf"
+  },
+  {
+    "path": "test\\test_latest_gemini_regressions.py",
+    "change": "modified",
+    "before_sha256": "214b53c9a9f9cf03ba757c023002af9fac0eac9c0d11faf3f82b6083ee98aec8",
+    "after_sha256": "557048505354fb7958fe466ebdd075896ae2df0cfb99bd7688a1142dc8cd0949"
+  },
+  {
+    "path": "test\\test_phase2.py",
+    "change": "modified",
+    "before_sha256": "8a441cfe6f04ae4fed6490779c1b2b6434fdf31fb8a52cf91ea4dddf5f752fb8",
+    "after_sha256": "13d025aab530af9ae7c3d5be19468bf74a354347ee1eb0dc116d5edfb9cdb22a"
+  },
+  {
+    "path": "test\\test_review_repairs.py",
+    "change": "added",
+    "before_sha256": null,
+    "after_sha256": "6ba02c075e4a78bd04324dab6ba9cd5f6d9c0ab1c1cebd133befdedf1607251b"
+  },
+  {
+    "path": "test\\test_training_resume_smoke.py",
+    "change": "added",
+    "before_sha256": null,
+    "after_sha256": "8d3080e880538061a7e0b68cd6a8456149f1d71c64b720a9f473a2af494b4afb"
+  },
+  {
+    "path": "train_sc_v68.py",
+    "change": "modified",
+    "before_sha256": "5e69891a1d4b274b2f4a0d50f01beabdf9c15a89bb48236d7bf6b7317b6d718d",
+    "after_sha256": "d08a4bfa3480a375303f98f2faed14a3e9625195b8ea5b3a18925327938a7c3a"
+  },
+  {
+    "path": "training_diagnostics.py",
+    "change": "modified",
+    "before_sha256": "7de82f2ced15e57a9bd302a4816cbf0a8d19128c904b061adb571f5f62225e8d",
+    "after_sha256": "1478526a84cd2d4b87038b705fee9bb33b49e7f592c2129b71e381bbc18e5c48"
+  },
+  {
+    "path": "validate_sc_v68.py",
+    "change": "modified",
+    "before_sha256": "4a603d2cc5bf884c94d0496e8fd4c880ab3692a2e98fb54facf8bfed8d98e900",
+    "after_sha256": "13bb1e13341c397fe46d6e094be17e2250b885e94fc228137134541ae693d5d0"
+  }
+]

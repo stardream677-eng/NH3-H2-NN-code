@@ -1,0 +1,54 @@
+FFF                                                                      [100%]
+================================== FAILURES ===================================
+_________ test_real_checkpoint_loader_rejects_inconsistent_transform __________
+
+tmp_path = WindowsPath('C:/Users/123/AppData/Local/Temp/pytest-of-123/pytest-157/test_real_checkpoint_loader_re0')
+
+    def test_real_checkpoint_loader_rejects_inconsistent_transform(tmp_path):
+        import validate_sc_v68 as val
+        ckpt,_,_=artifact_fixture(tmp_path)
+        ckpt['transform_signature']=tr.LEGACY_TRANSFORM_SIGNATURE
+        p=tmp_path/'weights.pth'; torch.save(ckpt,p)
+>       with pytest.raises(ValueError,match='[Tt]ransform'):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+test\test_review_repairs.py:127: Failed
+_________ test_real_checkpoint_loader_detects_changed_mechanism_bytes _________
+
+tmp_path = WindowsPath('C:/Users/123/AppData/Local/Temp/pytest-of-123/pytest-157/test_real_checkpoint_loader_de0')
+
+    def test_real_checkpoint_loader_detects_changed_mechanism_bytes(tmp_path):
+        import validate_sc_v68 as val
+        ckpt,_,_=artifact_fixture(tmp_path)
+        p=tmp_path/'weights.pth'; torch.save(ckpt,p)
+        mech=Path(ckpt['feature_info']['mechanism_path'])
+        mech.write_bytes(mech.read_bytes()+b'\n# changed mechanism file\n')
+>       with pytest.raises(ValueError,match='[Mm]echanism'):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+test\test_review_repairs.py:137: Failed
+_____________ test_real_scaler_loader_rejects_changed_statistics ______________
+
+tmp_path = WindowsPath('C:/Users/123/AppData/Local/Temp/pytest-of-123/pytest-157/test_real_scaler_loader_reject0')
+
+    def test_real_scaler_loader_rejects_changed_statistics(tmp_path):
+        import joblib
+        import validate_sc_v68 as val
+        ckpt,sx,sy=artifact_fixture(tmp_path)
+        scaler_dir=tmp_path/tr.artifact_subdir('scalers'); scaler_dir.mkdir()
+        fi=ckpt['feature_info']; sig=fi['transform_signature']
+        sx.mean_[0]+=1.
+        for name,value in [('scaler_X',sx),('scaler_Y',sy),('feature_info',fi)]:
+            joblib.dump(value,scaler_dir/f'{name}_nuig_2024_{sig}.pkl')
+>       with pytest.raises(ValueError,match='[Ss]caler hash'):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+test\test_review_repairs.py:150: Failed
+=========================== short test summary info ===========================
+FAILED test/test_review_repairs.py::test_real_checkpoint_loader_rejects_inconsistent_transform
+FAILED test/test_review_repairs.py::test_real_checkpoint_loader_detects_changed_mechanism_bytes
+FAILED test/test_review_repairs.py::test_real_scaler_loader_rejects_changed_statistics
+3 failed, 9 deselected in 4.09s

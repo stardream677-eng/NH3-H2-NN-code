@@ -1,0 +1,5 @@
+Using device: cpu
+Workstation argument template: parser accepted; training not invoked
+output_parameterization: dual_branch_pd_v1
+curriculum: [1, 8, 32, 128] [0, 5, 8, 11]
+Python syntax checks: passed

@@ -192,7 +192,10 @@ def test_compute_qssa_rate_mask_dual_branch():
     true_rate = torch.tensor([
         [1.0, -1.0, -20.0, -10.0, -5.0, -5.0]
     ])
-    mask = tr.compute_qssa_rate_mask(DummyTools(), true_rate)
+    # Parameters alone cannot establish dormancy; use both physical endpoints.
+    assert tr.compute_qssa_rate_mask(DummyTools(), true_rate) is None
+    state = torch.tensor([[0.1, 0.9, -20.0, -5.0]])
+    mask = tr.compute_qssa_rate_mask(DummyTools(), true_rate, state, state)
     assert mask is not None
     # Macro heads (0, 1): 1.0
     assert (mask[0, :2] == 1.0).all()

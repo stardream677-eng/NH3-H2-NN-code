@@ -1,0 +1,284 @@
+Using device: cpu
+Loading mini_ds.pkl from C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc16\data_pipeline\mini_ds.pkl...
+Saved 4800 rows (30 trajectories) to C:\Users\123\AppData\Local\Temp\pytest-of-123\pytest-158\test_pd_training_resume_and_in0\data\trajectories_nuig_2024\part-000001.parquet
+
+##########################################################################################
+V68 Long-Horizon Species-Autoregressive Operator Training
+##########################################################################################
+Version: v68
+Transform: dual_branch_pd_v1
+Rollout: external_recorded_t_p_dt_species_ar_experiments_v3
+Max horizon: 8
+Curriculum horizons: [1]
+Curriculum start epochs: [0]
+Eval horizons: [1, 8]
+Tail fraction: 0.05 → 1.00 (ramp=0 epochs)
+Backward chunk steps: 1
+Parts per epoch: 1
+Validation parts per epoch: 1
+Batch size: 8; validation batch size: 8
+Transition weighting: alpha=0.0, clip=8.0
+Feedback state noise std: 0.0
+Feedback blend: 1.00 -> 1.00 over 0 epochs
+Trust-region fraction: 0.000
+Rate decode: dual_branch_pd_v1 (z_limit=10.000)
+Temperature mode: recorded
+Stability loss weight: 0.0
+Experiment mode: baseline
+State update mode: dual_branch_pd_v1
+Resume: none
+Trajectory split dir: C:\Users\123\AppData\Local\Temp\pytest-of-123\pytest-158\test_pd_training_resume_and_in0\splits
+Lambda weights: rate=1.0, state=1.0, element=0.2, mass=0.05, positive=0.01, rollout=0.0, stability=0.0
+
+[Metadata]
+  mechanism = nuig_2024
+  rows      = 64
+  success   = 4
+  failed    = 0
+  parts     = 1
+
+Species summary:
+  inert = 2
+  macro = 5
+  micro = 32
+
+[Split] Trajectory manifest: C:\Users\123\AppData\Local\Temp\pytest-of-123\pytest-158\test_pd_training_resume_and_in0\splits
+  train sample_ids = 3
+  validation sample_ids = 1
+
+Dataset split:
+  total parts = 1
+  train parts = 1
+  val parts   = 1
+
+[Scaler] Selected parts:
+  - part-000001.parquet
+[Scaler] Macro P90 rate scales:
+  H2: 6.374131e+00
+  H2O: 9.618748e+01
+  N2: 2.518134e+01
+  NH3: 4.212337e+01
+  O2: 1.089989e+02
+[Scaler] processed=48
+
+[Scaler Summary]
+X mean range: -1.939e+01 to 1.642e+03
+X std range: 3.018e-03 to 6.991e+02
+Y mean range: -7.160e+00 to 1.245e+01
+Y std range: 2.351e-01 to 5.304e+00
+Instantiated baseline CoupledKineticsNet (dim=42->69) on cpu
+Species loss weights: macro=1.0, micro=1.0, key=1.0; present=['NH2', 'HO2', 'OH', 'H2O2']
+
+Epoch 1/1 H=1 tail=1.00: 0it [00:00, ?it/s]
+Epoch 1/1 H=1 tail=1.00: 0it [00:00, ?it/s, loss=1.8791, rate=1.5586, state=0.3205, roll=0.0000, elem=2.21e-05, mass=2.33e-06, w=1.00]
+Epoch 1/1 H=1 tail=1.00: 1it [00:00,  3.62it/s, loss=1.8791, rate=1.5586, state=0.3205, roll=0.0000, elem=2.21e-05, mass=2.33e-06, w=1.00]
+Epoch 1/1 H=1 tail=1.00: 1it [00:00,  3.60it/s, loss=1.8791, rate=1.5586, state=0.3205, roll=0.0000, elem=2.21e-05, mass=2.33e-06, w=1.00]
+
+------------------------------------------------------------------------------------------
+Epoch   1
+  Horizon        : 1
+  Tail Fraction  : 1.000
+  Learning Rate  : 1.000e-05
+  Train Total    : 1.879079e+00
+  Train Rate     : 1.558558e+00
+  Train State    : 3.205157e-01
+  Train Rollout  : 0.000000e+00
+  Train Stability: 0.000000e+00
+  Train Transition Weight: 1.0000
+  Ignition Audit : high=0.00%, w(mean/p50/p90/max)=1.000/1.000/1.000/1.000
+  Ignition MSE   : rate high/normal=n/a/1.454938570658366, state high/normal=n/a/0.3205156539524118
+  Train Element  : 2.210766e-05
+  Train Mass     : 2.327142e-06
+  Val Total      : 3.167177e+00
+  Val Rate       : 2.454889e+00
+  Val State      : 7.122879e-01
+  Val Element    : 8.979591e-07
+  Val Mass       : 2.318147e-07
+  Val Positive   : 0.000000e+00
+
+  Oracle per-horizon RMSE:
+    H=  1: 8.445616e-01 (n=2)
+
+
+  Pure-AR per-horizon RMSE:
+    H=  1: 8.445616e-01 (n=2)
+    H=  8: 8.109792e-01 (n=2)
+------------------------------------------------------------------------------------------
+[SENTINEL] New best valid H=1 model -> best_v68_net_nuig_2024_H1.pth (score=8.108395e-01)
+[SENTINEL] New best valid H=8 model -> best_v68_net_nuig_2024_H8.pth (score=1.107938e+00)
+[SAVE] Best Oracle Average model -> best_oracle_avg_epoch1.pth (Avg RMSE=8.445616e-01)
+[SAVE] Best Composite model -> best_composite_epoch1.pth (Composite=8.445616e-01)
+[SAVE] Best Robust Raw model -> best_robust_raw_epoch1.pth (Score=3.7665, H=8.445616e-01, Mass=3.400599e-08)
+[SAVE] checkpoint -> C:\Users\123\AppData\Local\Temp\pytest-of-123\pytest-158\test_pd_training_resume_and_in0\output\checkpoints_v68\checkpoint_v68_nuig_2024_epoch1.pth
+
+==========================================================================================
+V68 training finished.
+Best validation loss (total) = 1.107938e+00
+
+Best metrics achieved:
+  Oracle Average RMSE    : 8.445616e-01
+  Composite (0.2O+0.8P)  : 8.445616e-01
+==========================================================================================
+
+##########################################################################################
+V68 Long-Horizon Species-Autoregressive Operator Training
+##########################################################################################
+Version: v68
+Transform: dual_branch_pd_v1
+Rollout: external_recorded_t_p_dt_species_ar_experiments_v3
+Max horizon: 8
+Curriculum horizons: [1]
+Curriculum start epochs: [0]
+Eval horizons: [1, 8]
+Tail fraction: 0.05 → 1.00 (ramp=0 epochs)
+Backward chunk steps: 1
+Parts per epoch: 1
+Validation parts per epoch: 1
+Batch size: 8; validation batch size: 8
+Transition weighting: alpha=0.0, clip=8.0
+Feedback state noise std: 0.0
+Feedback blend: 1.00 -> 1.00 over 0 epochs
+Trust-region fraction: 0.000
+Rate decode: dual_branch_pd_v1 (z_limit=10.000)
+Temperature mode: recorded
+Stability loss weight: 0.0
+Experiment mode: baseline
+State update mode: dual_branch_pd_v1
+Resume: auto
+Trajectory split dir: C:\Users\123\AppData\Local\Temp\pytest-of-123\pytest-158\test_pd_training_resume_and_in0\splits
+Lambda weights: rate=1.0, state=1.0, element=0.2, mass=0.05, positive=0.01, rollout=0.0, stability=0.0
+
+[Metadata]
+  mechanism = nuig_2024
+  rows      = 64
+  success   = 4
+  failed    = 0
+  parts     = 1
+
+Species summary:
+  inert = 2
+  macro = 5
+  micro = 32
+
+[Split] Trajectory manifest: C:\Users\123\AppData\Local\Temp\pytest-of-123\pytest-158\test_pd_training_resume_and_in0\splits
+  train sample_ids = 3
+  validation sample_ids = 1
+
+Dataset split:
+  total parts = 1
+  train parts = 1
+  val parts   = 1
+
+Loading existing V68 scalers...
+Instantiated baseline CoupledKineticsNet (dim=42->69) on cpu
+Species loss weights: macro=1.0, micro=1.0, key=1.0; present=['NH2', 'HO2', 'OH', 'H2O2']
+
+[RESUME] Loading checkpoint: latest_v68_nuig_2024.pth
+[RESUME] RNG states restored.
+[RESUME] Resuming from epoch 1
+[RESUME] Best val loss: 1.1079
+[RESUME] History length: 1
+Epoch 2/2 H=1 tail=1.00: 0it [00:00, ?it/s]
+Epoch 2/2 H=1 tail=1.00: 0it [00:00, ?it/s, loss=1.8774, rate=1.5572, state=0.3201, roll=0.0000, elem=2.21e-05, mass=2.33e-06, w=1.00]
+Epoch 2/2 H=1 tail=1.00: 1it [00:00, 10.46it/s, loss=1.8774, rate=1.5572, state=0.3201, roll=0.0000, elem=2.21e-05, mass=2.33e-06, w=1.00]
+
+------------------------------------------------------------------------------------------
+Epoch   2
+  Horizon        : 1
+  Tail Fraction  : 1.000
+  Learning Rate  : 1.000e-05
+  Train Total    : 1.877367e+00
+  Train Rate     : 1.557229e+00
+  Train State    : 3.201337e-01
+  Train Rollout  : 0.000000e+00
+  Train Stability: 0.000000e+00
+  Train Transition Weight: 1.0000
+  Ignition Audit : high=0.00%, w(mean/p50/p90/max)=1.000/1.000/1.000/1.000
+  Ignition MSE   : rate high/normal=n/a/1.4537887573242188, state high/normal=n/a/0.32013369189184226
+  Train Element  : 2.210777e-05
+  Train Mass     : 2.327198e-06
+  Val Total      : 3.164456e+00
+  Val Rate       : 2.452947e+00
+  Val State      : 7.115091e-01
+  Val Element    : 8.978810e-07
+  Val Mass       : 2.317918e-07
+  Val Positive   : 0.000000e+00
+
+  Oracle per-horizon RMSE:
+    H=  1: 8.441001e-01 (n=2)
+
+  Pure-AR per-horizon RMSE:
+    H=  1: 8.441001e-01 (n=2)
+    H=  8: 8.109803e-01 (n=2)
+------------------------------------------------------------------------------------------
+[SENTINEL] New best valid H=1 model -> best_v68_net_nuig_2024_H1.pth (score=8.107464e-01)
+[SAVE] Best Oracle Average model -> best_oracle_avg_epoch2.pth (Avg RMSE=8.441001e-01)
+[SAVE] Best Composite model -> best_composite_epoch2.pth (Composite=8.441001e-01)
+[SAVE] Best Robust Raw model -> best_robust_raw_epoch2.pth (Score=3.7660, H=8.441001e-01, Mass=3.399944e-08)
+[SAVE] checkpoint -> C:\Users\123\AppData\Local\Temp\pytest-of-123\pytest-158\test_pd_training_resume_and_in0\output\checkpoints_v68\checkpoint_v68_nuig_2024_epoch2.pth
+
+==========================================================================================
+V68 training finished.
+Best validation loss (total) = 1.107938e+00
+
+Best metrics achieved:
+  Oracle Average RMSE    : 8.441001e-01
+  Composite (0.2O+0.8P)  : 8.441001e-01
+==========================================================================================
+
+##########################################################################################
+V68 Long-Horizon Species-Autoregressive Operator Training
+##########################################################################################
+Version: v68
+Transform: dual_branch_pd_v1
+Rollout: external_recorded_t_p_dt_species_ar_experiments_v3
+Max horizon: 8
+Curriculum horizons: [1]
+Curriculum start epochs: [0]
+Eval horizons: [1, 8]
+Tail fraction: 0.05 → 1.00 (ramp=0 epochs)
+Backward chunk steps: 1
+Parts per epoch: 1
+Validation parts per epoch: 1
+Batch size: 8; validation batch size: 8
+Transition weighting: alpha=0.0, clip=8.0
+Feedback state noise std: 0.0
+Feedback blend: 1.00 -> 1.00 over 0 epochs
+Trust-region fraction: 0.000
+Rate decode: dual_branch_pd_v1 (z_limit=10.000)
+Temperature mode: recorded
+Stability loss weight: 0.0
+Experiment mode: baseline
+State update mode: dual_branch_pd_v1
+Resume: auto
+Trajectory split dir: C:\Users\123\AppData\Local\Temp\pytest-of-123\pytest-158\test_pd_training_resume_and_in0\splits
+Lambda weights: rate=1.0, state=1.0, element=0.2, mass=0.05, positive=0.01, rollout=0.0, stability=0.0
+
+[Metadata]
+  mechanism = nuig_2024
+  rows      = 64
+  success   = 4
+  failed    = 0
+  parts     = 1
+
+Species summary:
+  inert = 2
+  macro = 5
+  micro = 32
+
+[Split] Trajectory manifest: C:\Users\123\AppData\Local\Temp\pytest-of-123\pytest-158\test_pd_training_resume_and_in0\splits
+  train sample_ids = 3
+  validation sample_ids = 1
+
+Dataset split:
+  total parts = 1
+  train parts = 1
+  val parts   = 1
+
+Loading existing V68 scalers...
+Instantiated baseline CoupledKineticsNet (dim=42->69) on cpu
+Species loss weights: macro=1.0, micro=1.0, key=1.0; present=['NH2', 'HO2', 'OH', 'H2O2']
+
+[RESUME] Loading checkpoint: latest_v68_nuig_2024.pth
+.
+1 passed in 5.44s

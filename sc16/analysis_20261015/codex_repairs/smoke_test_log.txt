@@ -1,0 +1,21 @@
+Using device: cuda
+
+=================================== ERRORS ====================================
+_____________ ERROR collecting test/test_training_resume_smoke.py _____________
+ImportError while importing test module 'C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc16\test\test_training_resume_smoke.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+C:\Users\123\.conda\envs\cantera\Lib\importlib\__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+test\test_training_resume_smoke.py:11: in <module>
+    from data_pipeline import build_training_dataset_v72 as builder
+data_pipeline\build_training_dataset_v72.py:18: in <module>
+    import cantera as ct
+C:\Users\123\.conda\envs\cantera\Lib\site-packages\cantera\__init__.py:4: in <module>
+    from ._cantera import *
+E   ImportError: DLL load failed while importing _cantera: 页面文件太小，无法完成操作。
+=========================== short test summary info ===========================
+ERROR test/test_training_resume_smoke.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 5.99s

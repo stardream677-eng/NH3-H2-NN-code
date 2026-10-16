@@ -1,0 +1,2778 @@
+--- before/chemistry_contract.py
++++ chemistry_contract.py
+@@ -16,6 +16,20 @@
+ import cantera as ct
+ import numpy as np
+ import torch
++
++
++def resolve_mechanism_file(mechanism="nuig_2024", recorded_path=None, search_roots=()):
++    """Resolve a moved mechanism by identity/name; callers verify its content hash."""
++    names = {"nuig_2024": "NUIG2024.yaml", "tsinghua_2024c": "TH2024.yaml", "ucf_2024": "UCF2024.yaml"}
++    filename = names.get(mechanism, f"{mechanism}.yaml")
++    roots = [Path(p) for p in search_roots] + [Path(__file__).resolve().parent]
++    candidates = [Path(recorded_path)] if recorded_path else []
++    candidates += [r / name for r in roots for name in
++                   dict.fromkeys([Path(recorded_path).name if recorded_path else filename, filename])]
++    for path in candidates:
++        if path.is_file():
++            return path.resolve()
++    raise FileNotFoundError(f"Mechanism {mechanism!r} not found: {candidates}")
+ 
+ 
+ def compute_element_mass_matrix(
+--- before/data_pipeline/build_training_dataset_v72.py
++++ data_pipeline/build_training_dataset_v72.py
+@@ -96,6 +96,7 @@
+     W_k = [gas.molecular_weights[gas.species_index(s)] if gas else 28.0 for s in names]
+ 
+     records = []
++    initial_phi_per_sid = {}
+     time_per_sid: dict[int, float] = {}
+     intervals_per_sid: dict[int, int] = {}
+     for r in rows:
+@@ -123,7 +124,9 @@
+ 
+         # Calculate phi from composition
+         sp_dict = {names[i]: float(r["Y"][i]) for i in range(len(names))}
+-        phi_calc = compute_phi_from_species_dict(sp_dict, gas)
++        if sid not in initial_phi_per_sid:
++            initial_phi_per_sid[sid] = compute_phi_from_species_dict(sp_dict, gas)
++        phi_calc = initial_phi_per_sid[sid]
+ 
+         rec = {
+             "sample_id": sid,
+--- before/experiment_manifest.py
++++ experiment_manifest.py
+@@ -25,6 +25,10 @@
+     "thermo_nasa7_layer.py",
+     "chemistry_contract.py",
+     "validate_sc_v68.py",
++    "kinetics_parameterization.py",
++    "species_validation_protocol.py",
++    "training_diagnostics.py",
++    "experiment_manifest.py",
+ )
+ 
+ 
+@@ -33,7 +37,11 @@
+     p = Path(file_path)
+     if not p.is_file():
+         raise FileNotFoundError(f"File not found for hashing: {p}")
+-    return hashlib.sha256(p.read_bytes()).hexdigest()
++    digest = hashlib.sha256()
++    with p.open("rb") as stream:
++        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
++            digest.update(chunk)
++    return digest.hexdigest()
+ 
+ 
+ def compute_source_hashes(root_dir: Optional[Union[str, Path]] = None) -> Dict[str, str]:
+@@ -69,6 +77,7 @@
+             "file": pf.name,
+             "rows": num_rows,
+             "size_bytes": pf.stat().st_size,
++            "sha256": compute_file_sha256(pf),
+         })
+ 
+     summary_file = dpath / "metadata.json"
+@@ -112,12 +121,13 @@
+     scaler_hashes: Optional[Dict[str, str]] = None,
+     split_hash: Optional[str] = None,
+     root_dir: Optional[Union[str, Path]] = None,
++    sentinel_hash: Optional[str] = None,
+ ) -> Dict[str, Any]:
+     """Assemble a comprehensive immutable experiment manifest."""
+     source_hashes = compute_source_hashes(root_dir)
+ 
+     manifest = {
+-        "manifest_version": "1.0",
++        "manifest_version": "2.0",
+         "source_hashes": source_hashes,
+         "mechanism_name": mechanism_contract["mechanism_name"],
+         "mechanism_sha256": mechanism_contract["mechanism_sha256"],
+@@ -131,6 +141,7 @@
+         "split_hash": split_hash,
+         "scaler_hashes": scaler_hashes or {},
+         "dataset_audit": dataset_audit or {},
++        "sentinel_hash": sentinel_hash,
+     }
+     return manifest
+ 
+@@ -159,8 +170,8 @@
+     # 1. Mechanism check
+     if ckpt_manifest.get("mechanism_sha256") != expected_manifest.get("mechanism_sha256"):
+         errors.append(
+-            f"Mechanism SHA256 mismatch: checkpoint {ckpt_manifest.get('mechanism_sha256')[:8]} "
+-            f"vs expected {expected_manifest.get('mechanism_sha256')[:8]}"
++            f"Mechanism SHA256 mismatch: checkpoint {str(ckpt_manifest.get('mechanism_sha256'))[:8]} "
++            f"vs expected {str(expected_manifest.get('mechanism_sha256'))[:8]}"
+         )
+ 
+     # 2. Species order check
+@@ -193,8 +204,48 @@
+         if k in ckpt_scalers and ckpt_scalers[k] != v:
+             errors.append(f"Scaler hash mismatch for '{k}'")
+ 
++    for key in ("element_names", "dt_policy", "concentration_policy", "evaluation_protocol_id",
++                "split_hash", "sentinel_hash"):
++        if key in expected_manifest and ckpt_manifest.get(key) != expected_manifest[key]:
++            errors.append(f"{key} mismatch between checkpoint and current experiment")
++
+     is_compatible = len(errors) == 0
+     return is_compatible, errors
++
++
++def hash_scalers(scaler_x, scaler_y):
++    return {name: hashlib.sha256(scaler.scale_.tobytes() + scaler.mean_.tobytes()).hexdigest()
++            for name, scaler in (("scaler_X", scaler_x), ("scaler_Y", scaler_y))}
++
++
++def hash_json(value):
++    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"), default=str).encode()).hexdigest()
++
++
++def require_compatible(checkpoint, expected_manifest):
++    compatible, errors = verify_checkpoint_compatibility(checkpoint, expected_manifest, strict=True)
++    if not compatible:
++        raise ValueError("Incompatible experiment contract: " + "; ".join(errors))
++
++
++def verify_runtime_artifacts(checkpoint, feature_info, scaler_x=None, scaler_y=None, search_roots=()):
++    """Check actual mechanism/scaler content, rather than trusting saved hashes."""
++    import chemistry_contract as cc
++    manifest = checkpoint.get("manifest")
++    if manifest is None:
++        if feature_info.get("output_parameterization") == "dual_branch_pd_v1":
++            raise ValueError("PD checkpoint lacks a verified manifest; start a new experiment")
++        return  # Legacy modes remain readable for comparisons, without provenance claims.
++    path = cc.resolve_mechanism_file(feature_info.get("mechanism", checkpoint.get("mechanism", "nuig_2024")),
++                                     feature_info.get("mechanism_path"), search_roots)
++    contract = cc.get_mechanism_contract(path, feature_info["all_species"], device="cpu")
++    expected = {k: contract[k] for k in ("mechanism_sha256", "element_names", "species_order")}
++    expected.update(output_parameterization=feature_info.get("output_parameterization", "direct_rate"),
++                    transform_signature=feature_info["transform_signature"])
++    if scaler_x is not None and scaler_y is not None:
++        expected["scaler_hashes"] = hash_scalers(scaler_x, scaler_y)
++    require_compatible(checkpoint, expected)
++    feature_info["mechanism_path"] = str(path)
+ 
+ 
+ def recompute_benchmark_summary(cases: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
+--- before/species_validation_protocol.py
++++ species_validation_protocol.py
+@@ -1,7 +1,7 @@
+ """Species Validation Protocol and Sentinel Suite for Ammonia-Hydrogen Combustion.
+ 
+ Standardizes model evaluation, validation metrics, and model selection:
+-1. Frozen Protocol ID: v68_species_sentinel_protocol_v1
++1. Frozen Protocol ID: v68_species_sentinel_protocol_v2
+ 2. Fixed horizons: H in (1, 8, 32, 128) evaluated independently
+ 3. Comprehensive metrics:
+    - Per-species MAE and peak-normalized MAE (NMAE)
+@@ -24,7 +24,7 @@
+ import numpy as np
+ import torch
+ 
+-PROTOCOL_ID = "v68_species_sentinel_protocol_v1"
++PROTOCOL_ID = "v68_species_sentinel_protocol_v2"
+ STANDARD_HORIZONS = (1, 8, 32, 128)
+ 
+ MAJOR_SPECIES = ("NH3", "H2", "O2", "N2", "H2O")
+@@ -37,6 +37,55 @@
+ COLD_FALSE_POSITIVE_THRESHOLD = 1e-6
+ # Active radical threshold for logarithmic tracking
+ RADICAL_ACTIVE_THRESHOLD = 1e-12
++
++
++class TrajectoryDiagnosticAccumulator:
++    """Stream window peak/time/end errors; never retain the validation corpus.
++
++    Times have shape (B, T) in seconds, so each window can have different dt.
++    T includes the common initial state and all predicted endpoints. These are
++    window diagnostics, not full-reactor ignition delays or equilibrium values.
++    """
++
++    def __init__(self, species_names: Sequence[str]):
++        self.species_names = list(species_names)
++        self.sums = np.zeros((len(self.species_names), 4), dtype=np.float64)
++        self.counts = np.zeros(len(self.species_names), dtype=np.int64)
++        self.invalid = np.zeros(len(self.species_names), dtype=np.int64)
++
++    def update(self, true_states, pred_states, time_points) -> None:
++        true = np.asarray(true_states, dtype=np.float64)
++        pred = np.asarray(pred_states, dtype=np.float64)
++        times = np.asarray(time_points, dtype=np.float64)
++        if true.ndim != 3 or pred.shape != true.shape or true.shape[2] != len(self.species_names):
++            raise ValueError("Expected matching (B, T, species) trajectory arrays")
++        if times.shape != true.shape[:2] or not np.isfinite(times).all() or (np.diff(times, axis=1) < 0).any():
++            raise ValueError("Expected finite, increasing per-window physical times")
++        for i in range(len(self.species_names)):
++            valid = np.isfinite(true[:, :, i]).all(axis=1) & np.isfinite(pred[:, :, i]).all(axis=1)
++            self.invalid[i] += int((~valid).sum())
++            yt, yp, t = true[valid, :, i], pred[valid, :, i], times[valid]
++            n = len(yt)
++            if not n:
++                continue
++            rows = np.arange(n)
++            endpoint_error = np.abs(yp[:, -1] - yt[:, -1])
++            self.sums[i] += np.array([
++                np.abs(yp.max(axis=1) - yt.max(axis=1)).sum(),
++                np.abs(t[rows, yp.argmax(axis=1)] - t[rows, yt.argmax(axis=1)]).sum(),
++                endpoint_error.sum(),
++                (endpoint_error / np.maximum(np.abs(yt[:, -1]), 1e-12)).sum(),
++            ])
++            self.counts[i] += n
++
++    def finalize(self) -> Dict[str, Any]:
++        keys = ('peak_amplitude_mae', 'peak_time_mae_s', 'endpoint_mae', 'endpoint_relative_error')
++        return {
++            sp: dict(n_windows=int(self.counts[i]), invalid_windows=int(self.invalid[i]),
++                     **{key: float(self.sums[i, j] / self.counts[i]) if self.counts[i] else None
++                        for j, key in enumerate(keys)})
++            for i, sp in enumerate(self.species_names)
++        }
+ 
+ 
+ def compute_species_trajectory_metrics(
+@@ -46,6 +95,7 @@
+     time_points: Optional[np.ndarray] = None,
+     element_matrix: Optional[np.ndarray] = None,
+     negative_tolerance: float = 1e-12,
++    inert_mass: Optional[np.ndarray] = None,
+ ) -> Dict[str, Any]:
+     """Compute detailed per-species and trajectory-level validation metrics.
+ 
+@@ -185,6 +235,8 @@
+ 
+     # 4. Physical conservation closure
+     mass_sum_pred = flat_pred.sum(axis=1)
++    if inert_mass is not None:
++        mass_sum_pred = mass_sum_pred + np.broadcast_to(np.asarray(inert_mass).reshape(-1), mass_sum_pred.shape)
+     unity_error = np.abs(mass_sum_pred - 1.0)
+     mass_closure = {
+         "mean_mass_sum": float(np.mean(mass_sum_pred)),
+@@ -219,7 +271,7 @@
+     if nonfinite_count > 0:
+         composite_score += 1e6 * nonfinite_count
+ 
+-    max_unity_err = float(mass_closure.get("max_abs_unity_error", 0.0)) if mass_closure else 0.0
++    max_unity_err = float(mass_closure["max_unity_error"])
+     max_elem_err = float(element_closure.get("max_element_error", 0.0)) if element_closure else 0.0
+     is_valid_candidate = (
+         (nonfinite_count == 0)
+@@ -284,3 +336,10 @@
+             "best_epochs": {str(h): e for h, e in self.best_epochs.items()},
+             "best_records": {str(h): r for h, r in self.best_records.items()},
+         }
++
++    def load_state_dict(self, state: Dict[str, Any]) -> None:
++        if state.get("protocol_id") != PROTOCOL_ID or tuple(state.get("horizons", ())) != self.horizons:
++            raise ValueError("Sentinel protocol or horizons changed; start a new experiment")
++        self.best_scores = {int(h): float(s) for h, s in state["best_scores"].items()}
++        self.best_epochs = {int(h): int(e) for h, e in state["best_epochs"].items()}
++        self.best_records = {int(h): r for h, r in state["best_records"].items()}
+--- before/test/test_latest_gemini_regressions.py
++++ test/test_latest_gemini_regressions.py
+@@ -192,7 +192,10 @@
+     true_rate = torch.tensor([
+         [1.0, -1.0, -20.0, -10.0, -5.0, -5.0]
+     ])
+-    mask = tr.compute_qssa_rate_mask(DummyTools(), true_rate)
++    # Parameters alone cannot establish dormancy; use both physical endpoints.
++    assert tr.compute_qssa_rate_mask(DummyTools(), true_rate) is None
++    state = torch.tensor([[0.1, 0.9, -20.0, -5.0]])
++    mask = tr.compute_qssa_rate_mask(DummyTools(), true_rate, state, state)
+     assert mask is not None
+     # Macro heads (0, 1): 1.0
+     assert (mask[0, :2] == 1.0).all()
+--- before/test/test_phase2.py
++++ test/test_phase2.py
+@@ -159,7 +159,12 @@
+         device=tr.DEVICE,
+     )
+     
+-    mask = tr.compute_qssa_rate_mask(tools, true_rate_scaled)
++    assert tr.compute_qssa_rate_mask(tools, true_rate_scaled) is None
++    state = torch.tensor([
++        [1500., 1., .5, .1, .4, -4., -6.],
++        [1000., 1., 1., 1e-20, 1e-20, -20., -6.],
++    ], device=tr.DEVICE)
++    mask = tr.compute_qssa_rate_mask(tools, true_rate_scaled, state, state)
+     assert mask is not None
+     assert torch.all(mask[0] == 1.0), "Active sample should have full 1.0 mask"
+     assert torch.all(mask[1, 0::2] == 1.0), "Dormant creation heads must remain supervised (1.0)"
+--- /dev/null
++++ test/test_review_repairs.py
+@@ -0,0 +1,221 @@
++"""Regression contracts from the third review; all fixtures are small and local."""
++import copy
++from pathlib import Path
++
++import numpy as np
++import pandas as pd
++import pytest
++import torch
++
++import train_sc_v68 as tr
++import species_validation_protocol as svp
++import training_diagnostics as td
++import experiment_manifest as em
++
++
++def tiny_dataset(tmp_path, **kwargs):
++    fi = tr.build_feature_info(['H2','H'], [], ['H2'], ['H'], 'dual_branch_pd_v1','dual_branch_pd_v1')
++    sx = tr.FeatureScaler(np.zeros(5), np.ones(5), 1)
++    sy = tr.FeatureScaler(np.zeros(3), np.ones(3), 1)
++    files = []
++    for n in range(3):
++        frame = pd.DataFrame([dict(sample_id=n, time=i*1e-6, T=1000.+n*100+i,
++            P=1., dt=1e-6, T_next=1001.+n*100+i, P_next=1., Y_H2=1., Y_H=1e-20,
++            Y_next_H2=1., Y_next_H=1e-20, dYdt_H2=0., P_avg_H=0.,D_coef_avg_H=0.) for i in range(4)])
++        p=tmp_path/f'part-{n:05d}.parquet'; frame.to_parquet(p,index=False); files.append(p)
++    return tr.CoarseOperatorDataset(files,fi,sx,sy,max_horizon=1,stride=1,
++                                   parts_per_epoch=2,shuffle_parts=False,**kwargs)
++
++
++def test_fixed_validation_preserves_even_a_truncated_prefix_across_epochs(tmp_path):
++    dataset=tiny_dataset(tmp_path)
++    dataset.set_epoch(0); a=list(dataset)[:3]
++    dataset.set_epoch(1); b=list(dataset)[:3]
++    assert all(torch.equal(x[0],y[0]) for x,y in zip(a,b))
++
++
++def test_explicit_missing_mechanism_cannot_fall_back(tmp_path):
++    with pytest.raises(FileNotFoundError):
++        tr.build_element_matrix(['NH3','H2O'],device='cpu',mechanism_path=tmp_path/'MISSING.yaml')
++
++
++def test_stable_clipping_preserves_finite_large_gradient_direction():
++    model=torch.nn.Linear(2,1,bias=False)
++    model.weight.grad=torch.full_like(model.weight,1e20)
++    td.clip_gradients_stable(model, max_norm=1.)
++    assert torch.allclose(model.weight.grad,torch.full_like(model.weight,.5**.5),atol=1e-6)
++
++
++def test_snapshot_replays_the_failed_stochastic_forward_exactly(tmp_path):
++    torch.manual_seed(123)
++    model=torch.nn.Sequential(torch.nn.Linear(8,8),torch.nn.Dropout(.5))
++    model.train(); x=torch.ones(4,8)
++    tracker=td.TrainingDiagnosticTracker(tmp_path)
++    tracker.step_attempted(model=model)
++    expected=model(x).detach()
++    snap=tracker.record_failure_and_check_budget(model,x,error_msg='after forward')
++    model.eval()  # Replay must restore the captured training mode as well.
++    seen=[]
++    def forward(m,bx,by):
++        y=m(bx); seen.append(y.detach()); return y.sum()
++    td.replay_snapshot_with_anomaly_detection(snap,model,forward)
++    assert torch.equal(expected,seen[0])
++
++
++def test_sentinel_restores_best_and_rejects_a_worse_resume_candidate():
++    first=svp.HorizonSentinelTracker([1,8])
++    assert first.consider_candidate(8,{'is_valid_candidate':True,'composite_score':.1},3)
++    restored=svp.HorizonSentinelTracker([1,8])
++    restored.load_state_dict(first.as_dict())
++    assert not restored.consider_candidate(8,{'is_valid_candidate':True,'composite_score':.2},4)
++    assert restored.best_epochs[8]==3
++
++
++def test_manifest_rejects_a_changed_validation_population():
++    manifest=dict(mechanism_sha256='a'*64,species_order=['H2'],output_parameterization='dual_branch_pd_v1',
++                  transform_signature='dual_branch_pd_v1',scaler_hashes={'X':'x'},split_hash='group_a',
++                  evaluation_protocol_id=svp.PROTOCOL_ID,sentinel_hash='windows_a')
++    old={**manifest,'sentinel_hash':'windows_b'}
++    good,errors=em.verify_checkpoint_compatibility({'manifest':old},manifest,strict=True)
++    assert not good and errors
++
++
++def test_manifest_missing_mechanism_hash_has_a_clear_rejection():
++    expected=dict(mechanism_sha256='a'*64,species_order=['H2'])
++    good,errors=em.verify_checkpoint_compatibility({'manifest':{'species_order':['H2']}},expected,strict=True)
++    assert not good and any('mechanism' in s.lower() for s in errors)
++
++
++def test_initial_phi_does_not_change_with_burning_composition(tmp_path):
++    from data_pipeline import build_training_dataset_v72 as builder
++    frame=builder.convert_mini_ds(tmp_path)
++    assert (frame.groupby('sample_id').phi.nunique()==1).all()
++    assert (frame.groupby('sample_id').phi_actual.nunique()==1).all()
++
++
++def test_dataset_diagnostic_metadata_identifies_the_window(tmp_path):
++    dataset=tiny_dataset(tmp_path,include_metadata=True)
++    x,y,meta=next(iter(dataset))
++    assert meta['sample_id']=='0'
++    assert meta['window_start']==0
++    assert meta['part'].endswith('part-00000.parquet')
++
++
++def artifact_fixture(tmp_path):
++    import chemistry_contract as cc
++    fi=tr.build_feature_info(['H2','H'],[],['H2'],['H'],'dual_branch_pd_v1','dual_branch_pd_v1')
++    sx=tr.FeatureScaler(np.zeros(5,dtype=np.float32),np.ones(5,dtype=np.float32),1)
++    sy=tr.FeatureScaler(np.zeros(3,dtype=np.float32),np.ones(3,dtype=np.float32),1)
++    mech=tmp_path/'NUIG2024.yaml'
++    mech.write_bytes((Path(tr.__file__).parent/'NUIG2024.yaml').read_bytes())
++    fi.update(mechanism='nuig_2024',mechanism_path=str(mech))
++    contract=cc.get_mechanism_contract(mech,fi['all_species'],device='cpu')
++    manifest=em.create_experiment_manifest(contract,'dual_branch_pd_v1','dual_branch_pd_v1',
++        {'validation':'finite_positive','clipping':False},{'floor':1e-40},svp.PROTOCOL_ID,
++        scaler_hashes=em.hash_scalers(sx,sy))
++    fi['manifest']=manifest
++    checkpoint=dict(model_state_dict={},feature_info=fi,version=tr.VERSION,mechanism='nuig_2024',
++        transform_signature='dual_branch_pd_v1',rollout_signature=tr.ROLLOUT_SIGNATURE,manifest=manifest)
++    return checkpoint,sx,sy
++
++
++def test_real_checkpoint_loader_rejects_inconsistent_transform(tmp_path):
++    import validate_sc_v68 as val
++    ckpt,_,_=artifact_fixture(tmp_path)
++    ckpt['transform_signature']=tr.LEGACY_TRANSFORM_SIGNATURE
++    p=tmp_path/'weights.pth'; torch.save(ckpt,p)
++    with pytest.raises(ValueError,match='[Tt]ransform'):
++        val.load_checkpoint(p,'nuig_2024')
++
++
++def test_real_checkpoint_loader_detects_changed_mechanism_bytes(tmp_path):
++    import validate_sc_v68 as val
++    ckpt,_,_=artifact_fixture(tmp_path)
++    p=tmp_path/'weights.pth'; torch.save(ckpt,p)
++    mech=Path(ckpt['feature_info']['mechanism_path'])
++    mech.write_bytes(mech.read_bytes()+b'\n# changed mechanism file\n')
++    with pytest.raises(ValueError,match='[Mm]echanism'):
++        val.load_checkpoint(p,'nuig_2024')
++
++
++def test_real_scaler_loader_rejects_changed_statistics(tmp_path):
++    import joblib
++    import validate_sc_v68 as val
++    ckpt,sx,sy=artifact_fixture(tmp_path)
++    scaler_dir=tmp_path/tr.artifact_subdir('scalers'); scaler_dir.mkdir()
++    fi=ckpt['feature_info']; sig=fi['transform_signature']
++    sx.mean_[0]+=1.
++    for name,value in [('scaler_X',sx),('scaler_Y',sy),('feature_info',fi)]:
++        joblib.dump(value,scaler_dir/f'{name}_nuig_2024_{sig}.pkl')
++    with pytest.raises(ValueError,match='[Ss]caler hash'):
++        val.load_scalers(tmp_path,'nuig_2024',fi)
++
++
++def test_trajectory_diagnostics_use_each_window_physical_time():
++    acc = svp.TrajectoryDiagnosticAccumulator(['OH', 'NO'])
++    true = np.array([[0., 2., 1.], [0., 3., 1.]])
++    pred = np.array([[0., 1., 2.], [0., 1., 3.]])
++    times = np.array([[0., 1., 4.], [0., 2., 8.]]) * 1e-6
++    acc.update(np.stack([true, true * 1e-3], axis=-1),
++               np.stack([pred, pred * 1e-3], axis=-1), times)
++    metrics = acc.finalize()
++    assert metrics['OH']['n_windows'] == 2
++    assert metrics['OH']['peak_time_mae_s'] == pytest.approx(4.5e-6)
++    assert metrics['OH']['peak_amplitude_mae'] == 0.
++    assert metrics['NO']['endpoint_mae'] == pytest.approx(1.5e-3)
++
++
++def test_full_input_log_zero_means_unit_concentration_not_dormancy():
++    class Tools:
++        rate_decode_mode = 'dual_branch_pd_v1'
++        macro_species = ['H2']
++        micro_species = ['H']
++        macro_idx = [0]
++        micro_idx = [1]
++        mean_Y = torch.zeros(3)
++        scale_Y = torch.ones(3)
++    state = torch.tensor([[0., 0.]])  # log10(Y_H) = 0 => Y_H = 1
++    assert tr.compute_qssa_rate_mask(Tools(), torch.zeros(1, 3), state, state) is None
++
++
++def test_rebuilt_scalers_must_match_checkpoint_before_being_written(tmp_path, monkeypatch):
++    import validate_sc_v68 as val
++    ckpt, sx, sy = artifact_fixture(tmp_path)
++    # Isolate the rebuild path. Only the expensive scaler estimation is stubbed;
++    # the production loader, actual mechanism, hash checks and writes are real.
++    sx.mean_[0] += 1.
++    monkeypatch.setattr(val, 'SCRIPT_DIR', tmp_path)
++    monkeypatch.chdir(tmp_path)
++    monkeypatch.setattr(tr, 'get_schema', lambda *args: (None, None, None, []))
++    monkeypatch.setattr(tr, 'compute_streaming_scalers', lambda *args, **kwargs: (sx, sy))
++    output = tmp_path / 'output'
++    with pytest.raises(ValueError, match='[Ss]caler hash'):
++        val.load_scalers(output, 'nuig_2024', ckpt['feature_info'],
++                         data_dir=tmp_path, rebuild_scalers=True)
++    assert not (output / tr.artifact_subdir('scalers')).exists()
++
++
++def test_tools_reject_saved_element_matrix_that_disagrees_with_mechanism(tmp_path):
++    ckpt, sx, sy = artifact_fixture(tmp_path)
++    fi = ckpt['feature_info']
++    fi['element_matrix'] = [[0.9, 1.]]
++    with pytest.raises(ValueError, match='[Ee]lement matrix'):
++        tr.CoarseOperatorTools(fi, sx, sy, device='cpu', rate_decode_mode='dual_branch_pd_v1')
++
++
++def test_snapshot_context_replays_after_the_saved_tail_draw(tmp_path):
++    model = torch.nn.Sequential(torch.nn.Linear(4, 4), torch.nn.Dropout(.5))
++    tracker = td.TrainingDiagnosticTracker(tmp_path)
++    tracker.step_attempted(model)
++    tail = torch.randint(1, 4, (2,))
++    context = {'tail_lengths': tail, 'rng_before_forward': td.capture_rng_state()}
++    x = torch.ones(2, 4)
++    expected = model(x).detach()
++    path = tracker.record_failure_and_check_budget(model, x, replay_context=context)
++    seen = []
++    def forward(m, bx, by, saved_context):
++        assert torch.equal(saved_context['tail_lengths'], tail)
++        result = m(bx); seen.append(result.detach()); return result.sum()
++    result = td.replay_snapshot_with_anomaly_detection(path, model, forward, use_saved_context=True)
++    assert not result['anomaly_detected']
++    assert torch.equal(expected, seen[0])
+--- /dev/null
++++ test/test_training_resume_smoke.py
+@@ -0,0 +1,71 @@
++"""Bounded integration test: 64 rows, two CPU epochs, no production artifacts."""
++import json
++from pathlib import Path
++
++import pandas as pd
++import pytest
++import torch
++
++import train_sc_v68 as tr
++import validate_sc_v68 as val
++from data_pipeline import build_training_dataset_v72 as builder
++
++
++@pytest.mark.filterwarnings('ignore:.*pin_memory.*')
++def test_pd_training_resume_and_independent_reload(tmp_path, monkeypatch):
++    monkeypatch.setattr(tr,'DEVICE',torch.device('cpu'))
++    threads=torch.get_num_threads(); torch.set_num_threads(2)
++    try:
++        data=tmp_path/'data'/'trajectories_nuig_2024'
++        frame=builder.convert_mini_ds(data)
++        ids=sorted(frame.sample_id.unique())[:4]
++        small=frame[frame.sample_id.isin(ids)].groupby('sample_id',sort=False).head(16)
++        small.to_parquet(data/'part-000001.parquet',index=False)
++        (data/'metadata.json').write_text(json.dumps({'training_rows':len(small),'success':4,'failed':0,'parquet_parts':1}))
++        split=tmp_path/'splits'; split.mkdir()
++        for name,values in [('train',ids[:3]),('validation',ids[3:])]:
++            pd.DataFrame({'sample_id':values}).to_csv(split/f'nuig_2024_{name}_sample_ids.csv',index=False)
++        output=tmp_path/'output'
++        kwargs=dict(data_dir=str(tmp_path/'data'),split_dir=str(split),output_root=str(output),
++                    epochs=1,batch_size=8,val_batch_size=8,max_horizon=8,
++                    curriculum_horizons=[1],curriculum_start_epochs=[0],eval_horizons=[1,8],
++                    train_stride=8,val_stride=8,parts_per_epoch=1,val_parts_per_epoch=1,
++                    scaler_parts=1,scaler_sample_rate=1.,scaler_max_rows=512,
++                    full_val_every=1,checkpoint_every=1,backward_chunk_steps=1,num_workers=0,
++                    output_parameterization='dual_branch_pd_v1',rate_decode_mode='dual_branch_pd_v1',
++                    state_update_mode='dual_branch_pd_v1',resume='none',lr=1e-5)
++        tr.train_model_v68(**kwargs)
++        weights=output/tr.artifact_subdir('weights')
++        latest=weights/'latest_v68_nuig_2024.pth'
++        first=torch.load(latest,map_location='cpu',weights_only=False)
++        assert first['epoch']==0
++        assert first['transform_signature']==first['feature_info']['transform_signature']=='dual_branch_pd_v1'
++        assert len(first['manifest']['mechanism_sha256'])==64
++        assert first['manifest']['dataset_audit']['actual_total_rows']==64
++        before=first['sentinel_tracker']['best_scores']
++        kwargs.update(epochs=2,resume='auto')
++        tr.train_model_v68(**kwargs)
++        resumed=torch.load(latest,map_location='cpu',weights_only=False)
++        assert resumed['epoch']==1 and len(resumed['history'])==2
++        assert resumed['manifest']['sentinel_hash']==first['manifest']['sentinel_hash']
++        assert all(resumed['sentinel_tracker']['best_scores'][h]<=s for h,s in before.items())
++        selected=weights/'best_v68_net_nuig_2024.pth'
++        assert selected.read_bytes()==(weights/'best_v68_net_nuig_2024_H8.pth').read_bytes()
++        checkpoint=val.load_checkpoint(selected,'nuig_2024')
++        assert checkpoint['sentinel_metrics']['is_valid_candidate']
++        assert checkpoint['sentinel_metrics']['metric_scope'] == 'window_endpoints'
++        assert checkpoint['sentinel_metrics']['trajectory_diagnostics']['NO']['n_windows'] > 0
++        assert checkpoint['sentinel_metrics']['timing_metrics']['OH_peak_time_mae_s'] >= 0.
++        sx,sy,fi=val.load_scalers(output,'nuig_2024',checkpoint['feature_info'],split_dir=split)
++        model=val._build_checkpoint_model(checkpoint,fi,device=torch.device('cpu'))
++        model.eval()
++        with torch.no_grad():
++            assert torch.isfinite(model(torch.zeros(1,len(fi['input_cols'])))).all()
++        # An incompatible resume must reject before doing another optimization step.
++        resumed['manifest']['mechanism_sha256']='0'*64
++        torch.save(resumed,latest)
++        kwargs['epochs']=3
++        with pytest.raises(RuntimeError,match='[Mm]echanism'):
++            tr.train_model_v68(**kwargs)
++    finally:
++        torch.set_num_threads(threads)
+--- before/train_sc_v68.py
++++ train_sc_v68.py
+@@ -136,6 +136,19 @@
+ DUAL_BRANCH_TRANSFORM_SIGNATURE = "dual_branch_asinh_macro_qssa_micro_v1"
+ DUAL_BRANCH_PD_V1_TRANSFORM_SIGNATURE = "dual_branch_pd_v1"
+ TRANSFORM_SIGNATURE = LEGACY_TRANSFORM_SIGNATURE
++
++
++def transform_signature_for(output_parameterization):
++    """One mode-to-signature contract for files, scalers and checkpoints."""
++    signatures = {
++        "direct_rate": LEGACY_TRANSFORM_SIGNATURE,
++        "conservative_simplex": LEGACY_TRANSFORM_SIGNATURE,
++        "qssa": QSSA_TRANSFORM_SIGNATURE,
++        "qssa_asymptotic": QSSA_ASYMPTOTIC_TRANSFORM_SIGNATURE,
++        "dual_branch": DUAL_BRANCH_TRANSFORM_SIGNATURE,
++        "dual_branch_pd_v1": DUAL_BRANCH_PD_V1_TRANSFORM_SIGNATURE,
++    }
++    return signatures[output_parameterization]
+ ROLLOUT_SIGNATURE = "external_recorded_t_p_dt_species_ar_experiments_v3"
+ RATE_SCALE_FLOOR = 1e-12
+ RATE_DECODE_MODES = ("direct_rate", "bounded_direct_rate", "qssa", "qssa_asymptotic", "dual_branch", "dual_branch_pd_v1")
+@@ -891,93 +904,38 @@
+     active_threshold: float = 1e-12,
+     noise_threshold: float = 1e-12,
+ ) -> torch.Tensor | None:
+-    """Mask destruction rate heads (odd columns) ONLY for dormant trace radicals.
+-
+-    Conservative rule:
+-    Only masks destruction head D when BOTH Y_old and Y_next are below active_threshold
+-    AND |Y_next - Y_old| < noise_threshold.
+-    If state information (Y_old, Y_next) is not supplied, no masking is performed (returns None)
+-    to prevent erroneously masking strong decay transitions (e.g. Y_old=1e-4 -> Y_next=1e-16 with D=1e8).
++    """Mask D only when both true endpoints establish a dormant species.
++
++    Full input vectors use the saved layout (micro columns are log10 Y).
++    Dual-branch micro-only vectors contain physical Y. Legacy QSSA reactive-only
++    vectors retain the macro-linear / micro-log input layout. Missing states
++    never establish dormancy; P/D labels alone cannot justify masking D.
+     """
+-    rate_mode = getattr(tools, "rate_decode_mode", None)
+-    if rate_mode not in ("qssa", "qssa_asymptotic", "dual_branch", "dual_branch_pd_v1"):
++    mode = getattr(tools, "rate_decode_mode", None)
++    if mode not in ("qssa", "qssa_asymptotic", "dual_branch", "dual_branch_pd_v1"):
+         return None
+-
++    if Y_old_unscaled is None or Y_next_unscaled is None:
++        return None
++    if Y_old_unscaled.shape != Y_next_unscaled.shape:
++        raise ValueError("Mask endpoint shapes differ")
+     mask = torch.ones_like(true_rate_scaled)
+-    scale_y = tools.scale_Y.to(device=true_rate_scaled.device)
+-    mean_y = tools.mean_Y.to(device=true_rate_scaled.device)
+-    target_denorm = true_rate_scaled * scale_y + mean_y
+-
+-    has_states = (Y_old_unscaled is not None and Y_next_unscaled is not None)
+-
+-    if rate_mode in ("dual_branch", "dual_branch_pd_v1"):
+-        slow_dim = len(tools.macro_species) if hasattr(tools, "macro_species") else len(tools.macro_idx)
+-        micro_targets = target_denorm[:, slow_dim:]
+-        n_micro = micro_targets.shape[1] // 2
+-        micro_mask = torch.ones_like(micro_targets)
+-        for i in range(n_micro):
+-            if has_states:
+-                if Y_old_unscaled.shape[1] == n_micro:
+-                    y_old_i = Y_old_unscaled[:, i]
+-                    y_next_i = Y_next_unscaled[:, i]
+-                else:
+-                    col_idx = tools.micro_idx[i]
+-                    y_old_i = Y_old_unscaled[:, col_idx]
+-                    y_next_i = Y_next_unscaled[:, col_idx]
+-
+-                if (y_old_i < 0).any():
+-                    y_old_phys = torch.pow(10.0, y_old_i.clamp(min=-40.0, max=0.0))
+-                    y_next_phys = torch.pow(10.0, y_next_i.clamp(min=-40.0, max=0.0))
+-                else:
+-                    y_old_phys = y_old_i
+-                    y_next_phys = y_next_i
+-                is_dormant = (y_old_phys < active_threshold) & (y_next_phys < active_threshold) & ((y_next_phys - y_old_phys).abs() < noise_threshold)
+-            else:
+-                z1 = micro_targets[:, 2 * i]
+-                z2 = micro_targets[:, 2 * i + 1]
+-                is_dormant = (z1 < -15.0) & (z2 <= 4.0)
+-
+-            micro_mask[:, 2 * i + 1] = torch.where(is_dormant, 0.0, 1.0)
+-
+-        mask[:, slow_dim:] = micro_mask
+-        if (mask == 1.0).all():
+-            return None
+-        return mask
+-    elif rate_mode in ("qssa", "qssa_asymptotic"):
+-        reactive_cols = list(tools.macro_idx) + list(tools.micro_idx)
+-        n_reactive = true_rate_scaled.shape[1] // 2
+-        for i in range(n_reactive):
+-            if has_states:
+-                if Y_old_unscaled.shape[1] == n_reactive:
+-                    y_old_i = Y_old_unscaled[:, i]
+-                    y_next_i = Y_next_unscaled[:, i]
+-                    is_micro = (i >= len(tools.macro_idx))
+-                else:
+-                    col_idx = reactive_cols[i]
+-                    y_old_i = Y_old_unscaled[:, col_idx]
+-                    y_next_i = Y_next_unscaled[:, col_idx]
+-                    is_micro = col_idx in tools.micro_idx
+-
+-                if is_micro or (y_old_i < 0).any():
+-                    y_old_phys = torch.pow(10.0, y_old_i.clamp(min=-40.0, max=0.0))
+-                    y_next_phys = torch.pow(10.0, y_next_i.clamp(min=-40.0, max=0.0))
+-                else:
+-                    y_old_phys = y_old_i
+-                    y_next_phys = y_next_i
+-                is_dormant = (y_old_phys < active_threshold) & (y_next_phys < active_threshold) & ((y_next_phys - y_old_phys).abs() < noise_threshold)
+-            else:
+-                z1 = target_denorm[:, 2 * i]
+-                z2 = target_denorm[:, 2 * i + 1]
+-                is_dormant = (z1 < -15.0) & (z2 <= 4.0)
+-
+-            mask[:, 2 * i + 1] = torch.where(is_dormant, 0.0, 1.0)
+-
+-        if (mask == 1.0).all():
+-            return None
+-        return mask
+-    if (mask == 1.0).all():
+-        return None
+-    return mask
++    is_dual = mode in ("dual_branch", "dual_branch_pd_v1")
++    n_macro = len(tools.macro_idx)
++    offset = n_macro if is_dual else 0
++    n_species = (true_rate_scaled.shape[1] - offset) // 2
++    full_cols = list(tools.micro_idx) if is_dual else list(tools.macro_idx) + list(tools.micro_idx)
++    is_subset = Y_old_unscaled.shape[1] == n_species
++    for i in range(n_species):
++        col = i if is_subset else full_cols[i]
++        old = Y_old_unscaled[:, col]
++        new = Y_next_unscaled[:, col]
++        is_log = (is_dual and not is_subset) or (not is_dual and i >= n_macro)
++        if is_log:
++            old = torch.pow(10.0, old.clamp(min=-40.0, max=0.0))
++            new = torch.pow(10.0, new.clamp(min=-40.0, max=0.0))
++        dormant = (old < active_threshold) & (new < active_threshold) & ((new-old).abs() < noise_threshold)
++        mask[:, offset + 2*i + 1] = (~dormant).to(mask.dtype)
++    return None if bool((mask == 1.0).all()) else mask
+ 
+ 
+ 
+@@ -2123,31 +2081,26 @@
+     if output_parameterization == "qssa":
+         for sp in reactive_species:
+             output_cols.extend((f"log10_P_avg_{sp}", f"log10_D_coef_avg_{sp}"))
+-        transform_signature = QSSA_TRANSFORM_SIGNATURE
+     elif output_parameterization == "qssa_asymptotic":
+         for sp in reactive_species:
+             output_cols.extend((f"log10_Y_qssa_{sp}", f"log10_D_coef_avg_{sp}"))
+-        transform_signature = QSSA_ASYMPTOTIC_TRANSFORM_SIGNATURE
+     elif output_parameterization == "dual_branch":
+         for sp in macro_species:
+             output_cols.append(f"asinh_dYdt_{sp}")
+         for sp in micro_species:
+             output_cols.extend((f"log10_Y_qssa_{sp}", f"log10_D_coef_avg_{sp}"))
+-        transform_signature = DUAL_BRANCH_TRANSFORM_SIGNATURE
+     elif output_parameterization == "dual_branch_pd_v1":
+         for sp in macro_species:
+             output_cols.append(f"asinh_dYdt_{sp}")
+         for sp in micro_species:
+             output_cols.extend((f"log10_P_avg_{sp}", f"log10_D_coef_avg_{sp}"))
+-        transform_signature = DUAL_BRANCH_PD_V1_TRANSFORM_SIGNATURE
+     else:
+         output_cols.extend(f"asinh_dYdt_{sp}" for sp in macro_species)
+         output_cols.extend(f"dlog10Ydt_{sp}" for sp in micro_species)
+-        transform_signature = LEGACY_TRANSFORM_SIGNATURE
+ 
+     return {
+         "version": VERSION,
+-        "transform_signature": transform_signature,
++        "transform_signature": transform_signature_for(output_parameterization),
+         "all_species": list(species),
+ 
+         "inert_species": list(
+@@ -2174,9 +2127,10 @@
+ 
+         "epsilon": LOG_EPS,
+ 
+-        "dt_min": DEFAULT_DT_MIN,
+-
+-        "dt_max": DEFAULT_DT_MAX,
++        "dt_min": None,
++
++        "dt_max": None,
++        "dt_policy": {"validation": "finite_positive", "clipping": False},
+         "macro_rate_scale": np.ones(len(macro_species), dtype=np.float32),
+         "output_parameterization": output_parameterization,
+         "rate_decode_mode": rate_decode_mode,
+@@ -2275,23 +2229,7 @@
+     ).astype(np.float32)
+     feature_info["macro_rate_scale"] = macro_rate_scale
+     feature_info["version"] = VERSION
+-    feature_info["transform_signature"] = (
+-        DUAL_BRANCH_PD_V1_TRANSFORM_SIGNATURE
+-        if feature_info.get("output_parameterization") == "dual_branch_pd_v1"
+-        else (
+-            DUAL_BRANCH_TRANSFORM_SIGNATURE
+-            if feature_info.get("output_parameterization") == "dual_branch"
+-            else (
+-                QSSA_ASYMPTOTIC_TRANSFORM_SIGNATURE
+-                if feature_info.get("output_parameterization") == "qssa_asymptotic"
+-                else (
+-                    QSSA_TRANSFORM_SIGNATURE
+-                    if feature_info.get("output_parameterization") == "qssa"
+-                    else LEGACY_TRANSFORM_SIGNATURE
+-                )
+-            )
+-        )
+-    )
++    feature_info["transform_signature"] = transform_signature_for(feature_info.get("output_parameterization", "direct_rate"))
+ 
+     print("[Scaler] Macro P90 rate scales:")
+     for sp, scale in zip(feature_info["macro_species"], macro_rate_scale):
+@@ -2498,6 +2436,7 @@
+         seed=42,
+         parts_per_epoch=None,
+         sample_ids=None,
++        include_metadata=False,
+     ):
+         super().__init__()
+ 
+@@ -2539,6 +2478,7 @@
+             else len(self.parquet_files)
+         )
+         self.sample_ids = None if sample_ids is None else {str(x) for x in sample_ids}
++        self.include_metadata = include_metadata
+ 
+     def set_epoch(self, epoch: int):
+         self.epoch = int(epoch)
+@@ -2577,7 +2517,8 @@
+ 
+                 # 当缓冲区满时，随机打乱并输出一半
+                 if len(buffer) >= buffer_size:
+-                    rng.shuffle(buffer)
++                    if self.shuffle_parts:
++                        rng.shuffle(buffer)
+                     # 输出前一半
+                     half = buffer_size // 2
+                     to_yield = buffer[:half]
+@@ -2587,7 +2528,8 @@
+ 
+         # 输出剩余窗口
+         if len(buffer) > 0:
+-            rng.shuffle(buffer)
++            if self.shuffle_parts:
++                rng.shuffle(buffer)
+             for window in buffer:
+                 yield window
+ 
+@@ -2776,7 +2718,7 @@
+                 ):
+                     continue
+ 
+-                yield (
++                window = (
+                     torch.from_numpy(
+                         x_window
+                     ),
+@@ -2784,6 +2726,11 @@
+                         y_window
+                     ),
+                 )
++                if self.include_metadata:
++                    yield (*window, {"sample_id": str(sample_id), "window_start": start,
++                                     "part": str(part_path)})
++                else:
++                    yield window
+ 
+         del df
+         gc.collect()
+@@ -2915,56 +2862,12 @@
+     device: torch.device | str | None = None,
+     mechanism_path: str | Path | None = None,
+ ):
+-    """A[e, species] = element mass fraction.
+-
+-    Uses chemistry_contract to query Cantera Solution when mechanism is available,
+-    strictly matching Cantera thermodynamics. Falls back to parse_formula for synthetic tests.
+-    """
+-    cand_mechs = [mechanism_path] if mechanism_path else [
+-        Path("NUIG2024.yaml"),
+-        Path(__file__).resolve().parent / "NUIG2024.yaml",
+-        Path(__file__).resolve().parent.parent / "sc15" / "NUIG2024.yaml",
+-    ]
+-    for cand in cand_mechs:
+-        if cand and Path(cand).is_file():
+-            try:
+-                import cantera as ct
+-                import chemistry_contract as cc
+-                gas = ct.Solution(str(cand))
+-                if all(sp in gas.species_names for sp in output_species):
+-                    _, A_np = cc.compute_element_mass_matrix(gas, output_species)
+-                    return torch.tensor(
+-                        A_np,
+-                        dtype=torch.float32,
+-                        device=DEVICE if device is None else device,
+-                    )
+-            except Exception:
+-                pass
+-
+-    preferred_elements = ["N", "H", "O", "Ar", "He"]
+-    formulas = [parse_formula(sp) for sp in output_species]
+-    elements = [e for e in preferred_elements if any(e in formula for formula in formulas)]
+-    if not elements:
+-        raise ValueError("Cannot build an element matrix for an empty species set")
+-
+-    rows = []
+-    for sp in output_species:
+-        formula = formulas[len(rows)]
+-        molecular_weight = sum(formula.get(e, 0) * AW[e] for e in elements)
+-        if molecular_weight <= 1e-12:
+-            molecular_weight = 1.0
+-        coeff = []
+-        for e in elements:
+-            coeff.append(formula.get(e, 0) * AW[e] / molecular_weight)
+-        rows.append(coeff)
+-
+-    A = np.asarray(rows, dtype=np.float32).T
+-    return torch.tensor(
+-        A,
+-        dtype=torch.float32,
+-        device=DEVICE if device is None else device,
+-    )
+-
++    """Build the matrix from the actual mechanism; explicit failures are errors."""
++    import chemistry_contract as cc
++    path = Path(mechanism_path) if mechanism_path is not None else cc.resolve_mechanism_file()
++    return cc.get_mechanism_contract(
++        path, output_species, device=DEVICE if device is None else device
++    )["element_matrix_tensor"]
+ 
+ 
+ # ============================================================
+@@ -3019,23 +2922,7 @@
+                 f"Expected feature_info version {VERSION}, "
+                 f"got {feature_info.get('version')!r}"
+             )
+-        expected_signature = (
+-            DUAL_BRANCH_PD_V1_TRANSFORM_SIGNATURE
+-            if feature_info.get("output_parameterization") == "dual_branch_pd_v1"
+-            else (
+-                DUAL_BRANCH_TRANSFORM_SIGNATURE
+-                if feature_info.get("output_parameterization") == "dual_branch"
+-                else (
+-                    QSSA_ASYMPTOTIC_TRANSFORM_SIGNATURE
+-                    if feature_info.get("output_parameterization") == "qssa_asymptotic"
+-                    else (
+-                        QSSA_TRANSFORM_SIGNATURE
+-                        if feature_info.get("output_parameterization") == "qssa"
+-                        else LEGACY_TRANSFORM_SIGNATURE
+-                    )
+-                )
+-            )
+-        )
++        expected_signature = transform_signature_for(feature_info.get("output_parameterization", "direct_rate"))
+         if feature_info.get("transform_signature") != expected_signature:
+             raise ValueError(
+                 f"Incompatible V68 transform signature: expected {expected_signature!r}, "
+@@ -3155,18 +3042,25 @@
+         )
+         self.n_reactive = self.n_macro + self.n_micro
+ 
++        import chemistry_contract as cc
++        mechanism_path = cc.resolve_mechanism_file(
++            feature_info.get("mechanism", "nuig_2024"), feature_info.get("mechanism_path")
++        )
++        self.mechanism_contract = cc.get_mechanism_contract(
++            mechanism_path, feature_info["all_species"], device=self.device
++        )
++        self.mech_sha256 = self.mechanism_contract["mechanism_sha256"]
++        actual_matrix = build_element_matrix(
++            self.macro_species + self.micro_species, device=self.device,
++            mechanism_path=mechanism_path,
++        )
+         if "element_matrix" in feature_info and feature_info["element_matrix"] is not None:
+-            elem_mat = feature_info["element_matrix"]
+-            if isinstance(elem_mat, torch.Tensor):
+-                self.A = elem_mat.to(device=self.device, dtype=torch.float32)
+-            else:
+-                self.A = torch.tensor(elem_mat, dtype=torch.float32, device=self.device)
+-        else:
+-            self.A = build_element_matrix(
+-                self.macro_species
+-                + self.micro_species,
+-                device=self.device,
+-            )
++            supplied_matrix = torch.as_tensor(feature_info["element_matrix"], device=self.device, dtype=torch.float32)
++            if supplied_matrix.shape != actual_matrix.shape or not torch.allclose(
++                supplied_matrix, actual_matrix, rtol=1e-7, atol=1e-8
++            ):
++                raise ValueError("Element matrix does not match the actual mechanism and reactive species order")
++        self.A = actual_matrix
+ 
+ 
+         # Constant pseudo-inverse used by the affine conservation projection.
+@@ -4307,6 +4201,7 @@
+     state_loss_source: str = DEFAULT_STATE_LOSS_SOURCE,
+     lambda_radical: float = 0.0,
+     lambda_no: float = 0.0,
++    true_current_X_scaled=None,
+ ):
+     """
+     最终 loss：
+@@ -4325,7 +4220,11 @@
+     # Both macro z and micro log-rate targets are already standardized
+     # consistently by scaler_Y in V68.
+     true_rate_scaled = target
+-    rate_mask = compute_qssa_rate_mask(tools, true_rate_scaled)
++    rate_mask = compute_qssa_rate_mask(
++        tools, true_rate_scaled,
++        tools.inverse_state(true_current_X_scaled) if true_current_X_scaled is not None else None,
++        tools.inverse_state(true_next_X_scaled) if true_current_X_scaled is not None else None,
++    )
+     if rate_loss_kind == "mse":
+         rate_loss = weighted_mse_loss(
+             pred_rate_scaled,
+@@ -4643,7 +4542,15 @@
+ 
+     # Per-horizon 指标累积器
+     horizon_metrics = HorizonMetricAccumulator(eval_horizons)
+-    sentinel_accum = {str(h): {"true": [], "pred": []} for h in eval_horizons}
++    sentinel_accum = {str(h): {"true": [], "pred": [], "inert_mass": []} for h in eval_horizons}
++    species_order = list(tools.macro_species) + list(tools.micro_species)
++    diagnostic_names = [sp for sp in species_order if sp in svp.KEY_RADICALS + svp.POLLUTANT_SPECIES]
++    diagnostic_cols = [species_order.index(sp) for sp in diagnostic_names]
++    trajectory_accum = {str(h): svp.TrajectoryDiagnosticAccumulator(diagnostic_names) for h in eval_horizons}
++
++    def diagnostic_state(state_scaled):
++        _, macro, _, micro = tools.get_current_state(state_scaled)
++        return torch.cat([macro, micro], dim=-1)[:, diagnostic_cols].cpu().numpy()
+ 
+     batches = 0
+ 
+@@ -4679,6 +4586,7 @@
+                 # Oracle one-step: 每步用真实物种
+                 for step in range(H):
+                     current_X = batch_X[:, step, :]
++                    true_current_X = current_X
+ 
+                     pred_rate = model(current_X)
+                     pred_state = tools.predict_next_state(
+@@ -4707,6 +4615,7 @@
+                         rate_loss_kind=rate_loss_kind,
+                         rate_huber_beta=rate_huber_beta,
+                         state_loss_source=state_loss_source,
++                        true_current_X_scaled=true_current_X,
+                     )
+ 
+                     loss_rad_val = torch.tensor(0.0, device=device)
+@@ -4772,6 +4681,9 @@
+             elif mode == "pure_ar":
+                 # Pure species-AR: 完全自回归物种，T/P/dt 保持真实
+                 current_X = batch_X[:, 0, :]
++                trajectory_true = [diagnostic_state(current_X)]
++                trajectory_pred = [trajectory_true[0]]
++                trajectory_times = [np.zeros(B, dtype=np.float64)]
+ 
+                 for step in range(H):
+                     true_current_X = batch_X[:, step, :]
+@@ -4811,6 +4723,7 @@
+                         rate_loss_kind=rate_loss_kind,
+                         rate_huber_beta=rate_huber_beta,
+                         state_loss_source=state_loss_source,
++                        true_current_X_scaled=true_current_X,
+                     )
+ 
+                     loss_rad_val = torch.tensor(0.0, device=device)
+@@ -4846,6 +4759,13 @@
+                     seq_positive += loss_dict["positive"].item()
+                     seq_radical += loss_rad_val.item()
+                     seq_no += loss_no_val.item()
++
++                    # Retain only this batch's selected species, not all trajectories.
++                    val_macro, val_micro_log = select_training_state(pred_state, state_loss_source)
++                    val_micro = torch.pow(10.0, val_micro_log.clamp(min=-40.0, max=0.0))
++                    trajectory_pred.append(torch.cat([val_macro, val_micro], dim=-1)[:, diagnostic_cols].cpu().numpy())
++                    trajectory_true.append(diagnostic_state(true_next_X))
++                    trajectory_times.append(trajectory_times[-1] + tools.get_current_dt(true_current_X).squeeze(-1).cpu().numpy())
+ 
+                     # Per-horizon pure-AR metrics
+                     if (step + 1) in eval_horizons:
+@@ -4874,6 +4794,10 @@
+                         )
+ 
+                         h_key = str(step + 1)
++                        trajectory_accum[h_key].update(
++                            np.stack(trajectory_true, axis=1), np.stack(trajectory_pred, axis=1),
++                            np.stack(trajectory_times, axis=1),
++                        )
+                         val_micro = torch.pow(10.0, torch.clamp(val_micro_log, min=-40.0, max=0.0))
+                         pred_species = torch.cat([val_macro, val_micro], dim=-1).detach().cpu().numpy()
+ 
+@@ -4884,6 +4808,8 @@
+ 
+                         sentinel_accum[h_key]["pred"].append(pred_species)
+                         sentinel_accum[h_key]["true"].append(true_species)
++                        inert = tools.inverse_state(true_next_X)[:, tools.inert_idx].sum(dim=-1)
++                        sentinel_accum[h_key]["inert_mass"].append(inert.detach().cpu().numpy())
+ 
+                     # 构造下一步输入：预测物种 + 真实 T/P/dt
+                     if step < H - 1:
+@@ -4936,7 +4862,14 @@
+                 pred_states=all_preds,
+                 species_names=species_order,
+                 element_matrix=elem_mat_np,
+-            )
++                inert_mass=np.concatenate(acc["inert_mass"]),
++            )
++            sentinel_metrics[h_str]["metric_scope"] = "window_endpoints"
++            sentinel_metrics[h_str]["trajectory_diagnostics"] = trajectory_accum[h_str].finalize()
++            sentinel_metrics[h_str]["timing_metrics"] = {
++                f"{sp}_peak_time_mae_s": record["peak_time_mae_s"]
++                for sp, record in sentinel_metrics[h_str]["trajectory_diagnostics"].items()
++            }
+ 
+     stats = {
+         "total": total / batches,
+@@ -5317,6 +5250,12 @@
+     for candidate in candidates:
+         if candidate is not None and candidate.is_file():
+             return candidate.resolve()
++
++    import chemistry_contract as cc
++    try:
++        return cc.resolve_mechanism_file(mechanism, recorded, (data_root, data_root.parent))
++    except FileNotFoundError:
++        pass
+ 
+     attempted = "\n  ".join(str(path) for path in candidates if path is not None)
+     raise FileNotFoundError(
+@@ -5629,6 +5568,8 @@
+     projection_mode: str = "multiplicative_kl",
+     desentinelize_scaler: bool = False,
+     network_arch: str = "mlp",
++    weight_decay: float = 1e-5,
++    curriculum_warmup_epochs: int | None = None,
+ ):
+     """
+     V68 训练入口：长 horizon 物种自回归，外部真实 T/P/dt。
+@@ -5652,7 +5593,16 @@
+     if curriculum_horizons is None:
+         curriculum_horizons = [1, 8, 32, 128]
+     if curriculum_start_epochs is None:
+-        curriculum_start_epochs = [0, 2, 5, 8]
++        if curriculum_warmup_epochs is not None:
++            if curriculum_warmup_epochs < 1:
++                raise ValueError("curriculum_warmup_epochs must be positive")
++            curriculum_start_epochs = [0] + [curriculum_warmup_epochs + 3*i for i in range(len(curriculum_horizons)-1)]
++        else:
++            curriculum_start_epochs = [0, 2, 5, 8]
++    elif curriculum_warmup_epochs is not None:
++        raise ValueError("Use either curriculum_start_epochs or curriculum_warmup_epochs")
++    if not np.isfinite(weight_decay) or weight_decay < 0:
++        raise ValueError("weight_decay must be finite and nonnegative")
+     if eval_horizons is None:
+         eval_horizons = [1, 2, 4, 8, 16, 32, 64, 128]
+     if train_stride is None:
+@@ -5798,19 +5748,7 @@
+     )
+     print("#" * 90)
+     print(f"Version: {VERSION}")
+-    transform_signature = (
+-        QSSA_ASYMPTOTIC_TRANSFORM_SIGNATURE
+-        if output_parameterization == "qssa_asymptotic"
+-        else (
+-            DUAL_BRANCH_TRANSFORM_SIGNATURE
+-            if output_parameterization == "dual_branch"
+-            else (
+-                QSSA_TRANSFORM_SIGNATURE
+-                if output_parameterization == "qssa"
+-                else LEGACY_TRANSFORM_SIGNATURE
+-            )
+-        )
+-    )
++    transform_signature = transform_signature_for(output_parameterization)
+     print(f"Transform: {transform_signature}")
+     print(f"Rollout: {ROLLOUT_SIGNATURE}")
+     print(f"Max horizon: {max_horizon}")
+@@ -5887,6 +5825,10 @@
+         rate_z_limit=rate_z_limit,
+     )
+     expected_feature_info = feature_info.copy()
++    chemical_mechanism_path = resolve_temperature_mechanism_path(metadata, data_dir, mechanism)
++    feature_info.update(mechanism=mechanism, mechanism_path=str(chemical_mechanism_path))
++    expected_feature_info.update(mechanism=mechanism, mechanism_path=str(chemical_mechanism_path))
++    training_config["weight_decay"] = float(weight_decay)
+ 
+     # V3.5 uses a fixed, differentiable thermodynamic closure.  If metadata
+     # or Cantera is unavailable, remain finite and use recorded temperature.
+@@ -6131,6 +6073,8 @@
+     # dataset
+     # --------------------------------------------------------
+ 
++    # A scaler loaded from a relocated experiment must use today's resolved file.
++    feature_info["mechanism_path"] = str(chemical_mechanism_path)
+     train_dataset = CoarseOperatorDataset(
+         train_parts,
+         feature_info,
+@@ -6142,6 +6086,7 @@
+         seed=SEED,
+         parts_per_epoch=parts_per_epoch,
+         sample_ids=train_sample_ids,
++        include_metadata=True,
+     )
+ 
+     val_dataset = CoarseOperatorDataset(
+@@ -6150,7 +6095,7 @@
+         scaler_X,
+         scaler_Y,
+         max_horizon=max_horizon,  # V68
+-        shuffle_parts=True,
++        shuffle_parts=False,
+         stride=val_stride,  # V68
+         seed=SEED,
+         parts_per_epoch=val_parts_per_epoch,
+@@ -6255,27 +6200,38 @@
+         rate_feature_weights = species_loss_weights
+     state_feature_weights = species_loss_weights
+     training_config["species_loss_metadata"] = species_loss_metadata
+-    scaler_hashes = {
+-        "scaler_X": hashlib.sha256(scaler_X.scale_.tobytes() + scaler_X.mean_.tobytes()).hexdigest(),
+-        "scaler_Y": hashlib.sha256(scaler_Y.scale_.tobytes() + scaler_Y.mean_.tobytes()).hexdigest(),
++    scaler_hashes = em.hash_scalers(scaler_X, scaler_Y)
++    chem_contract = dict(tools.mechanism_contract, mechanism_name=mechanism)
++    dataset_audit = em.audit_parquet_dataset(resolve_mechanism_trajectory_dir(data_dir, mechanism))
++    if not dataset_audit["is_consistent"]:
++        raise ValueError(dataset_audit["inconsistency_warning"])
++    split_hash = em.hash_json({"train": sorted(train_sample_ids) if train_sample_ids else [p.name for p in train_parts],
++                               "validation": sorted(val_sample_ids) if val_sample_ids else [p.name for p in val_parts]})
++    sentinel_spec = {
++        "part_content": dataset_audit["parquet_parts"], "split_hash": split_hash,
++        "selected_parts": [p.name for p in select_epoch_files(val_parts, val_parts_per_epoch, SEED, 0, False)],
++        "stride": val_dataset.stride, "window_horizon": max_horizon, "horizons": eval_horizons,
++        "batch_size": val_batch_size, "max_batches": max_val_batches, "num_workers": num_workers,
++        "state_loss_source": state_loss_source, "feedback_state_source": feedback_state_source,
++        "temperature_mode": effective_temperature_mode,
+     }
+-    chem_contract = {
+-        "mechanism_name": mechanism,
+-        "mechanism_sha256": getattr(tools, "mech_sha256", "unverified"),
+-        "species_order": feature_info["all_species"],
+-        "element_names": ["H", "N", "O", "AR"],
+-    }
++    training_config["sentinel_spec"] = sentinel_spec
++    training_config["selection_horizon"] = max(eval_horizons)
+     experiment_manifest_data = em.create_experiment_manifest(
+         mechanism_contract=chem_contract,
+         output_parameterization=output_parameterization,
+         transform_signature=transform_signature,
+-        dt_policy={"min": float(feature_info.get("dt_min", 1e-8)), "max": float(feature_info.get("dt_max", 2e-4))},
++        dt_policy={"validation": "finite_positive", "clipping": False},
+         concentration_policy={"floor": float(LOG_EPS)},
+         evaluation_protocol_id=svp.PROTOCOL_ID,
+         scaler_hashes=scaler_hashes,
++        dataset_audit=dataset_audit,
++        split_hash=split_hash,
++        sentinel_hash=em.hash_json(sentinel_spec),
+     )
+     feature_info["manifest"] = experiment_manifest_data
+     training_config["manifest"] = experiment_manifest_data
++    joblib.dump(feature_info, fi_path)
+     print(
+         "Species loss weights: "
+         f"macro={macro_loss_weight}, micro={micro_loss_weight}, "
+@@ -6286,7 +6242,7 @@
+     optimizer = torch.optim.AdamW(
+         model.parameters(),
+         lr=lr,
+-        weight_decay=1e-5,
++        weight_decay=weight_decay,
+     )
+ 
+     scheduler = (
+@@ -6338,6 +6294,8 @@
+     # V68 断点续训逻辑：支持完整 RNG 状态恢复
+     # ========================================================
+     resume_path = None
++    restored_sentinel_state = None
++    restored_horizon_losses = {}
+ 
+     if resume == "auto":
+         latest_path = weights_dir / f"latest_v68_{mechanism}.pth"
+@@ -6351,6 +6309,9 @@
+ 
+         try:
+             ckpt = torch.load(resume_path, map_location=DEVICE, weights_only=False)
++            em.require_compatible(ckpt, experiment_manifest_data)
++            if "sentinel_tracker" not in ckpt:
++                raise ValueError("Checkpoint lacks sentinel selection state; use a new output directory")
+ 
+             # V68 签名校验
+             resume_config_keys = {
+@@ -6371,6 +6332,7 @@
+                     "trust_region_fraction",
+                     "feedback_noise_std",
+                     "detach_rollout",
++                    "weight_decay",
+                 )
+             }
+             if not checkpoint_compatible(
+@@ -6384,7 +6346,7 @@
+                 print(f"  Expected: {VERSION}/{transform_signature}/{ROLLOUT_SIGNATURE}")
+                 print(f"  Found: {ckpt.get('version')}/{ckpt.get('transform_signature')}/{ckpt.get('rollout_signature')}")
+                 print("  Training configuration differs or is missing; optimizer/RNG state will not be resumed.")
+-                print("[WARNING] Starting training from scratch.")
++                raise ValueError("Checkpoint training configuration differs; refusing a silent restart")
+             else:
+                 model_state = ckpt["model_state_dict"]
+                 legacy_projection = (
+@@ -6420,6 +6382,8 @@
+                     best_val_loss = ckpt["best_val_loss"]
+                     patience_counter = ckpt.get("patience_counter", 0)
+                     history = ckpt.get("history", [])
++                    restored_sentinel_state = ckpt["sentinel_tracker"]
++                    restored_horizon_losses = ckpt.get("best_val_loss_by_horizon", {})
+ 
+                     # V68: 恢复多指标最佳值（如果存在）
+                     best_oracle_h128 = ckpt.get("best_oracle_h128", float("inf"))
+@@ -6432,7 +6396,7 @@
+                     if "rng_states" in ckpt:
+                         random.setstate(ckpt["rng_states"]["python"])
+                         np.random.set_state(ckpt["rng_states"]["numpy"])
+-                        torch.set_rng_state(ckpt["rng_states"]["torch"])
++                        torch.set_rng_state(ckpt["rng_states"]["torch"].cpu())
+                         cuda_states = ckpt["rng_states"].get("cuda")
+                         cuda_restored = cuda_states is None or restore_cuda_rng_state(cuda_states)
+                         if cuda_states is not None and not cuda_restored:
+@@ -6450,12 +6414,7 @@
+                     print(f"[RESUME] History length: {len(history)}")
+ 
+         except Exception as e:
+-            print(f"[ERROR] Failed to load checkpoint: {e}")
+-            print("[WARNING] Starting training from scratch.")
+-            start_epoch = 0
+-            best_val_loss = float("inf")
+-            patience_counter = 0
+-            history = []
++            raise RuntimeError(f"Refusing incompatible resume checkpoint {resume_path}: {e}") from e
+ 
+     # ========================================================
+     # V68 暖机启动逻辑：只加载模型权重，不加载优化器/scheduler/history
+@@ -6467,6 +6426,11 @@
+ 
+             try:
+                 ckpt = torch.load(warm_start_path, map_location=DEVICE, weights_only=False)
++                # Weight-only initialization may use a different dataset, but never a
++                # different chemistry, parameterization or standardization.
++                warm_contract = {k: v for k, v in experiment_manifest_data.items()
++                                 if k not in ("split_hash", "sentinel_hash", "dataset_audit")}
++                em.require_compatible(ckpt, warm_contract)
+ 
+                 if ckpt.get("version") != VERSION:
+                     raise RuntimeError(
+@@ -6513,8 +6477,10 @@
+         max_skip_budget=50,
+         debug_mode=False,
+     )
+-    sentinel_tracker = svp.HorizonSentinelTracker()
+-    best_val_loss_by_horizon = {}
++    sentinel_tracker = svp.HorizonSentinelTracker(eval_horizons)
++    if restored_sentinel_state is not None:
++        sentinel_tracker.load_state_dict(restored_sentinel_state)
++    best_val_loss_by_horizon = {int(h): float(v) for h, v in restored_horizon_losses.items()}
+     previous_horizon = None
+ 
+     # ========================================================
+@@ -6525,8 +6491,7 @@
+         # 当前 epoch 的 active horizon
+         active_horizon = horizon_for_epoch(epoch, horizon_schedule)
+         if previous_horizon is not None and active_horizon != previous_horizon:
+-            print(f"\n[CURRICULUM] Transitioning horizon from {previous_horizon} to {active_horizon}. Resetting patience counter.")
+-            patience_counter = 0
++            print(f"\n[CURRICULUM] Transitioning horizon from {previous_horizon} to {active_horizon}; fixed sentinel monitoring continues.")
+         previous_horizon = active_horizon
+ 
+         # The epoch is relative to this invocation. Warm-start runs therefore
+@@ -6545,9 +6510,8 @@
+         )
+ 
+         train_dataset.set_epoch(epoch)
+-        # Validation samples are re-selected deterministically per epoch. A
+-        # fixed epoch would repeatedly validate the same leading files.
+-        val_dataset.set_epoch(epoch)
++        # The sentinel population and any truncated batch prefix are immutable.
++        val_dataset.set_epoch(0)
+ 
+         model.train()
+ 
+@@ -6579,8 +6543,8 @@
+             ncols=120,
+         )
+ 
+-        for batch_X, batch_Y in pbar:
+-            attempted_batch_idx = tracker.step_attempted()
++        for batch_X, batch_Y, batch_metadata in pbar:
++            attempted_batch_idx = tracker.step_attempted(model=model)
+ 
+             batch_X = batch_X.to(
+                 DEVICE,
+@@ -6626,6 +6590,23 @@
+                 device=DEVICE,
+             )
+             use_pred_mask = build_prediction_tail_mask(B, actual_H, tail_lengths)
++            replay_context = {
++                "training_config": training_config, "feature_info": feature_info,
++                "scaler_X": scaler_X, "scaler_Y": scaler_Y,
++                "actual_horizon": actual_H, "tail_fraction": tail_fraction,
++                "feedback_blend": feedback_strength, "epoch": epoch,
++                "use_pred_mask": use_pred_mask.detach().cpu(),
++                "rng_before_forward": td.capture_rng_state(),
++            }
++
++            def record_batch_failure(reason, diagnostics=None):
++                return tracker.record_failure_and_check_budget(
++                    model=model, batch_X=batch_X, batch_Y=batch_Y,
++                    sample_ids=batch_metadata["sample_id"],
++                    window_start=batch_metadata["window_start"].tolist(),
++                    epoch=epoch + 1, optimizer=optimizer, error_msg=reason,
++                    diagnostics=diagnostics, replay_context={**replay_context, "part": batch_metadata["part"]},
++                )
+ 
+             current_X = batch_X[:, 0, :]
+ 
+@@ -6663,444 +6644,448 @@
+             previous_pred_rate_scaled = None
+             previous_true_rate_scaled = None
+ 
+-            for step in range(actual_H):
+-
+-                # ----------------------------------------------
+-                # network & disentangled parameter supervision
+-                # ----------------------------------------------
+-                true_current_X = batch_X[:, step, :]
+-                is_true_input = (step == 0) or torch.equal(current_X, true_current_X)
+-
+-                if is_true_input:
+-                    pred_rate_scaled = model(current_X)
+-                    rate_pred_true = pred_rate_scaled
+-                else:
+-                    pred_rate_scaled = model(current_X)
+-                    rate_pred_true = model(true_current_X)
+-
+-                # ----------------------------------------------
+-                # next state
+-                # ----------------------------------------------
+-
+-                pred_state = (
+-                    tools.predict_next_state(
+-                        current_X,
+-                        pred_rate_scaled,
+-                        safe_for_rollout=(feedback_state_source != "raw"),
+-                        experiment_mode=experiment_mode,
+-                        trust_region_fraction=trust_region_fraction,
+-                        state_update_mode=state_update_mode,
++            try:
++                for step in range(actual_H):
++
++                    # ----------------------------------------------
++                    # network & disentangled parameter supervision
++                    # ----------------------------------------------
++                    true_current_X = batch_X[:, step, :]
++                    is_true_input = (step == 0) or torch.equal(current_X, true_current_X)
++
++                    if is_true_input:
++                        pred_rate_scaled = model(current_X)
++                        rate_pred_true = pred_rate_scaled
++                    else:
++                        pred_rate_scaled = model(current_X)
++                        rate_pred_true = model(true_current_X)
++
++                    # ----------------------------------------------
++                    # next state
++                    # ----------------------------------------------
++
++                    pred_state = (
++                        tools.predict_next_state(
++                            current_X,
++                            pred_rate_scaled,
++                            safe_for_rollout=(feedback_state_source != "raw"),
++                            experiment_mode=experiment_mode,
++                            trust_region_fraction=trust_region_fraction,
++                            state_update_mode=state_update_mode,
++                        )
+                     )
+-                )
+-
+-                # ✅ 修复：True endpoint of this transition
+-                #
+-                # Dataset window now contains t0...t50 (51 points)
+-                # So all 50 transitions have their endpoints:
+-                # step 0: t0 -> t1
+-                # step 1: t1 -> t2
+-                # ...
+-                # step 49: t49 -> t50 ✅ t50 在窗口中！
+-                #
+-                # 所有 50 步都计算 state loss
+-
+-                true_next_X = (
+-                    batch_X[
+-                        :,
+-                        step + 1,
+-                        :
+-                    ]
+-                )
+-                step_weights = transition_weights[:, step] if transition_weights is not None else None
+-                true_cur_X_unscaled = true_current_X * tools.scale_X + tools.mean_X
+-                true_nxt_X_unscaled = true_next_X * tools.scale_X + tools.mean_X
+-                if use_induction_weights:
+-                    from enhanced_loss_and_weights import compute_induction_sample_weights
+-                    ind_w = compute_induction_sample_weights(
+-                        true_cur_X_unscaled, true_nxt_X_unscaled, tools, boost_factor=induction_boost
+-                    )
+-                    step_weights = ind_w if step_weights is None else step_weights * ind_w
+-
+-                # V68 targets are already standardized
+-                true_rate_scaled = batch_Y[:, step, :]
+-                rate_mask = compute_qssa_rate_mask(
+-                    tools,
+-                    true_rate_scaled,
+-                    Y_old_unscaled=true_cur_X_unscaled,
+-                    Y_next_unscaled=true_nxt_X_unscaled,
+-                )
+-                if rate_loss_kind == "mse":
+-                    rate_loss = weighted_mse_loss(
+-                        rate_pred_true,
+-                        true_rate_scaled,
+-                        sample_weights=step_weights,
+-                        feature_weights=rate_feature_weights,
+-                        mask=rate_mask,
+-                    )
+-                else:
+-                    rate_loss = weighted_smooth_l1_loss(
+-                        rate_pred_true,
+-                        true_rate_scaled,
+-                        sample_weights=step_weights,
+-                        feature_weights=rate_feature_weights,
+-                        mask=rate_mask,
+-                        beta=rate_huber_beta,
+-                    )
+-                # ----------------------------------------------
+-                # integrated state loss
+-                # ✅ 修复：所有 50 步都计算 state loss
+-                # ----------------------------------------------
+-
+-                train_macro, train_micro_log = select_training_state(
+-                    pred_state, state_loss_source
+-                )
+-
+-                pred_macro_scaled = (
+-                    (
+-                        train_macro
+-                        - tools.mean_X[
+-                            tools.macro_idx
+-                        ]
+-                    )
+-                    / tools.scale_X[
+-                        tools.macro_idx
+-                    ]
+-                )
+-
+-                pred_micro_log_scaled = (
+-                    (
+-                        train_micro_log
+-                        - tools.mean_X[
+-                            tools.micro_idx
+-                        ]
+-                    )
+-                    / tools.scale_X[
+-                        tools.micro_idx
+-                    ]
+-                )
+-
+-                pred_state_scaled = (
+-                    torch.cat(
+-                        [
+-                            pred_macro_scaled,
+-                            pred_micro_log_scaled,
+-                        ],
+-                        dim=1,
+-                    )
+-                )
+-
+-                true_macro_scaled = (
+-                    true_next_X[
+-                        :,
+-                        tools.macro_idx
+-                    ]
+-                )
+-
+-                true_micro_scaled = (
+-                    true_next_X[
+-                        :,
+-                        tools.micro_idx
+-                    ]
+-                )
+-
+-                true_state_scaled = (
+-                    torch.cat(
+-                        [
+-                            true_macro_scaled,
+-                            true_micro_scaled,
+-                        ],
+-                        dim=1,
+-                    )
+-                )
+-
+-                pred_state_scaled = state_loss_features(
+-                    pred_state_scaled,
+-                    state_loss_source,
+-                )
+-                true_state_scaled = state_loss_features(
+-                    true_state_scaled,
+-                    state_loss_source,
+-                )
+-
+-                if lambda_stability > 0.0:
+-                    if state_update_mode in ("qssa", "qssa_asymptotic"):
+-                        if (
+-                            previous_pred_rate_scaled is not None
+-                            and previous_true_rate_scaled is not None
+-                        ):
+-                            stability_loss = compute_rate_stability_loss(
+-                                qssa_log_rate_features_from_scaled(
+-                                    torch.stack(
+-                                        [previous_pred_rate_scaled, pred_rate_scaled], dim=1
+-                                    ),
+-                                    tools,
+-                                ),
+-                                qssa_log_rate_features_from_scaled(
+-                                    torch.stack(
+-                                        [previous_true_rate_scaled, true_rate_scaled], dim=1
+-                                    ),
+-                                    tools,
+-                                ),
+-                            )
+-                        else:
+-                            stability_loss = pred_state_scaled.sum() * 0.0
+-                    else:
+-                        stability_loss = compute_stability_loss(
+-                            torch.stack(
+-                                [previous_pred_state_scaled, pred_state_scaled], dim=1
+-                            ),
+-                            torch.stack(
+-                                [previous_true_state_scaled, true_state_scaled], dim=1
+-                            ),
+-                        )
+-                else:
+-                    stability_loss = pred_state_scaled.sum() * 0.0
+-
+-                state_loss = weighted_mse_loss(
+-                    pred_state_scaled,
+-                    true_state_scaled,
+-                    step_weights,
+-                    species_loss_weights,
+-                    stable_accumulation=(state_loss_source == "raw"),
+-                )
+-
+-                audit_weights = update_transition_audit(
+-                    local_transition_audit,
+-                    step_weights,
+-                    pred_rate_scaled,
+-                    true_rate_scaled,
+-                    pred_state_scaled,
+-                    true_state_scaled,
+-                )
+-                local_audit_weight_values.append(audit_weights.cpu())
+-
+-                # ----------------------------------------------
+-                # physics
+-                # ----------------------------------------------
+-
+-                loss_element, loss_mass = (
+-                    compute_element_conservation_loss(
+-                        tools,
+-                        pred_state,
+-                        state_loss_source=state_loss_source,
+-                    )
+-                )
+-
+-                loss_positive = (
+-                    compute_positivity_loss(
+-                        pred_state
+-                    )
+-                )
+-
+-                loss_radical = torch.tensor(0.0, device=rate_loss.device)
+-                if lambda_radical > 0.0:
+-                    from enhanced_loss_and_weights import compute_physical_radical_loss
+-                    loss_radical = compute_physical_radical_loss(
+-                        tools=tools,
+-                        pred_state=pred_state,
+-                        true_next_X_scaled=true_next_X,
+-                        state_source=state_loss_source,
+-                    )
+-
+-                loss_no = torch.tensor(0.0, device=rate_loss.device)
+-                if lambda_no > 0.0:
+-                    from enhanced_loss_and_weights import compute_pollutant_no_loss
+-                    loss_no = compute_pollutant_no_loss(
+-                        tools=tools,
+-                        pred_state=pred_state,
+-                        true_next_X_scaled=true_next_X,
+-                        state_source=state_loss_source,
+-                    )
+-
+-                # ----------------------------------------------
+-                # total
+-                # ----------------------------------------------
+-
+-                step_loss = (
+-                    lambda_rate
+-                    * rate_loss
+-
+-                    + lambda_state
+-                    * state_loss
+-
+-                    + lambda_element
+-                    * loss_element
+-
+-                    + lambda_mass
+-                    * loss_mass
+-
+-                    + lambda_positive
+-                    * loss_positive
+-                    + lambda_stability
+-                    * stability_loss
+-                    + lambda_radical
+-                    * loss_radical
+-                    + lambda_no
+-                    * loss_no
+-                )
+-
+-                # Accumulate a small detached chunk to reduce backward
+-                # engine launches while bounding retained activations.
+-                if not torch.isfinite(step_loss):
+-                    print(f"DEBUG METRICS: rate={rate_loss}, state={state_loss}, element={loss_element}, mass={loss_mass}, pos={loss_positive}, rad={loss_radical}, no={loss_no}")
+-                chunk_loss = (
+-                    step_loss
+-                    if chunk_loss is None
+-                    else chunk_loss + step_loss
+-                )
+-                chunk_steps += 1
+-                chunk_completed = False
+-
+-                if (
+-                    chunk_steps >= backward_chunk_steps
+-                    or step == actual_H - 1
+-                ):
+-                    step_valid, step_value = backward_loss_chunk(
+-                        chunk_loss,
+-                        actual_H,
+-                    )
+-                    if not step_valid:
+-                        print(
+-                            f"\n[WARNING] Non-finite loss; discarding batch "
+-                            f"at epoch={epoch + 1}, "
+-                            f"batch={n_train_batches + 1}, "
+-                            f"step={step}."
+-                        )
+-                        batch_valid = False
+-                        break
+-                    batch_total += step_value
+-                    chunk_loss = None
+-                    chunk_steps = 0
+-                    chunk_completed = True
+-
+-                local_stats[
+-                    "rate"
+-                ] += rate_loss.item()
+-
+-                local_stats[
+-                    "state"
+-                ] += state_loss.item()
+-
+-                local_stats[
+-                    "element"
+-                ] += loss_element.item()
+-
+-                local_stats[
+-                    "mass"
+-                ] += loss_mass.item()
+-
+-                local_stats[
+-                    "positive"
+-                ] += loss_positive.item()
+-
+-                local_stats["stability"] += stability_loss.item()
+-                local_stats["radical"] += loss_radical.item()
+-                local_stats["no"] += loss_no.item()
+-
+-                # Record the effective per-transition weighting so V3.1 can
+-                # be audited from the training log.  Legacy modes report 1.
+-                local_stats["transition_weight"] += (
+-                    step_weights.mean().item()
+-                    if step_weights is not None
+-                    else 1.0
+-                )
+-
+-                # ----------------------------------------------
+-                # V68 rollout: 连续预测尾段
+-                # ----------------------------------------------
+-
+-                if step < actual_H - 1:
+-
+-                    base_next_X = (
++
++                    # ✅ 修复：True endpoint of this transition
++                    #
++                    # Dataset window now contains t0...t50 (51 points)
++                    # So all 50 transitions have their endpoints:
++                    # step 0: t0 -> t1
++                    # step 1: t1 -> t2
++                    # ...
++                    # step 49: t49 -> t50 ✅ t50 在窗口中！
++                    #
++                    # 所有 50 步都计算 state loss
++
++                    true_next_X = (
+                         batch_X[
+                             :,
+                             step + 1,
+                             :
+                         ]
+                     )
+-
+-                    feed_macro, feed_micro_log = select_feedback_state(
+-                        pred_state, feedback_state_source
++                    step_weights = transition_weights[:, step] if transition_weights is not None else None
++                    true_cur_X_unscaled = true_current_X * tools.scale_X + tools.mean_X
++                    true_nxt_X_unscaled = true_next_X * tools.scale_X + tools.mean_X
++                    if use_induction_weights:
++                        from enhanced_loss_and_weights import compute_induction_sample_weights
++                        ind_w = compute_induction_sample_weights(
++                            true_cur_X_unscaled, true_nxt_X_unscaled, tools, boost_factor=induction_boost
++                        )
++                        step_weights = ind_w if step_weights is None else step_weights * ind_w
++
++                    # V68 targets are already standardized
++                    true_rate_scaled = batch_Y[:, step, :]
++                    rate_mask = compute_qssa_rate_mask(
++                        tools,
++                        true_rate_scaled,
++                        Y_old_unscaled=true_cur_X_unscaled,
++                        Y_next_unscaled=true_nxt_X_unscaled,
+                     )
+-                    predicted_next_X = (
+-                        tools.state_to_input_scaled(
+-                            base_next_X,
+-                            feed_macro,
+-                            feed_micro_log,
+-                            temperature_mode=effective_temperature_mode,
+-                            thermo_closure=thermo_closure,
+-                            current_X_scaled=current_X,
+-                            max_delta_temperature=max_delta_temperature,
+-                            feedback_input_limit=(
+-                                RAW_FEEDBACK_INPUT_LIMIT
+-                                if feedback_state_source == "raw"
+-                                else None
+-                            ),
++                    if rate_loss_kind == "mse":
++                        rate_loss = weighted_mse_loss(
++                            rate_pred_true,
++                            true_rate_scaled,
++                            sample_weights=step_weights,
++                            feature_weights=rate_feature_weights,
++                            mask=rate_mask,
++                        )
++                    else:
++                        rate_loss = weighted_smooth_l1_loss(
++                            rate_pred_true,
++                            true_rate_scaled,
++                            sample_weights=step_weights,
++                            feature_weights=rate_feature_weights,
++                            mask=rate_mask,
++                            beta=rate_huber_beta,
++                        )
++                    # ----------------------------------------------
++                    # integrated state loss
++                    # ✅ 修复：所有 50 步都计算 state loss
++                    # ----------------------------------------------
++
++                    train_macro, train_micro_log = select_training_state(
++                        pred_state, state_loss_source
++                    )
++
++                    pred_macro_scaled = (
++                        (
++                            train_macro
++                            - tools.mean_X[
++                                tools.macro_idx
++                            ]
++                        )
++                        / tools.scale_X[
++                            tools.macro_idx
++                        ]
++                    )
++
++                    pred_micro_log_scaled = (
++                        (
++                            train_micro_log
++                            - tools.mean_X[
++                                tools.micro_idx
++                            ]
++                        )
++                        / tools.scale_X[
++                            tools.micro_idx
++                        ]
++                    )
++
++                    pred_state_scaled = (
++                        torch.cat(
++                            [
++                                pred_macro_scaled,
++                                pred_micro_log_scaled,
++                            ],
++                            dim=1,
+                         )
+                     )
+ 
+-                    species_idx = torch.cat(
+-                        [
+-                            tools.macro_idx,
+-                            tools.micro_idx,
++                    true_macro_scaled = (
++                        true_next_X[
++                            :,
++                            tools.macro_idx
+                         ]
+                     )
+-                    feedback_idx = species_idx
+-                    if effective_temperature_mode == "autonomous":
+-                        # V3.5 predicts T from composition energy change; T
+-                        # must enter the next feedback state together with Y.
+-                        feedback_idx = torch.cat(
++
++                    true_micro_scaled = (
++                        true_next_X[
++                            :,
++                            tools.micro_idx
++                        ]
++                    )
++
++                    true_state_scaled = (
++                        torch.cat(
+                             [
+-                                species_idx,
+-                                torch.tensor(
+-                                    [tools.temperature_idx],
+-                                    device=species_idx.device,
+-                                    dtype=species_idx.dtype,
++                                true_macro_scaled,
++                                true_micro_scaled,
++                            ],
++                            dim=1,
++                        )
++                    )
++
++                    pred_state_scaled = state_loss_features(
++                        pred_state_scaled,
++                        state_loss_source,
++                    )
++                    true_state_scaled = state_loss_features(
++                        true_state_scaled,
++                        state_loss_source,
++                    )
++
++                    if lambda_stability > 0.0:
++                        if state_update_mode in ("qssa", "qssa_asymptotic"):
++                            if (
++                                previous_pred_rate_scaled is not None
++                                and previous_true_rate_scaled is not None
++                            ):
++                                stability_loss = compute_rate_stability_loss(
++                                    qssa_log_rate_features_from_scaled(
++                                        torch.stack(
++                                            [previous_pred_rate_scaled, pred_rate_scaled], dim=1
++                                        ),
++                                        tools,
++                                    ),
++                                    qssa_log_rate_features_from_scaled(
++                                        torch.stack(
++                                            [previous_true_rate_scaled, true_rate_scaled], dim=1
++                                        ),
++                                        tools,
++                                    ),
++                                )
++                            else:
++                                stability_loss = pred_state_scaled.sum() * 0.0
++                        else:
++                            stability_loss = compute_stability_loss(
++                                torch.stack(
++                                    [previous_pred_state_scaled, pred_state_scaled], dim=1
+                                 ),
++                                torch.stack(
++                                    [previous_true_state_scaled, true_state_scaled], dim=1
++                                ),
++                            )
++                    else:
++                        stability_loss = pred_state_scaled.sum() * 0.0
++
++                    state_loss = weighted_mse_loss(
++                        pred_state_scaled,
++                        true_state_scaled,
++                        step_weights,
++                        species_loss_weights,
++                        stable_accumulation=(state_loss_source == "raw"),
++                    )
++
++                    audit_weights = update_transition_audit(
++                        local_transition_audit,
++                        step_weights,
++                        pred_rate_scaled,
++                        true_rate_scaled,
++                        pred_state_scaled,
++                        true_state_scaled,
++                    )
++                    local_audit_weight_values.append(audit_weights.cpu())
++
++                    # ----------------------------------------------
++                    # physics
++                    # ----------------------------------------------
++
++                    loss_element, loss_mass = (
++                        compute_element_conservation_loss(
++                            tools,
++                            pred_state,
++                            state_loss_source=state_loss_source,
++                        )
++                    )
++
++                    loss_positive = (
++                        compute_positivity_loss(
++                            pred_state
++                        )
++                    )
++
++                    loss_radical = torch.tensor(0.0, device=rate_loss.device)
++                    if lambda_radical > 0.0:
++                        from enhanced_loss_and_weights import compute_physical_radical_loss
++                        loss_radical = compute_physical_radical_loss(
++                            tools=tools,
++                            pred_state=pred_state,
++                            true_next_X_scaled=true_next_X,
++                            state_source=state_loss_source,
++                        )
++
++                    loss_no = torch.tensor(0.0, device=rate_loss.device)
++                    if lambda_no > 0.0:
++                        from enhanced_loss_and_weights import compute_pollutant_no_loss
++                        loss_no = compute_pollutant_no_loss(
++                            tools=tools,
++                            pred_state=pred_state,
++                            true_next_X_scaled=true_next_X,
++                            state_source=state_loss_source,
++                        )
++
++                    # ----------------------------------------------
++                    # total
++                    # ----------------------------------------------
++
++                    step_loss = (
++                        lambda_rate
++                        * rate_loss
++
++                        + lambda_state
++                        * state_loss
++
++                        + lambda_element
++                        * loss_element
++
++                        + lambda_mass
++                        * loss_mass
++
++                        + lambda_positive
++                        * loss_positive
++                        + lambda_stability
++                        * stability_loss
++                        + lambda_radical
++                        * loss_radical
++                        + lambda_no
++                        * loss_no
++                    )
++
++                    # Accumulate a small detached chunk to reduce backward
++                    # engine launches while bounding retained activations.
++                    if not torch.isfinite(step_loss):
++                        print(f"DEBUG METRICS: rate={rate_loss}, state={state_loss}, element={loss_element}, mass={loss_mass}, pos={loss_positive}, rad={loss_radical}, no={loss_no}")
++                    chunk_loss = (
++                        step_loss
++                        if chunk_loss is None
++                        else chunk_loss + step_loss
++                    )
++                    chunk_steps += 1
++                    chunk_completed = False
++
++                    if (
++                        chunk_steps >= backward_chunk_steps
++                        or step == actual_H - 1
++                    ):
++                        step_valid, step_value = backward_loss_chunk(
++                            chunk_loss,
++                            actual_H,
++                        )
++                        if not step_valid:
++                            print(
++                                f"\n[WARNING] Non-finite loss; discarding batch "
++                                f"at epoch={epoch + 1}, "
++                                f"batch={n_train_batches + 1}, "
++                                f"step={step}."
++                            )
++                            batch_valid = False
++                            break
++                        batch_total += step_value
++                        chunk_loss = None
++                        chunk_steps = 0
++                        chunk_completed = True
++
++                    local_stats[
++                        "rate"
++                    ] += rate_loss.item()
++
++                    local_stats[
++                        "state"
++                    ] += state_loss.item()
++
++                    local_stats[
++                        "element"
++                    ] += loss_element.item()
++
++                    local_stats[
++                        "mass"
++                    ] += loss_mass.item()
++
++                    local_stats[
++                        "positive"
++                    ] += loss_positive.item()
++
++                    local_stats["stability"] += stability_loss.item()
++                    local_stats["radical"] += loss_radical.item()
++                    local_stats["no"] += loss_no.item()
++
++                    # Record the effective per-transition weighting so V3.1 can
++                    # be audited from the training log.  Legacy modes report 1.
++                    local_stats["transition_weight"] += (
++                        step_weights.mean().item()
++                        if step_weights is not None
++                        else 1.0
++                    )
++
++                    # ----------------------------------------------
++                    # V68 rollout: 连续预测尾段
++                    # ----------------------------------------------
++
++                    if step < actual_H - 1:
++
++                        base_next_X = (
++                            batch_X[
++                                :,
++                                step + 1,
++                                :
+                             ]
+                         )
+ 
+-                    # V68: 连续预测尾段 - 每个样本根据 mask 选择
+-                    # mask[b, step] = True 表示样本 b 在步 step 使用预测值
+-                    use_pred = use_pred_mask[:, step].unsqueeze(1)  # (B, 1)
+-
+-                    selected_next_X = (
+-                        base_next_X.clone()
+-                    )
+-
+-                    selected_next_X[:, feedback_idx] = blend_feedback_state(
+-                        base_next_X[:, feedback_idx],
+-                        predicted_next_X[:, feedback_idx],
+-                        use_pred,
+-                        feedback_strength,
+-                    )
+-
+-                    if feedback_noise_std > 0.0:
+-                        selected_next_X[:, species_idx] = add_feedback_state_noise(
+-                            selected_next_X[:, species_idx],
+-                            feedback_noise_std * tail_fraction,
++                        feed_macro, feed_micro_log = select_feedback_state(
++                            pred_state, feedback_state_source
++                        )
++                        predicted_next_X = (
++                            tools.state_to_input_scaled(
++                                base_next_X,
++                                feed_macro,
++                                feed_micro_log,
++                                temperature_mode=effective_temperature_mode,
++                                thermo_closure=thermo_closure,
++                                current_X_scaled=current_X,
++                                max_delta_temperature=max_delta_temperature,
++                                feedback_input_limit=(
++                                    RAW_FEEDBACK_INPUT_LIMIT
++                                    if feedback_state_source == "raw"
++                                    else None
++                                ),
++                            )
++                        )
++
++                        species_idx = torch.cat(
++                            [
++                                tools.macro_idx,
++                                tools.micro_idx,
++                            ]
++                        )
++                        feedback_idx = species_idx
++                        if effective_temperature_mode == "autonomous":
++                            # V3.5 predicts T from composition energy change; T
++                            # must enter the next feedback state together with Y.
++                            feedback_idx = torch.cat(
++                                [
++                                    species_idx,
++                                    torch.tensor(
++                                        [tools.temperature_idx],
++                                        device=species_idx.device,
++                                        dtype=species_idx.dtype,
++                                    ),
++                                ]
++                            )
++
++                        # V68: 连续预测尾段 - 每个样本根据 mask 选择
++                        # mask[b, step] = True 表示样本 b 在步 step 使用预测值
++                        use_pred = use_pred_mask[:, step].unsqueeze(1)  # (B, 1)
++
++                        selected_next_X = (
++                            base_next_X.clone()
++                        )
++
++                        selected_next_X[:, feedback_idx] = blend_feedback_state(
++                            base_next_X[:, feedback_idx],
++                            predicted_next_X[:, feedback_idx],
+                             use_pred,
++                            feedback_strength,
+                         )
+ 
+-                    current_X = (
+-                        selected_next_X
+-                    )
+-
+-                    # Keep gradients through predicted feedback within a
+-                    # chunk; detach only after that chunk was backpropagated.
+-                    if detach_rollout and chunk_completed:
+-                        current_X = current_X.detach()
+-
+-                if chunk_completed:
+-                    previous_pred_state_scaled = pred_state_scaled.detach()
+-                    previous_true_state_scaled = true_state_scaled.detach()
+-                    previous_pred_rate_scaled = pred_rate_scaled.detach()
+-                    previous_true_rate_scaled = true_rate_scaled.detach()
+-                else:
+-                    previous_pred_state_scaled = pred_state_scaled
+-                    previous_true_state_scaled = true_state_scaled.detach()
+-                    previous_pred_rate_scaled = pred_rate_scaled
+-                    previous_true_rate_scaled = true_rate_scaled.detach()
++                        if feedback_noise_std > 0.0:
++                            selected_next_X[:, species_idx] = add_feedback_state_noise(
++                                selected_next_X[:, species_idx],
++                                feedback_noise_std * tail_fraction,
++                                use_pred,
++                            )
++
++                        current_X = (
++                            selected_next_X
++                        )
++
++                        # Keep gradients through predicted feedback within a
++                        # chunk; detach only after that chunk was backpropagated.
++                        if detach_rollout and chunk_completed:
++                            current_X = current_X.detach()
++
++                    if chunk_completed:
++                        previous_pred_state_scaled = pred_state_scaled.detach()
++                        previous_true_state_scaled = true_state_scaled.detach()
++                        previous_pred_rate_scaled = pred_rate_scaled.detach()
++                        previous_true_rate_scaled = true_rate_scaled.detach()
++                    else:
++                        previous_pred_state_scaled = pred_state_scaled
++                        previous_true_state_scaled = true_state_scaled.detach()
++                        previous_pred_rate_scaled = pred_rate_scaled
++                        previous_true_rate_scaled = true_rate_scaled.detach()
++            except Exception as exc:
++                record_batch_failure(f"Forward/backward exception: {type(exc).__name__}: {exc}")
++                raise
+ 
+             # ----------------------------------------------------
+             # finalize accumulated gradients
+@@ -7108,34 +7093,40 @@
+ 
+             if not batch_valid:
+                 # Earlier steps may already have accumulated gradients.
++                record_batch_failure(f"Non-finite loss at rollout step {step}")
+                 optimizer.zero_grad(set_to_none=True)
+                 continue
+ 
+             rollout_loss = torch.zeros((), device=batch_X.device)
+             rollout_breakdown = {}
+             if lambda_rollout > 0:
+-                rollout_loss, rollout_breakdown = compute_training_rollout_loss(
+-                    model,
+-                    tools,
+-                    batch_X,
+-                    actual_H,
+-                    experiment_mode,
+-                    batch_Y=batch_Y,
+-                    detach_interval=backward_chunk_steps,
+-                    lambda_stability=lambda_stability,
+-                    trust_region_fraction=trust_region_fraction,
+-                    state_update_mode=state_update_mode,
+-                    state_loss_source=state_loss_source,
+-                    feedback_state_source=feedback_state_source,
+-                    temperature_mode=effective_temperature_mode,
+-                    thermo_closure=thermo_closure,
+-                    max_delta_temperature=max_delta_temperature,
+-                    feedback_noise_std=feedback_noise_std * tail_fraction,
+-                    backward_callback=lambda chunk_loss: (
+-                        lambda_rollout * chunk_loss
+-                    ).backward(),
+-                )
++                try:
++                    rollout_loss, rollout_breakdown = compute_training_rollout_loss(
++                        model,
++                        tools,
++                        batch_X,
++                        actual_H,
++                        experiment_mode,
++                        batch_Y=batch_Y,
++                        detach_interval=backward_chunk_steps,
++                        lambda_stability=lambda_stability,
++                        trust_region_fraction=trust_region_fraction,
++                        state_update_mode=state_update_mode,
++                        state_loss_source=state_loss_source,
++                        feedback_state_source=feedback_state_source,
++                        temperature_mode=effective_temperature_mode,
++                        thermo_closure=thermo_closure,
++                        max_delta_temperature=max_delta_temperature,
++                        feedback_noise_std=feedback_noise_std * tail_fraction,
++                        backward_callback=lambda chunk_loss: (
++                            lambda_rollout * chunk_loss
++                        ).backward(),
++                    )
++                except Exception as exc:
++                    record_batch_failure(f"Auxiliary rollout exception: {type(exc).__name__}: {exc}")
++                    raise
+                 if not torch.isfinite(rollout_loss):
++                    record_batch_failure("Non-finite auxiliary rollout loss")
+                     optimizer.zero_grad(set_to_none=True)
+                     continue
+                 # H=1 is the first curriculum stage, while the auxiliary
+@@ -7155,25 +7146,18 @@
+                     f"\n[WARNING] Non-finite gradients ({grad_diag.get('non_finite_params')}) "
+                     f"at epoch={epoch + 1}, attempted_batch={attempted_batch_idx}."
+                 )
+-                tracker.record_failure_and_check_budget(
+-                    model=model,
+-                    batch_X=batch_X,
+-                    batch_Y=batch_Y,
+-                    epoch=epoch + 1,
+-                    optimizer=optimizer,
+-                    error_msg=f"Non-finite gradients: {grad_diag.get('non_finite_params')}",
+-                    diagnostics=grad_diag,
+-                )
++                record_batch_failure(f"Non-finite gradients: {grad_diag.get('non_finite_params')}", grad_diag)
+                 optimizer.zero_grad(set_to_none=True)
+                 continue
+ 
++            td.clip_gradients_stable(model, max_norm=1.0, total_norm=grad_norm_f64)
++            if not all(torch.isfinite(p.grad).all() for p in model.parameters() if p.grad is not None):
++                record_batch_failure("Non-finite gradient after clipping")
++                optimizer.zero_grad(set_to_none=True)
++                continue
++
++            optimizer.step()
+             tracker.record_success()
+-            torch.nn.utils.clip_grad_norm_(
+-                model.parameters(),
+-                max_norm=1.0,
+-            )
+-
+-            optimizer.step()
+ 
+             for key in transition_audit:
+                 if key == "weight_max":
+@@ -7301,7 +7285,7 @@
+ 
+         # Pure species-AR validation (用于评估长 horizon 累积误差)
+         # 每 full_val_every epoch 运行一次完整的 pure-AR 验证
+-        if (epoch + 1) % full_val_every == 0:
++        if epoch == start_epoch or (epoch + 1) % full_val_every == 0 or epoch == epochs - 1:
+             val_stats_pure_ar = validate_model_v68(
+                 model,
+                 val_loader,
+@@ -7338,9 +7322,11 @@
+         # objective; it excludes train-only transition/induction weights,
+         # stability, and rollout losses.
+         val_stats = val_stats_oracle
+-        scheduler.step(
+-            val_stats["total"]
+-        )
++        primary_metrics = None
++        if val_stats_pure_ar is not None:
++            primary_metrics = val_stats_pure_ar["sentinel_metrics"][str(max(eval_horizons))]
++            selection_score = primary_metrics["composite_score"] if primary_metrics["is_valid_candidate"] else float("inf")
++            scheduler.step(selection_score)
+ 
+         # --------------------------------------------------------
+         # report
+@@ -7509,17 +7495,15 @@
+                 "mass": val_stats_pure_ar["mass"],
+                 "positive": val_stats_pure_ar["positive"],
+                 "per_horizon": val_stats_pure_ar["per_horizon"],
++                "sentinel_metrics": val_stats_pure_ar["sentinel_metrics"],
+             }
+ 
+         history.append(history_entry)
+-
+-        # --------------------------------------------------------
+-        # save best - 原有总损失模型
+-        # --------------------------------------------------------
+ 
+         # --------------------------------------------------------
+         # save best - Fixed Horizon Sentinel Tracking & Model Selection
+         # --------------------------------------------------------
++        primary_improved = False
+         if val_stats_pure_ar is not None and "sentinel_metrics" in val_stats_pure_ar:
+             for h_int in eval_horizons:
+                 h_str = str(h_int)
+@@ -7537,7 +7521,11 @@
+                                 "rollout_signature": ROLLOUT_SIGNATURE,
+                                 "training_config": training_config,
+                                 "manifest": experiment_manifest_data,
+-                                "best_val_loss": val_stats["total"],
++                                "sentinel_tracker": sentinel_tracker.as_dict(),
++                                "best_val_loss_by_horizon": dict(sentinel_tracker.best_scores),
++
++                                "best_val_loss": h_metrics["composite_score"],
++                                "oracle_total_loss": val_stats["total"],
+                                 "sentinel_score": h_metrics.get("composite_score"),
+                                 "sentinel_metrics": h_metrics,
+                                 "epoch": epoch + 1,
+@@ -7546,39 +7534,19 @@
+                             h_path,
+                         )
+                         print(f"[SENTINEL] New best valid H={h_int} model -> {h_path.name} (score={h_metrics.get('composite_score'):.6e})")
+-
+-        horizon_best_loss = best_val_loss_by_horizon.get(active_horizon, float("inf"))
+-        improved_horizon = val_stats["total"] < horizon_best_loss
+-        if improved_horizon:
+-            best_val_loss_by_horizon[active_horizon] = val_stats["total"]
+-            best_val_loss = val_stats["total"]
+-            patience_counter = 0
+-
+-            # Update overall benchmark model if this is a mature horizon (H >= 32 or max_horizon)
+-            if active_horizon >= 32 or active_horizon == max_horizon:
+-                best_path = weights_dir / f"best_v68_net_{mechanism}.pth"
+-                torch.save(
+-                    {
+-                        "model_state_dict": model.state_dict(),
+-                        "mechanism": mechanism,
+-                        "feature_info": feature_info,
+-                        "version": VERSION,
+-                        "transform_signature": transform_signature,
+-                        "rollout_signature": ROLLOUT_SIGNATURE,
+-                        "training_config": training_config,
+-                        "manifest": experiment_manifest_data,
+-                        "best_val_loss": best_val_loss,
+-                        "epoch": epoch + 1,
+-                        "horizon": active_horizon,
+-                    },
+-                    best_path,
+-                )
+-                print(f"[SAVE] Best mature model -> {best_path.name}")
+-        else:
+-            patience_counter += 1
+-            if patience_counter >= 20:
+-                print("\nEarly stopping.")
+-                break
++                        if h_int == max(eval_horizons):
++                            primary_improved = True
++                            default_path = weights_dir / f"best_v68_net_{mechanism}.pth"
++                            temporary_default = default_path.with_suffix(".tmp")
++                            temporary_default.write_bytes(h_path.read_bytes())
++                            temporary_default.replace(default_path)
++
++        stop_training = False
++        if primary_metrics is not None:
++            best_val_loss_by_horizon = dict(sentinel_tracker.best_scores)
++            best_val_loss = sentinel_tracker.best_scores[max(eval_horizons)]
++            patience_counter = 0 if primary_improved else patience_counter + 1
++            stop_training = patience_counter >= 20
+ 
+         # --------------------------------------------------------
+         # V68 多指标最佳模型保存
+@@ -7599,6 +7567,9 @@
+                         "transform_signature": transform_signature,
+                         "rollout_signature": ROLLOUT_SIGNATURE,
+                         "training_config": training_config,
++                        "manifest": experiment_manifest_data,
++                        "sentinel_tracker": sentinel_tracker.as_dict(),
++                        "best_val_loss_by_horizon": dict(sentinel_tracker.best_scores),
+                         "metric_name": "oracle_h128_rmse",
+                         "metric_value": best_oracle_h128,
+                         "epoch": epoch + 1,
+@@ -7627,6 +7598,9 @@
+                         "transform_signature": transform_signature,
+                         "rollout_signature": ROLLOUT_SIGNATURE,
+                         "training_config": training_config,
++                        "manifest": experiment_manifest_data,
++                        "sentinel_tracker": sentinel_tracker.as_dict(),
++                        "best_val_loss_by_horizon": dict(sentinel_tracker.best_scores),
+                         "metric_name": "oracle_avg_rmse",
+                         "metric_value": best_oracle_avg,
+                         "epoch": epoch + 1,
+@@ -7652,6 +7626,9 @@
+                             "transform_signature": transform_signature,
+                             "rollout_signature": ROLLOUT_SIGNATURE,
+                             "training_config": training_config,
++                            "manifest": experiment_manifest_data,
++                            "sentinel_tracker": sentinel_tracker.as_dict(),
++                            "best_val_loss_by_horizon": dict(sentinel_tracker.best_scores),
+                             "metric_name": "pure_ar_h128_rmse",
+                             "metric_value": best_pure_ar_h128,
+                             "epoch": epoch + 1,
+@@ -7690,6 +7667,9 @@
+                             "transform_signature": transform_signature,
+                             "rollout_signature": ROLLOUT_SIGNATURE,
+                             "training_config": training_config,
++                            "manifest": experiment_manifest_data,
++                            "sentinel_tracker": sentinel_tracker.as_dict(),
++                            "best_val_loss_by_horizon": dict(sentinel_tracker.best_scores),
+                             "metric_name": "composite",
+                             "metric_value": best_composite,
+                             "metric_formula": "0.2*oracle_h128 + 0.8*pure_ar_h128",
+@@ -7733,6 +7713,9 @@
+                                 "transform_signature": transform_signature,
+                                 "rollout_signature": ROLLOUT_SIGNATURE,
+                                 "training_config": training_config,
++                                "manifest": experiment_manifest_data,
++                                "sentinel_tracker": sentinel_tracker.as_dict(),
++                                "best_val_loss_by_horizon": dict(sentinel_tracker.best_scores),
+                                 "metric_name": "robust_raw_score",
+                                 "metric_value": best_robust_raw,
+                                 "metric_formula": "log1p(h128/ref_h128); mass/element are hard gates; rate is diagnostic only",
+@@ -7803,6 +7786,9 @@
+ 
+                     "rollout_signature": ROLLOUT_SIGNATURE,
+                     "training_config": training_config,
++                    "manifest": experiment_manifest_data,
++                    "sentinel_tracker": sentinel_tracker.as_dict(),
++                    "best_val_loss_by_horizon": dict(sentinel_tracker.best_scores),
+ 
+                     "rng_states": {
+                         "python": random.getstate(),
+@@ -7858,6 +7844,9 @@
+ 
+                 "rollout_signature": ROLLOUT_SIGNATURE,
+                 "training_config": training_config,
++                "manifest": experiment_manifest_data,
++                "sentinel_tracker": sentinel_tracker.as_dict(),
++                "best_val_loss_by_horizon": dict(sentinel_tracker.best_scores),
+ 
+                 # V68: 保存多指标最佳值
+                 "best_oracle_h128": best_oracle_h128,
+@@ -7908,13 +7897,17 @@
+                 ensure_ascii=False,
+             )
+ 
++        if stop_training:
++            print("Early stopping on the fixed sentinel score.")
++            break
++
+     print("\n" + "=" * 90)
+     print(
+         "V68 training finished."
+     )
+ 
+     print(
+-        f"Best validation loss (total) = "
++        f"Best fixed-horizon sentinel score = "
+         f"{best_val_loss:.6e}"
+     )
+ 
+@@ -7961,6 +7954,10 @@
+             "chemistry operator training"
+         )
+     )
++    parser.add_argument("--weight_decay", type=float, default=1e-5,
++                        help="AdamW weight decay (recorded in the experiment contract).")
++    parser.add_argument("--curriculum_warmup_epochs", type=int, default=None,
++                        help="First curriculum stage length; later stages start every 3 epochs. Mutually exclusive with curriculum_start_epochs.")
+ 
+     parser.add_argument(
+         "--data_dir",
+@@ -8455,6 +8452,8 @@
+         projection_mode=args.projection_mode,
+         desentinelize_scaler=args.desentinelize_scaler,
+         network_arch=args.network_arch,
++        weight_decay=args.weight_decay,
++        curriculum_warmup_epochs=args.curriculum_warmup_epochs,
+         num_workers=args.num_workers,
+     )
+ 
+--- before/training_diagnostics.py
++++ training_diagnostics.py
+@@ -36,9 +36,9 @@
+     if "numpy_rng" in state:
+         np.random.set_state(state["numpy_rng"])
+     if "torch_cpu_rng" in state:
+-        torch.set_rng_state(state["torch_cpu_rng"])
++        torch.set_rng_state(state["torch_cpu_rng"].cpu())
+     if "torch_cuda_rng" in state and torch.cuda.is_available():
+-        torch.cuda.set_rng_state_all(state["torch_cuda_rng"])
++        torch.cuda.set_rng_state_all([value.cpu() for value in state["torch_cuda_rng"]])
+ 
+ 
+ def check_gradient_finite_and_norm(model: nn.Module) -> Tuple[bool, float, Dict[str, Any]]:
+@@ -94,17 +94,50 @@
+     return out_path
+ 
+ 
++@torch.no_grad()
++def clip_gradients_stable(model: nn.Module, max_norm: float = 1.0, total_norm: float | None = None) -> float:
++    """Scale with the float64 norm; never recompute a float32 sum of squares."""
++    if total_norm is None:
++        finite, total_norm, _ = check_gradient_finite_and_norm(model)
++        if not finite:
++            raise ValueError("Cannot clip non-finite gradients")
++    if not np.isfinite(total_norm) or not np.isfinite(max_norm) or max_norm <= 0:
++        raise ValueError("Gradient norm and positive clipping limit must be finite")
++    factor = min(1.0, max_norm / max(total_norm, 1e-300))
++    for parameter in model.parameters():
++        if parameter.grad is not None:
++            parameter.grad.mul_(factor)
++    return total_norm
++
++
+ def replay_snapshot_with_anomaly_detection(
+     snapshot_path: str | Path,
+     model: nn.Module,
+     forward_fn: Any,
+     device: torch.device | str = "cpu",
++    use_saved_context: bool = False,
+ ) -> Dict[str, Any]:
+-    """Replay a saved failure snapshot under torch.autograd.detect_anomaly to pinpoint failure operation."""
++    """Replay a loss callback under detect_anomaly.
++
++    Default callback: fn(model, X, Y), starting at the pre-batch RNG state.
++    With use_saved_context: fn(model, X, Y, context), starting immediately
++    before the forward pass. The callback must use the saved tail mask and
++    configuration, rather than drawing that mask again. It returns the loss;
++    this helper performs backward. Exact CUDA replay requires matching hardware
++    and deterministic operations; CPU stochastic replay is regression-tested.
++    """
+     ckpt = torch.load(str(snapshot_path), map_location=device, weights_only=False)
+     restore_rng_state(ckpt["rng_state"])
+     model.load_state_dict(ckpt["model_state_dict"])
+     model.to(device)
++    for name, module in model.named_modules():
++        module.training = ckpt.get("module_training", {}).get(name, module.training)
++    model.zero_grad(set_to_none=True)
++    context = ckpt.get("replay_context", {})
++    if use_saved_context:
++        if "rng_before_forward" not in context:
++            raise ValueError("Snapshot has no pre-forward RNG for context replay")
++        restore_rng_state(context["rng_before_forward"])
+ 
+     batch_X = ckpt["batch_X"].to(device)
+     batch_Y = ckpt["batch_Y"].to(device) if ckpt.get("batch_Y") is not None else None
+@@ -114,7 +147,7 @@
+ 
+     try:
+         with torch.autograd.detect_anomaly(check_nan=True):
+-            loss = forward_fn(model, batch_X, batch_Y)
++            loss = forward_fn(model, batch_X, batch_Y, context) if use_saved_context else forward_fn(model, batch_X, batch_Y)
+             loss.backward()
+     except Exception as exc:
+         anomaly_detected = True
+@@ -143,10 +176,20 @@
+         self.attempted_batch_idx = 0
+         self.skipped_batches = 0
+         self.successful_batches = 0
+-
+-    def step_attempted(self) -> int:
++        self.batch_rng = None
++        self.batch_buffers = {}
++        self.module_training = {}
++
++    def step_attempted(self, model: Optional[nn.Module] = None) -> int:
+         """Increment monotonic attempted batch index."""
+         self.attempted_batch_idx += 1
++        self.batch_rng = capture_rng_state()
++        self.batch_buffers = {} if model is None else {
++            name: buf.detach().cpu().clone() for name, buf in model.named_buffers()
++        }
++        self.module_training = {} if model is None else {
++            name: module.training for name, module in model.named_modules()
++        }
+         return self.attempted_batch_idx
+ 
+     def record_success(self) -> None:
+@@ -163,6 +206,7 @@
+         optimizer: Optional[torch.optim.Optimizer] = None,
+         error_msg: str = "",
+         diagnostics: Optional[Dict[str, Any]] = None,
++        replay_context: Optional[Dict[str, Any]] = None,
+     ) -> Path:
+         """Record failure snapshot and check whether skip budget is exceeded."""
+         self.skipped_batches += 1
+@@ -174,9 +218,13 @@
+             "window_start": window_start,
+             "batch_X": batch_X.detach().cpu(),
+             "batch_Y": batch_Y.detach().cpu() if batch_Y is not None else None,
+-            "model_state_dict": {k: v.cpu() for k, v in model.state_dict().items()},
++            "model_state_dict": {k: self.batch_buffers.get(k, v.detach().cpu()).clone()
++                                 for k, v in model.state_dict().items()},
+             "optimizer_state_dict": optimizer.state_dict() if optimizer else None,
+-            "rng_state": capture_rng_state(),
++            "rng_state": self.batch_rng if self.batch_rng is not None else capture_rng_state(),
++            "rng_captured_before_batch": self.batch_rng is not None,
++            "module_training": self.module_training,
++            "replay_context": replay_context or {},
+             "error_msg": error_msg,
+             "diagnostics": diagnostics or {},
+         }
+--- before/validate_sc_v68.py
++++ validate_sc_v68.py
+@@ -162,6 +162,12 @@
+                     f"Checkpoint mechanism mismatch: {source} contains "
+                     f"{value!r}, requested {mechanism!r}"
+                 )
++    fi = checkpoint["feature_info"]
++    expected_signature = tr.transform_signature_for(fi.get("output_parameterization", "direct_rate"))
++    if checkpoint.get("transform_signature") != expected_signature or fi.get("transform_signature") != expected_signature:
++        raise ValueError("Transform signature differs between checkpoint, mode and feature_info")
++    import experiment_manifest as em
++    em.verify_runtime_artifacts(checkpoint, fi)
+     return checkpoint
+ 
+ 
+@@ -392,6 +398,11 @@
+             max_parts=10, sample_rate=0.02, max_rows=2_000_000,
+             sample_ids=train_sample_ids,
+         )
++        _validate_scaler(scaler_x, "scaler_X", len(feature_info["input_cols"]))
++        _validate_scaler(scaler_y, "scaler_Y", len(feature_info["output_cols"]))
++        import experiment_manifest as em
++        em.verify_runtime_artifacts({"manifest": feature_info.get("manifest")}, feature_info,
++                                    scaler_x, scaler_y, (data_dir,))
+         scaler_dir = output_root / tr.artifact_subdir("scalers")
+         scaler_dir.mkdir(parents=True, exist_ok=True)
+         joblib.dump(scaler_x, scaler_dir / f"scaler_X_{mechanism}_{sig_to_use}{scaler_suffix}.pkl")
+@@ -399,8 +410,6 @@
+         saved_info = dict(feature_info)
+         saved_info["_scaler_source"] = f"rebuilt:{scaler_dir}"
+         joblib.dump(saved_info, scaler_dir / f"feature_info_{mechanism}_{sig_to_use}{scaler_suffix}.pkl")
+-        _validate_scaler(scaler_x, "scaler_X", len(feature_info["input_cols"]))
+-        _validate_scaler(scaler_y, "scaler_Y", len(feature_info["output_cols"]))
+         return scaler_x, scaler_y, saved_info
+     sx_path = scaler_dir / f"scaler_X_{mechanism}_{matched_sig}{matched_suffix}.pkl"
+     sy_path = scaler_dir / f"scaler_Y_{mechanism}_{matched_sig}{matched_suffix}.pkl"
+@@ -442,6 +451,9 @@
+     if not np.isclose(saved_rate_z_limit, checkpoint_rate_z_limit):
+         raise ValueError("Checkpoint and scaler feature_info differ in rate_z_limit")
+     saved_info["_scaler_source"] = str(scaler_dir)
++    import experiment_manifest as em
++    em.verify_runtime_artifacts({"manifest": feature_info.get("manifest")}, feature_info,
++                                scaler_x, scaler_y, (data_dir,) if data_dir is not None else ())
+     return scaler_x, scaler_y, saved_info
+ 
+ 

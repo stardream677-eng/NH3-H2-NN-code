@@ -904,96 +904,38 @@ def compute_qssa_rate_mask(
     active_threshold: float = 1e-12,
     noise_threshold: float = 1e-12,
 ) -> torch.Tensor | None:
-    """Mask destruction rate heads (odd columns) ONLY for dormant trace radicals.
+    """Mask D only when both true endpoints establish a dormant species.
 
-    Conservative rule:
-    Only masks destruction head D when BOTH Y_old and Y_next are below active_threshold
-    AND |Y_next - Y_old| < noise_threshold.
-    If state information (Y_old, Y_next) is not supplied, no masking is performed (returns None)
-    to prevent erroneously masking strong decay transitions (e.g. Y_old=1e-4 -> Y_next=1e-16 with D=1e8).
+    Full input vectors use the saved layout (micro columns are log10 Y).
+    Dual-branch micro-only vectors contain physical Y. Legacy QSSA reactive-only
+    vectors retain the macro-linear / micro-log input layout. Missing states
+    never establish dormancy; P/D labels alone cannot justify masking D.
     """
-    rate_mode = getattr(tools, "rate_decode_mode", None)
-    if rate_mode not in ("qssa", "qssa_asymptotic", "dual_branch", "dual_branch_pd_v1"):
+    mode = getattr(tools, "rate_decode_mode", None)
+    if mode not in ("qssa", "qssa_asymptotic", "dual_branch", "dual_branch_pd_v1"):
         return None
-
+    if Y_old_unscaled is None or Y_next_unscaled is None:
+        return None
+    if Y_old_unscaled.shape != Y_next_unscaled.shape:
+        raise ValueError("Mask endpoint shapes differ")
     mask = torch.ones_like(true_rate_scaled)
-    scale_y = tools.scale_Y.to(device=true_rate_scaled.device)
-    mean_y = tools.mean_Y.to(device=true_rate_scaled.device)
-    target_denorm = true_rate_scaled * scale_y + mean_y
-
-    has_states = (Y_old_unscaled is not None and Y_next_unscaled is not None)
-    if not has_states:
-        # P/D labels do not establish whether the initial concentration is dormant.
-        return None
-
-    if rate_mode in ("dual_branch", "dual_branch_pd_v1"):
-        slow_dim = len(tools.macro_species) if hasattr(tools, "macro_species") else len(tools.macro_idx)
-        micro_targets = target_denorm[:, slow_dim:]
-        n_micro = micro_targets.shape[1] // 2
-        micro_mask = torch.ones_like(micro_targets)
-        for i in range(n_micro):
-            if has_states:
-                if Y_old_unscaled.shape[1] == n_micro:
-                    y_old_i = Y_old_unscaled[:, i]
-                    y_next_i = Y_next_unscaled[:, i]
-                else:
-                    col_idx = tools.micro_idx[i]
-                    y_old_i = Y_old_unscaled[:, col_idx]
-                    y_next_i = Y_next_unscaled[:, col_idx]
-
-                if (y_old_i < 0).any():
-                    y_old_phys = torch.pow(10.0, y_old_i.clamp(min=-40.0, max=0.0))
-                    y_next_phys = torch.pow(10.0, y_next_i.clamp(min=-40.0, max=0.0))
-                else:
-                    y_old_phys = y_old_i
-                    y_next_phys = y_next_i
-                is_dormant = (y_old_phys < active_threshold) & (y_next_phys < active_threshold) & ((y_next_phys - y_old_phys).abs() < noise_threshold)
-            else:
-                z1 = micro_targets[:, 2 * i]
-                z2 = micro_targets[:, 2 * i + 1]
-                is_dormant = (z1 < -15.0) & (z2 <= 4.0)
-
-            micro_mask[:, 2 * i + 1] = torch.where(is_dormant, 0.0, 1.0)
-
-        mask[:, slow_dim:] = micro_mask
-        if (mask == 1.0).all():
-            return None
-        return mask
-    elif rate_mode in ("qssa", "qssa_asymptotic"):
-        reactive_cols = list(tools.macro_idx) + list(tools.micro_idx)
-        n_reactive = true_rate_scaled.shape[1] // 2
-        for i in range(n_reactive):
-            if has_states:
-                if Y_old_unscaled.shape[1] == n_reactive:
-                    y_old_i = Y_old_unscaled[:, i]
-                    y_next_i = Y_next_unscaled[:, i]
-                    is_micro = (i >= len(tools.macro_idx))
-                else:
-                    col_idx = reactive_cols[i]
-                    y_old_i = Y_old_unscaled[:, col_idx]
-                    y_next_i = Y_next_unscaled[:, col_idx]
-                    is_micro = col_idx in tools.micro_idx
-
-                if is_micro or (y_old_i < 0).any():
-                    y_old_phys = torch.pow(10.0, y_old_i.clamp(min=-40.0, max=0.0))
-                    y_next_phys = torch.pow(10.0, y_next_i.clamp(min=-40.0, max=0.0))
-                else:
-                    y_old_phys = y_old_i
-                    y_next_phys = y_next_i
-                is_dormant = (y_old_phys < active_threshold) & (y_next_phys < active_threshold) & ((y_next_phys - y_old_phys).abs() < noise_threshold)
-            else:
-                z1 = target_denorm[:, 2 * i]
-                z2 = target_denorm[:, 2 * i + 1]
-                is_dormant = (z1 < -15.0) & (z2 <= 4.0)
-
-            mask[:, 2 * i + 1] = torch.where(is_dormant, 0.0, 1.0)
-
-        if (mask == 1.0).all():
-            return None
-        return mask
-    if (mask == 1.0).all():
-        return None
-    return mask
+    is_dual = mode in ("dual_branch", "dual_branch_pd_v1")
+    n_macro = len(tools.macro_idx)
+    offset = n_macro if is_dual else 0
+    n_species = (true_rate_scaled.shape[1] - offset) // 2
+    full_cols = list(tools.micro_idx) if is_dual else list(tools.macro_idx) + list(tools.micro_idx)
+    is_subset = Y_old_unscaled.shape[1] == n_species
+    for i in range(n_species):
+        col = i if is_subset else full_cols[i]
+        old = Y_old_unscaled[:, col]
+        new = Y_next_unscaled[:, col]
+        is_log = (is_dual and not is_subset) or (not is_dual and i >= n_macro)
+        if is_log:
+            old = torch.pow(10.0, old.clamp(min=-40.0, max=0.0))
+            new = torch.pow(10.0, new.clamp(min=-40.0, max=0.0))
+        dormant = (old < active_threshold) & (new < active_threshold) & ((new-old).abs() < noise_threshold)
+        mask[:, offset + 2*i + 1] = (~dormant).to(mask.dtype)
+    return None if bool((mask == 1.0).all()) else mask
 
 
 
@@ -2139,31 +2081,26 @@ def build_feature_info(
     if output_parameterization == "qssa":
         for sp in reactive_species:
             output_cols.extend((f"log10_P_avg_{sp}", f"log10_D_coef_avg_{sp}"))
-        transform_signature = QSSA_TRANSFORM_SIGNATURE
     elif output_parameterization == "qssa_asymptotic":
         for sp in reactive_species:
             output_cols.extend((f"log10_Y_qssa_{sp}", f"log10_D_coef_avg_{sp}"))
-        transform_signature = QSSA_ASYMPTOTIC_TRANSFORM_SIGNATURE
     elif output_parameterization == "dual_branch":
         for sp in macro_species:
             output_cols.append(f"asinh_dYdt_{sp}")
         for sp in micro_species:
             output_cols.extend((f"log10_Y_qssa_{sp}", f"log10_D_coef_avg_{sp}"))
-        transform_signature = DUAL_BRANCH_TRANSFORM_SIGNATURE
     elif output_parameterization == "dual_branch_pd_v1":
         for sp in macro_species:
             output_cols.append(f"asinh_dYdt_{sp}")
         for sp in micro_species:
             output_cols.extend((f"log10_P_avg_{sp}", f"log10_D_coef_avg_{sp}"))
-        transform_signature = DUAL_BRANCH_PD_V1_TRANSFORM_SIGNATURE
     else:
         output_cols.extend(f"asinh_dYdt_{sp}" for sp in macro_species)
         output_cols.extend(f"dlog10Ydt_{sp}" for sp in micro_species)
-        transform_signature = LEGACY_TRANSFORM_SIGNATURE
 
     return {
         "version": VERSION,
-        "transform_signature": transform_signature,
+        "transform_signature": transform_signature_for(output_parameterization),
         "all_species": list(species),
 
         "inert_species": list(
@@ -2190,9 +2127,10 @@ def build_feature_info(
 
         "epsilon": LOG_EPS,
 
-        "dt_min": DEFAULT_DT_MIN,
+        "dt_min": None,
 
-        "dt_max": DEFAULT_DT_MAX,
+        "dt_max": None,
+        "dt_policy": {"validation": "finite_positive", "clipping": False},
         "macro_rate_scale": np.ones(len(macro_species), dtype=np.float32),
         "output_parameterization": output_parameterization,
         "rate_decode_mode": rate_decode_mode,
@@ -2291,23 +2229,7 @@ def compute_streaming_scalers(
     ).astype(np.float32)
     feature_info["macro_rate_scale"] = macro_rate_scale
     feature_info["version"] = VERSION
-    feature_info["transform_signature"] = (
-        DUAL_BRANCH_PD_V1_TRANSFORM_SIGNATURE
-        if feature_info.get("output_parameterization") == "dual_branch_pd_v1"
-        else (
-            DUAL_BRANCH_TRANSFORM_SIGNATURE
-            if feature_info.get("output_parameterization") == "dual_branch"
-            else (
-                QSSA_ASYMPTOTIC_TRANSFORM_SIGNATURE
-                if feature_info.get("output_parameterization") == "qssa_asymptotic"
-                else (
-                    QSSA_TRANSFORM_SIGNATURE
-                    if feature_info.get("output_parameterization") == "qssa"
-                    else LEGACY_TRANSFORM_SIGNATURE
-                )
-            )
-        )
-    )
+    feature_info["transform_signature"] = transform_signature_for(feature_info.get("output_parameterization", "direct_rate"))
 
     print("[Scaler] Macro P90 rate scales:")
     for sp, scale in zip(feature_info["macro_species"], macro_rate_scale):
@@ -3120,18 +3042,25 @@ class CoarseOperatorTools:
         )
         self.n_reactive = self.n_macro + self.n_micro
 
+        import chemistry_contract as cc
+        mechanism_path = cc.resolve_mechanism_file(
+            feature_info.get("mechanism", "nuig_2024"), feature_info.get("mechanism_path")
+        )
+        self.mechanism_contract = cc.get_mechanism_contract(
+            mechanism_path, feature_info["all_species"], device=self.device
+        )
+        self.mech_sha256 = self.mechanism_contract["mechanism_sha256"]
+        actual_matrix = build_element_matrix(
+            self.macro_species + self.micro_species, device=self.device,
+            mechanism_path=mechanism_path,
+        )
         if "element_matrix" in feature_info and feature_info["element_matrix"] is not None:
-            elem_mat = feature_info["element_matrix"]
-            if isinstance(elem_mat, torch.Tensor):
-                self.A = elem_mat.to(device=self.device, dtype=torch.float32)
-            else:
-                self.A = torch.tensor(elem_mat, dtype=torch.float32, device=self.device)
-        else:
-            self.A = build_element_matrix(
-                self.macro_species
-                + self.micro_species,
-                device=self.device,
-            )
+            supplied_matrix = torch.as_tensor(feature_info["element_matrix"], device=self.device, dtype=torch.float32)
+            if supplied_matrix.shape != actual_matrix.shape or not torch.allclose(
+                supplied_matrix, actual_matrix, rtol=1e-7, atol=1e-8
+            ):
+                raise ValueError("Element matrix does not match the actual mechanism and reactive species order")
+        self.A = actual_matrix
 
 
         # Constant pseudo-inverse used by the affine conservation projection.
@@ -4272,6 +4201,7 @@ def compute_training_loss(
     state_loss_source: str = DEFAULT_STATE_LOSS_SOURCE,
     lambda_radical: float = 0.0,
     lambda_no: float = 0.0,
+    true_current_X_scaled=None,
 ):
     """
     最终 loss：
@@ -4290,7 +4220,11 @@ def compute_training_loss(
     # Both macro z and micro log-rate targets are already standardized
     # consistently by scaler_Y in V68.
     true_rate_scaled = target
-    rate_mask = compute_qssa_rate_mask(tools, true_rate_scaled)
+    rate_mask = compute_qssa_rate_mask(
+        tools, true_rate_scaled,
+        tools.inverse_state(true_current_X_scaled) if true_current_X_scaled is not None else None,
+        tools.inverse_state(true_next_X_scaled) if true_current_X_scaled is not None else None,
+    )
     if rate_loss_kind == "mse":
         rate_loss = weighted_mse_loss(
             pred_rate_scaled,
@@ -4609,6 +4543,14 @@ def validate_model_v68(
     # Per-horizon 指标累积器
     horizon_metrics = HorizonMetricAccumulator(eval_horizons)
     sentinel_accum = {str(h): {"true": [], "pred": [], "inert_mass": []} for h in eval_horizons}
+    species_order = list(tools.macro_species) + list(tools.micro_species)
+    diagnostic_names = [sp for sp in species_order if sp in svp.KEY_RADICALS + svp.POLLUTANT_SPECIES]
+    diagnostic_cols = [species_order.index(sp) for sp in diagnostic_names]
+    trajectory_accum = {str(h): svp.TrajectoryDiagnosticAccumulator(diagnostic_names) for h in eval_horizons}
+
+    def diagnostic_state(state_scaled):
+        _, macro, _, micro = tools.get_current_state(state_scaled)
+        return torch.cat([macro, micro], dim=-1)[:, diagnostic_cols].cpu().numpy()
 
     batches = 0
 
@@ -4644,6 +4586,7 @@ def validate_model_v68(
                 # Oracle one-step: 每步用真实物种
                 for step in range(H):
                     current_X = batch_X[:, step, :]
+                    true_current_X = current_X
 
                     pred_rate = model(current_X)
                     pred_state = tools.predict_next_state(
@@ -4672,6 +4615,7 @@ def validate_model_v68(
                         rate_loss_kind=rate_loss_kind,
                         rate_huber_beta=rate_huber_beta,
                         state_loss_source=state_loss_source,
+                        true_current_X_scaled=true_current_X,
                     )
 
                     loss_rad_val = torch.tensor(0.0, device=device)
@@ -4737,6 +4681,9 @@ def validate_model_v68(
             elif mode == "pure_ar":
                 # Pure species-AR: 完全自回归物种，T/P/dt 保持真实
                 current_X = batch_X[:, 0, :]
+                trajectory_true = [diagnostic_state(current_X)]
+                trajectory_pred = [trajectory_true[0]]
+                trajectory_times = [np.zeros(B, dtype=np.float64)]
 
                 for step in range(H):
                     true_current_X = batch_X[:, step, :]
@@ -4776,6 +4723,7 @@ def validate_model_v68(
                         rate_loss_kind=rate_loss_kind,
                         rate_huber_beta=rate_huber_beta,
                         state_loss_source=state_loss_source,
+                        true_current_X_scaled=true_current_X,
                     )
 
                     loss_rad_val = torch.tensor(0.0, device=device)
@@ -4812,6 +4760,13 @@ def validate_model_v68(
                     seq_radical += loss_rad_val.item()
                     seq_no += loss_no_val.item()
 
+                    # Retain only this batch's selected species, not all trajectories.
+                    val_macro, val_micro_log = select_training_state(pred_state, state_loss_source)
+                    val_micro = torch.pow(10.0, val_micro_log.clamp(min=-40.0, max=0.0))
+                    trajectory_pred.append(torch.cat([val_macro, val_micro], dim=-1)[:, diagnostic_cols].cpu().numpy())
+                    trajectory_true.append(diagnostic_state(true_next_X))
+                    trajectory_times.append(trajectory_times[-1] + tools.get_current_dt(true_current_X).squeeze(-1).cpu().numpy())
+
                     # Per-horizon pure-AR metrics
                     if (step + 1) in eval_horizons:
                         val_macro, val_micro_log = select_training_state(
@@ -4839,6 +4794,10 @@ def validate_model_v68(
                         )
 
                         h_key = str(step + 1)
+                        trajectory_accum[h_key].update(
+                            np.stack(trajectory_true, axis=1), np.stack(trajectory_pred, axis=1),
+                            np.stack(trajectory_times, axis=1),
+                        )
                         val_micro = torch.pow(10.0, torch.clamp(val_micro_log, min=-40.0, max=0.0))
                         pred_species = torch.cat([val_macro, val_micro], dim=-1).detach().cpu().numpy()
 
@@ -4905,6 +4864,12 @@ def validate_model_v68(
                 element_matrix=elem_mat_np,
                 inert_mass=np.concatenate(acc["inert_mass"]),
             )
+            sentinel_metrics[h_str]["metric_scope"] = "window_endpoints"
+            sentinel_metrics[h_str]["trajectory_diagnostics"] = trajectory_accum[h_str].finalize()
+            sentinel_metrics[h_str]["timing_metrics"] = {
+                f"{sp}_peak_time_mae_s": record["peak_time_mae_s"]
+                for sp, record in sentinel_metrics[h_str]["trajectory_diagnostics"].items()
+            }
 
     stats = {
         "total": total / batches,
@@ -5286,6 +5251,12 @@ def resolve_temperature_mechanism_path(
         if candidate is not None and candidate.is_file():
             return candidate.resolve()
 
+    import chemistry_contract as cc
+    try:
+        return cc.resolve_mechanism_file(mechanism, recorded, (data_root, data_root.parent))
+    except FileNotFoundError:
+        pass
+
     attempted = "\n  ".join(str(path) for path in candidates if path is not None)
     raise FileNotFoundError(
         "Cantera mechanism file not found. Tried:\n  " + attempted
@@ -5597,6 +5568,8 @@ def train_model_v68(
     projection_mode: str = "multiplicative_kl",
     desentinelize_scaler: bool = False,
     network_arch: str = "mlp",
+    weight_decay: float = 1e-5,
+    curriculum_warmup_epochs: int | None = None,
 ):
     """
     V68 训练入口：长 horizon 物种自回归，外部真实 T/P/dt。
@@ -5620,7 +5593,16 @@ def train_model_v68(
     if curriculum_horizons is None:
         curriculum_horizons = [1, 8, 32, 128]
     if curriculum_start_epochs is None:
-        curriculum_start_epochs = [0, 2, 5, 8]
+        if curriculum_warmup_epochs is not None:
+            if curriculum_warmup_epochs < 1:
+                raise ValueError("curriculum_warmup_epochs must be positive")
+            curriculum_start_epochs = [0] + [curriculum_warmup_epochs + 3*i for i in range(len(curriculum_horizons)-1)]
+        else:
+            curriculum_start_epochs = [0, 2, 5, 8]
+    elif curriculum_warmup_epochs is not None:
+        raise ValueError("Use either curriculum_start_epochs or curriculum_warmup_epochs")
+    if not np.isfinite(weight_decay) or weight_decay < 0:
+        raise ValueError("weight_decay must be finite and nonnegative")
     if eval_horizons is None:
         eval_horizons = [1, 2, 4, 8, 16, 32, 64, 128]
     if train_stride is None:
@@ -5843,6 +5825,10 @@ def train_model_v68(
         rate_z_limit=rate_z_limit,
     )
     expected_feature_info = feature_info.copy()
+    chemical_mechanism_path = resolve_temperature_mechanism_path(metadata, data_dir, mechanism)
+    feature_info.update(mechanism=mechanism, mechanism_path=str(chemical_mechanism_path))
+    expected_feature_info.update(mechanism=mechanism, mechanism_path=str(chemical_mechanism_path))
+    training_config["weight_decay"] = float(weight_decay)
 
     # V3.5 uses a fixed, differentiable thermodynamic closure.  If metadata
     # or Cantera is unavailable, remain finite and use recorded temperature.
@@ -6087,6 +6073,8 @@ def train_model_v68(
     # dataset
     # --------------------------------------------------------
 
+    # A scaler loaded from a relocated experiment must use today's resolved file.
+    feature_info["mechanism_path"] = str(chemical_mechanism_path)
     train_dataset = CoarseOperatorDataset(
         train_parts,
         feature_info,
@@ -6098,6 +6086,7 @@ def train_model_v68(
         seed=SEED,
         parts_per_epoch=parts_per_epoch,
         sample_ids=train_sample_ids,
+        include_metadata=True,
     )
 
     val_dataset = CoarseOperatorDataset(
@@ -6106,7 +6095,7 @@ def train_model_v68(
         scaler_X,
         scaler_Y,
         max_horizon=max_horizon,  # V68
-        shuffle_parts=True,
+        shuffle_parts=False,
         stride=val_stride,  # V68
         seed=SEED,
         parts_per_epoch=val_parts_per_epoch,
@@ -6211,27 +6200,38 @@ def train_model_v68(
         rate_feature_weights = species_loss_weights
     state_feature_weights = species_loss_weights
     training_config["species_loss_metadata"] = species_loss_metadata
-    scaler_hashes = {
-        "scaler_X": hashlib.sha256(scaler_X.scale_.tobytes() + scaler_X.mean_.tobytes()).hexdigest(),
-        "scaler_Y": hashlib.sha256(scaler_Y.scale_.tobytes() + scaler_Y.mean_.tobytes()).hexdigest(),
+    scaler_hashes = em.hash_scalers(scaler_X, scaler_Y)
+    chem_contract = dict(tools.mechanism_contract, mechanism_name=mechanism)
+    dataset_audit = em.audit_parquet_dataset(resolve_mechanism_trajectory_dir(data_dir, mechanism))
+    if not dataset_audit["is_consistent"]:
+        raise ValueError(dataset_audit["inconsistency_warning"])
+    split_hash = em.hash_json({"train": sorted(train_sample_ids) if train_sample_ids else [p.name for p in train_parts],
+                               "validation": sorted(val_sample_ids) if val_sample_ids else [p.name for p in val_parts]})
+    sentinel_spec = {
+        "part_content": dataset_audit["parquet_parts"], "split_hash": split_hash,
+        "selected_parts": [p.name for p in select_epoch_files(val_parts, val_parts_per_epoch, SEED, 0, False)],
+        "stride": val_dataset.stride, "window_horizon": max_horizon, "horizons": eval_horizons,
+        "batch_size": val_batch_size, "max_batches": max_val_batches, "num_workers": num_workers,
+        "state_loss_source": state_loss_source, "feedback_state_source": feedback_state_source,
+        "temperature_mode": effective_temperature_mode,
     }
-    chem_contract = {
-        "mechanism_name": mechanism,
-        "mechanism_sha256": getattr(tools, "mech_sha256", "unverified"),
-        "species_order": feature_info["all_species"],
-        "element_names": ["H", "N", "O", "AR"],
-    }
+    training_config["sentinel_spec"] = sentinel_spec
+    training_config["selection_horizon"] = max(eval_horizons)
     experiment_manifest_data = em.create_experiment_manifest(
         mechanism_contract=chem_contract,
         output_parameterization=output_parameterization,
         transform_signature=transform_signature,
-        dt_policy={"min": float(feature_info.get("dt_min", 1e-8)), "max": float(feature_info.get("dt_max", 2e-4))},
+        dt_policy={"validation": "finite_positive", "clipping": False},
         concentration_policy={"floor": float(LOG_EPS)},
         evaluation_protocol_id=svp.PROTOCOL_ID,
         scaler_hashes=scaler_hashes,
+        dataset_audit=dataset_audit,
+        split_hash=split_hash,
+        sentinel_hash=em.hash_json(sentinel_spec),
     )
     feature_info["manifest"] = experiment_manifest_data
     training_config["manifest"] = experiment_manifest_data
+    joblib.dump(feature_info, fi_path)
     print(
         "Species loss weights: "
         f"macro={macro_loss_weight}, micro={micro_loss_weight}, "
@@ -6242,7 +6242,7 @@ def train_model_v68(
     optimizer = torch.optim.AdamW(
         model.parameters(),
         lr=lr,
-        weight_decay=1e-5,
+        weight_decay=weight_decay,
     )
 
     scheduler = (
@@ -6294,6 +6294,8 @@ def train_model_v68(
     # V68 断点续训逻辑：支持完整 RNG 状态恢复
     # ========================================================
     resume_path = None
+    restored_sentinel_state = None
+    restored_horizon_losses = {}
 
     if resume == "auto":
         latest_path = weights_dir / f"latest_v68_{mechanism}.pth"
@@ -6307,6 +6309,9 @@ def train_model_v68(
 
         try:
             ckpt = torch.load(resume_path, map_location=DEVICE, weights_only=False)
+            em.require_compatible(ckpt, experiment_manifest_data)
+            if "sentinel_tracker" not in ckpt:
+                raise ValueError("Checkpoint lacks sentinel selection state; use a new output directory")
 
             # V68 签名校验
             resume_config_keys = {
@@ -6327,6 +6332,7 @@ def train_model_v68(
                     "trust_region_fraction",
                     "feedback_noise_std",
                     "detach_rollout",
+                    "weight_decay",
                 )
             }
             if not checkpoint_compatible(
@@ -6340,7 +6346,7 @@ def train_model_v68(
                 print(f"  Expected: {VERSION}/{transform_signature}/{ROLLOUT_SIGNATURE}")
                 print(f"  Found: {ckpt.get('version')}/{ckpt.get('transform_signature')}/{ckpt.get('rollout_signature')}")
                 print("  Training configuration differs or is missing; optimizer/RNG state will not be resumed.")
-                print("[WARNING] Starting training from scratch.")
+                raise ValueError("Checkpoint training configuration differs; refusing a silent restart")
             else:
                 model_state = ckpt["model_state_dict"]
                 legacy_projection = (
@@ -6376,6 +6382,8 @@ def train_model_v68(
                     best_val_loss = ckpt["best_val_loss"]
                     patience_counter = ckpt.get("patience_counter", 0)
                     history = ckpt.get("history", [])
+                    restored_sentinel_state = ckpt["sentinel_tracker"]
+                    restored_horizon_losses = ckpt.get("best_val_loss_by_horizon", {})
 
                     # V68: 恢复多指标最佳值（如果存在）
                     best_oracle_h128 = ckpt.get("best_oracle_h128", float("inf"))
@@ -6388,7 +6396,7 @@ def train_model_v68(
                     if "rng_states" in ckpt:
                         random.setstate(ckpt["rng_states"]["python"])
                         np.random.set_state(ckpt["rng_states"]["numpy"])
-                        torch.set_rng_state(ckpt["rng_states"]["torch"])
+                        torch.set_rng_state(ckpt["rng_states"]["torch"].cpu())
                         cuda_states = ckpt["rng_states"].get("cuda")
                         cuda_restored = cuda_states is None or restore_cuda_rng_state(cuda_states)
                         if cuda_states is not None and not cuda_restored:
@@ -6406,12 +6414,7 @@ def train_model_v68(
                     print(f"[RESUME] History length: {len(history)}")
 
         except Exception as e:
-            print(f"[ERROR] Failed to load checkpoint: {e}")
-            print("[WARNING] Starting training from scratch.")
-            start_epoch = 0
-            best_val_loss = float("inf")
-            patience_counter = 0
-            history = []
+            raise RuntimeError(f"Refusing incompatible resume checkpoint {resume_path}: {e}") from e
 
     # ========================================================
     # V68 暖机启动逻辑：只加载模型权重，不加载优化器/scheduler/history
@@ -6423,6 +6426,11 @@ def train_model_v68(
 
             try:
                 ckpt = torch.load(warm_start_path, map_location=DEVICE, weights_only=False)
+                # Weight-only initialization may use a different dataset, but never a
+                # different chemistry, parameterization or standardization.
+                warm_contract = {k: v for k, v in experiment_manifest_data.items()
+                                 if k not in ("split_hash", "sentinel_hash", "dataset_audit")}
+                em.require_compatible(ckpt, warm_contract)
 
                 if ckpt.get("version") != VERSION:
                     raise RuntimeError(
@@ -6469,8 +6477,10 @@ def train_model_v68(
         max_skip_budget=50,
         debug_mode=False,
     )
-    sentinel_tracker = svp.HorizonSentinelTracker()
-    best_val_loss_by_horizon = {}
+    sentinel_tracker = svp.HorizonSentinelTracker(eval_horizons)
+    if restored_sentinel_state is not None:
+        sentinel_tracker.load_state_dict(restored_sentinel_state)
+    best_val_loss_by_horizon = {int(h): float(v) for h, v in restored_horizon_losses.items()}
     previous_horizon = None
 
     # ========================================================
@@ -6481,8 +6491,7 @@ def train_model_v68(
         # 当前 epoch 的 active horizon
         active_horizon = horizon_for_epoch(epoch, horizon_schedule)
         if previous_horizon is not None and active_horizon != previous_horizon:
-            print(f"\n[CURRICULUM] Transitioning horizon from {previous_horizon} to {active_horizon}. Resetting patience counter.")
-            patience_counter = 0
+            print(f"\n[CURRICULUM] Transitioning horizon from {previous_horizon} to {active_horizon}; fixed sentinel monitoring continues.")
         previous_horizon = active_horizon
 
         # The epoch is relative to this invocation. Warm-start runs therefore
@@ -6501,9 +6510,8 @@ def train_model_v68(
         )
 
         train_dataset.set_epoch(epoch)
-        # Validation samples are re-selected deterministically per epoch. A
-        # fixed epoch would repeatedly validate the same leading files.
-        val_dataset.set_epoch(epoch)
+        # The sentinel population and any truncated batch prefix are immutable.
+        val_dataset.set_epoch(0)
 
         model.train()
 
@@ -6535,8 +6543,8 @@ def train_model_v68(
             ncols=120,
         )
 
-        for batch_X, batch_Y in pbar:
-            attempted_batch_idx = tracker.step_attempted()
+        for batch_X, batch_Y, batch_metadata in pbar:
+            attempted_batch_idx = tracker.step_attempted(model=model)
 
             batch_X = batch_X.to(
                 DEVICE,
@@ -6582,6 +6590,23 @@ def train_model_v68(
                 device=DEVICE,
             )
             use_pred_mask = build_prediction_tail_mask(B, actual_H, tail_lengths)
+            replay_context = {
+                "training_config": training_config, "feature_info": feature_info,
+                "scaler_X": scaler_X, "scaler_Y": scaler_Y,
+                "actual_horizon": actual_H, "tail_fraction": tail_fraction,
+                "feedback_blend": feedback_strength, "epoch": epoch,
+                "use_pred_mask": use_pred_mask.detach().cpu(),
+                "rng_before_forward": td.capture_rng_state(),
+            }
+
+            def record_batch_failure(reason, diagnostics=None):
+                return tracker.record_failure_and_check_budget(
+                    model=model, batch_X=batch_X, batch_Y=batch_Y,
+                    sample_ids=batch_metadata["sample_id"],
+                    window_start=batch_metadata["window_start"].tolist(),
+                    epoch=epoch + 1, optimizer=optimizer, error_msg=reason,
+                    diagnostics=diagnostics, replay_context={**replay_context, "part": batch_metadata["part"]},
+                )
 
             current_X = batch_X[:, 0, :]
 
@@ -6619,444 +6644,448 @@ def train_model_v68(
             previous_pred_rate_scaled = None
             previous_true_rate_scaled = None
 
-            for step in range(actual_H):
+            try:
+                for step in range(actual_H):
 
-                # ----------------------------------------------
-                # network & disentangled parameter supervision
-                # ----------------------------------------------
-                true_current_X = batch_X[:, step, :]
-                is_true_input = (step == 0) or torch.equal(current_X, true_current_X)
+                    # ----------------------------------------------
+                    # network & disentangled parameter supervision
+                    # ----------------------------------------------
+                    true_current_X = batch_X[:, step, :]
+                    is_true_input = (step == 0) or torch.equal(current_X, true_current_X)
 
-                if is_true_input:
-                    pred_rate_scaled = model(current_X)
-                    rate_pred_true = pred_rate_scaled
-                else:
-                    pred_rate_scaled = model(current_X)
-                    rate_pred_true = model(true_current_X)
-
-                # ----------------------------------------------
-                # next state
-                # ----------------------------------------------
-
-                pred_state = (
-                    tools.predict_next_state(
-                        current_X,
-                        pred_rate_scaled,
-                        safe_for_rollout=(feedback_state_source != "raw"),
-                        experiment_mode=experiment_mode,
-                        trust_region_fraction=trust_region_fraction,
-                        state_update_mode=state_update_mode,
-                    )
-                )
-
-                # ✅ 修复：True endpoint of this transition
-                #
-                # Dataset window now contains t0...t50 (51 points)
-                # So all 50 transitions have their endpoints:
-                # step 0: t0 -> t1
-                # step 1: t1 -> t2
-                # ...
-                # step 49: t49 -> t50 ✅ t50 在窗口中！
-                #
-                # 所有 50 步都计算 state loss
-
-                true_next_X = (
-                    batch_X[
-                        :,
-                        step + 1,
-                        :
-                    ]
-                )
-                step_weights = transition_weights[:, step] if transition_weights is not None else None
-                true_cur_X_unscaled = true_current_X * tools.scale_X + tools.mean_X
-                true_nxt_X_unscaled = true_next_X * tools.scale_X + tools.mean_X
-                if use_induction_weights:
-                    from enhanced_loss_and_weights import compute_induction_sample_weights
-                    ind_w = compute_induction_sample_weights(
-                        true_cur_X_unscaled, true_nxt_X_unscaled, tools, boost_factor=induction_boost
-                    )
-                    step_weights = ind_w if step_weights is None else step_weights * ind_w
-
-                # V68 targets are already standardized
-                true_rate_scaled = batch_Y[:, step, :]
-                rate_mask = compute_qssa_rate_mask(
-                    tools,
-                    true_rate_scaled,
-                    Y_old_unscaled=true_cur_X_unscaled,
-                    Y_next_unscaled=true_nxt_X_unscaled,
-                )
-                if rate_loss_kind == "mse":
-                    rate_loss = weighted_mse_loss(
-                        rate_pred_true,
-                        true_rate_scaled,
-                        sample_weights=step_weights,
-                        feature_weights=rate_feature_weights,
-                        mask=rate_mask,
-                    )
-                else:
-                    rate_loss = weighted_smooth_l1_loss(
-                        rate_pred_true,
-                        true_rate_scaled,
-                        sample_weights=step_weights,
-                        feature_weights=rate_feature_weights,
-                        mask=rate_mask,
-                        beta=rate_huber_beta,
-                    )
-                # ----------------------------------------------
-                # integrated state loss
-                # ✅ 修复：所有 50 步都计算 state loss
-                # ----------------------------------------------
-
-                train_macro, train_micro_log = select_training_state(
-                    pred_state, state_loss_source
-                )
-
-                pred_macro_scaled = (
-                    (
-                        train_macro
-                        - tools.mean_X[
-                            tools.macro_idx
-                        ]
-                    )
-                    / tools.scale_X[
-                        tools.macro_idx
-                    ]
-                )
-
-                pred_micro_log_scaled = (
-                    (
-                        train_micro_log
-                        - tools.mean_X[
-                            tools.micro_idx
-                        ]
-                    )
-                    / tools.scale_X[
-                        tools.micro_idx
-                    ]
-                )
-
-                pred_state_scaled = (
-                    torch.cat(
-                        [
-                            pred_macro_scaled,
-                            pred_micro_log_scaled,
-                        ],
-                        dim=1,
-                    )
-                )
-
-                true_macro_scaled = (
-                    true_next_X[
-                        :,
-                        tools.macro_idx
-                    ]
-                )
-
-                true_micro_scaled = (
-                    true_next_X[
-                        :,
-                        tools.micro_idx
-                    ]
-                )
-
-                true_state_scaled = (
-                    torch.cat(
-                        [
-                            true_macro_scaled,
-                            true_micro_scaled,
-                        ],
-                        dim=1,
-                    )
-                )
-
-                pred_state_scaled = state_loss_features(
-                    pred_state_scaled,
-                    state_loss_source,
-                )
-                true_state_scaled = state_loss_features(
-                    true_state_scaled,
-                    state_loss_source,
-                )
-
-                if lambda_stability > 0.0:
-                    if state_update_mode in ("qssa", "qssa_asymptotic"):
-                        if (
-                            previous_pred_rate_scaled is not None
-                            and previous_true_rate_scaled is not None
-                        ):
-                            stability_loss = compute_rate_stability_loss(
-                                qssa_log_rate_features_from_scaled(
-                                    torch.stack(
-                                        [previous_pred_rate_scaled, pred_rate_scaled], dim=1
-                                    ),
-                                    tools,
-                                ),
-                                qssa_log_rate_features_from_scaled(
-                                    torch.stack(
-                                        [previous_true_rate_scaled, true_rate_scaled], dim=1
-                                    ),
-                                    tools,
-                                ),
-                            )
-                        else:
-                            stability_loss = pred_state_scaled.sum() * 0.0
+                    if is_true_input:
+                        pred_rate_scaled = model(current_X)
+                        rate_pred_true = pred_rate_scaled
                     else:
-                        stability_loss = compute_stability_loss(
-                            torch.stack(
-                                [previous_pred_state_scaled, pred_state_scaled], dim=1
-                            ),
-                            torch.stack(
-                                [previous_true_state_scaled, true_state_scaled], dim=1
-                            ),
+                        pred_rate_scaled = model(current_X)
+                        rate_pred_true = model(true_current_X)
+
+                    # ----------------------------------------------
+                    # next state
+                    # ----------------------------------------------
+
+                    pred_state = (
+                        tools.predict_next_state(
+                            current_X,
+                            pred_rate_scaled,
+                            safe_for_rollout=(feedback_state_source != "raw"),
+                            experiment_mode=experiment_mode,
+                            trust_region_fraction=trust_region_fraction,
+                            state_update_mode=state_update_mode,
                         )
-                else:
-                    stability_loss = pred_state_scaled.sum() * 0.0
-
-                state_loss = weighted_mse_loss(
-                    pred_state_scaled,
-                    true_state_scaled,
-                    step_weights,
-                    species_loss_weights,
-                    stable_accumulation=(state_loss_source == "raw"),
-                )
-
-                audit_weights = update_transition_audit(
-                    local_transition_audit,
-                    step_weights,
-                    pred_rate_scaled,
-                    true_rate_scaled,
-                    pred_state_scaled,
-                    true_state_scaled,
-                )
-                local_audit_weight_values.append(audit_weights.cpu())
-
-                # ----------------------------------------------
-                # physics
-                # ----------------------------------------------
-
-                loss_element, loss_mass = (
-                    compute_element_conservation_loss(
-                        tools,
-                        pred_state,
-                        state_loss_source=state_loss_source,
-                    )
-                )
-
-                loss_positive = (
-                    compute_positivity_loss(
-                        pred_state
-                    )
-                )
-
-                loss_radical = torch.tensor(0.0, device=rate_loss.device)
-                if lambda_radical > 0.0:
-                    from enhanced_loss_and_weights import compute_physical_radical_loss
-                    loss_radical = compute_physical_radical_loss(
-                        tools=tools,
-                        pred_state=pred_state,
-                        true_next_X_scaled=true_next_X,
-                        state_source=state_loss_source,
                     )
 
-                loss_no = torch.tensor(0.0, device=rate_loss.device)
-                if lambda_no > 0.0:
-                    from enhanced_loss_and_weights import compute_pollutant_no_loss
-                    loss_no = compute_pollutant_no_loss(
-                        tools=tools,
-                        pred_state=pred_state,
-                        true_next_X_scaled=true_next_X,
-                        state_source=state_loss_source,
-                    )
+                    # ✅ 修复：True endpoint of this transition
+                    #
+                    # Dataset window now contains t0...t50 (51 points)
+                    # So all 50 transitions have their endpoints:
+                    # step 0: t0 -> t1
+                    # step 1: t1 -> t2
+                    # ...
+                    # step 49: t49 -> t50 ✅ t50 在窗口中！
+                    #
+                    # 所有 50 步都计算 state loss
 
-                # ----------------------------------------------
-                # total
-                # ----------------------------------------------
-
-                step_loss = (
-                    lambda_rate
-                    * rate_loss
-
-                    + lambda_state
-                    * state_loss
-
-                    + lambda_element
-                    * loss_element
-
-                    + lambda_mass
-                    * loss_mass
-
-                    + lambda_positive
-                    * loss_positive
-                    + lambda_stability
-                    * stability_loss
-                    + lambda_radical
-                    * loss_radical
-                    + lambda_no
-                    * loss_no
-                )
-
-                # Accumulate a small detached chunk to reduce backward
-                # engine launches while bounding retained activations.
-                if not torch.isfinite(step_loss):
-                    print(f"DEBUG METRICS: rate={rate_loss}, state={state_loss}, element={loss_element}, mass={loss_mass}, pos={loss_positive}, rad={loss_radical}, no={loss_no}")
-                chunk_loss = (
-                    step_loss
-                    if chunk_loss is None
-                    else chunk_loss + step_loss
-                )
-                chunk_steps += 1
-                chunk_completed = False
-
-                if (
-                    chunk_steps >= backward_chunk_steps
-                    or step == actual_H - 1
-                ):
-                    step_valid, step_value = backward_loss_chunk(
-                        chunk_loss,
-                        actual_H,
-                    )
-                    if not step_valid:
-                        print(
-                            f"\n[WARNING] Non-finite loss; discarding batch "
-                            f"at epoch={epoch + 1}, "
-                            f"batch={n_train_batches + 1}, "
-                            f"step={step}."
-                        )
-                        batch_valid = False
-                        break
-                    batch_total += step_value
-                    chunk_loss = None
-                    chunk_steps = 0
-                    chunk_completed = True
-
-                local_stats[
-                    "rate"
-                ] += rate_loss.item()
-
-                local_stats[
-                    "state"
-                ] += state_loss.item()
-
-                local_stats[
-                    "element"
-                ] += loss_element.item()
-
-                local_stats[
-                    "mass"
-                ] += loss_mass.item()
-
-                local_stats[
-                    "positive"
-                ] += loss_positive.item()
-
-                local_stats["stability"] += stability_loss.item()
-                local_stats["radical"] += loss_radical.item()
-                local_stats["no"] += loss_no.item()
-
-                # Record the effective per-transition weighting so V3.1 can
-                # be audited from the training log.  Legacy modes report 1.
-                local_stats["transition_weight"] += (
-                    step_weights.mean().item()
-                    if step_weights is not None
-                    else 1.0
-                )
-
-                # ----------------------------------------------
-                # V68 rollout: 连续预测尾段
-                # ----------------------------------------------
-
-                if step < actual_H - 1:
-
-                    base_next_X = (
+                    true_next_X = (
                         batch_X[
                             :,
                             step + 1,
                             :
                         ]
                     )
+                    step_weights = transition_weights[:, step] if transition_weights is not None else None
+                    true_cur_X_unscaled = true_current_X * tools.scale_X + tools.mean_X
+                    true_nxt_X_unscaled = true_next_X * tools.scale_X + tools.mean_X
+                    if use_induction_weights:
+                        from enhanced_loss_and_weights import compute_induction_sample_weights
+                        ind_w = compute_induction_sample_weights(
+                            true_cur_X_unscaled, true_nxt_X_unscaled, tools, boost_factor=induction_boost
+                        )
+                        step_weights = ind_w if step_weights is None else step_weights * ind_w
 
-                    feed_macro, feed_micro_log = select_feedback_state(
-                        pred_state, feedback_state_source
+                    # V68 targets are already standardized
+                    true_rate_scaled = batch_Y[:, step, :]
+                    rate_mask = compute_qssa_rate_mask(
+                        tools,
+                        true_rate_scaled,
+                        Y_old_unscaled=true_cur_X_unscaled,
+                        Y_next_unscaled=true_nxt_X_unscaled,
                     )
-                    predicted_next_X = (
-                        tools.state_to_input_scaled(
-                            base_next_X,
-                            feed_macro,
-                            feed_micro_log,
-                            temperature_mode=effective_temperature_mode,
-                            thermo_closure=thermo_closure,
-                            current_X_scaled=current_X,
-                            max_delta_temperature=max_delta_temperature,
-                            feedback_input_limit=(
-                                RAW_FEEDBACK_INPUT_LIMIT
-                                if feedback_state_source == "raw"
-                                else None
-                            ),
+                    if rate_loss_kind == "mse":
+                        rate_loss = weighted_mse_loss(
+                            rate_pred_true,
+                            true_rate_scaled,
+                            sample_weights=step_weights,
+                            feature_weights=rate_feature_weights,
+                            mask=rate_mask,
+                        )
+                    else:
+                        rate_loss = weighted_smooth_l1_loss(
+                            rate_pred_true,
+                            true_rate_scaled,
+                            sample_weights=step_weights,
+                            feature_weights=rate_feature_weights,
+                            mask=rate_mask,
+                            beta=rate_huber_beta,
+                        )
+                    # ----------------------------------------------
+                    # integrated state loss
+                    # ✅ 修复：所有 50 步都计算 state loss
+                    # ----------------------------------------------
+
+                    train_macro, train_micro_log = select_training_state(
+                        pred_state, state_loss_source
+                    )
+
+                    pred_macro_scaled = (
+                        (
+                            train_macro
+                            - tools.mean_X[
+                                tools.macro_idx
+                            ]
+                        )
+                        / tools.scale_X[
+                            tools.macro_idx
+                        ]
+                    )
+
+                    pred_micro_log_scaled = (
+                        (
+                            train_micro_log
+                            - tools.mean_X[
+                                tools.micro_idx
+                            ]
+                        )
+                        / tools.scale_X[
+                            tools.micro_idx
+                        ]
+                    )
+
+                    pred_state_scaled = (
+                        torch.cat(
+                            [
+                                pred_macro_scaled,
+                                pred_micro_log_scaled,
+                            ],
+                            dim=1,
                         )
                     )
 
-                    species_idx = torch.cat(
-                        [
-                            tools.macro_idx,
-                            tools.micro_idx,
+                    true_macro_scaled = (
+                        true_next_X[
+                            :,
+                            tools.macro_idx
                         ]
                     )
-                    feedback_idx = species_idx
-                    if effective_temperature_mode == "autonomous":
-                        # V3.5 predicts T from composition energy change; T
-                        # must enter the next feedback state together with Y.
-                        feedback_idx = torch.cat(
+
+                    true_micro_scaled = (
+                        true_next_X[
+                            :,
+                            tools.micro_idx
+                        ]
+                    )
+
+                    true_state_scaled = (
+                        torch.cat(
                             [
-                                species_idx,
-                                torch.tensor(
-                                    [tools.temperature_idx],
-                                    device=species_idx.device,
-                                    dtype=species_idx.dtype,
+                                true_macro_scaled,
+                                true_micro_scaled,
+                            ],
+                            dim=1,
+                        )
+                    )
+
+                    pred_state_scaled = state_loss_features(
+                        pred_state_scaled,
+                        state_loss_source,
+                    )
+                    true_state_scaled = state_loss_features(
+                        true_state_scaled,
+                        state_loss_source,
+                    )
+
+                    if lambda_stability > 0.0:
+                        if state_update_mode in ("qssa", "qssa_asymptotic"):
+                            if (
+                                previous_pred_rate_scaled is not None
+                                and previous_true_rate_scaled is not None
+                            ):
+                                stability_loss = compute_rate_stability_loss(
+                                    qssa_log_rate_features_from_scaled(
+                                        torch.stack(
+                                            [previous_pred_rate_scaled, pred_rate_scaled], dim=1
+                                        ),
+                                        tools,
+                                    ),
+                                    qssa_log_rate_features_from_scaled(
+                                        torch.stack(
+                                            [previous_true_rate_scaled, true_rate_scaled], dim=1
+                                        ),
+                                        tools,
+                                    ),
+                                )
+                            else:
+                                stability_loss = pred_state_scaled.sum() * 0.0
+                        else:
+                            stability_loss = compute_stability_loss(
+                                torch.stack(
+                                    [previous_pred_state_scaled, pred_state_scaled], dim=1
                                 ),
+                                torch.stack(
+                                    [previous_true_state_scaled, true_state_scaled], dim=1
+                                ),
+                            )
+                    else:
+                        stability_loss = pred_state_scaled.sum() * 0.0
+
+                    state_loss = weighted_mse_loss(
+                        pred_state_scaled,
+                        true_state_scaled,
+                        step_weights,
+                        species_loss_weights,
+                        stable_accumulation=(state_loss_source == "raw"),
+                    )
+
+                    audit_weights = update_transition_audit(
+                        local_transition_audit,
+                        step_weights,
+                        pred_rate_scaled,
+                        true_rate_scaled,
+                        pred_state_scaled,
+                        true_state_scaled,
+                    )
+                    local_audit_weight_values.append(audit_weights.cpu())
+
+                    # ----------------------------------------------
+                    # physics
+                    # ----------------------------------------------
+
+                    loss_element, loss_mass = (
+                        compute_element_conservation_loss(
+                            tools,
+                            pred_state,
+                            state_loss_source=state_loss_source,
+                        )
+                    )
+
+                    loss_positive = (
+                        compute_positivity_loss(
+                            pred_state
+                        )
+                    )
+
+                    loss_radical = torch.tensor(0.0, device=rate_loss.device)
+                    if lambda_radical > 0.0:
+                        from enhanced_loss_and_weights import compute_physical_radical_loss
+                        loss_radical = compute_physical_radical_loss(
+                            tools=tools,
+                            pred_state=pred_state,
+                            true_next_X_scaled=true_next_X,
+                            state_source=state_loss_source,
+                        )
+
+                    loss_no = torch.tensor(0.0, device=rate_loss.device)
+                    if lambda_no > 0.0:
+                        from enhanced_loss_and_weights import compute_pollutant_no_loss
+                        loss_no = compute_pollutant_no_loss(
+                            tools=tools,
+                            pred_state=pred_state,
+                            true_next_X_scaled=true_next_X,
+                            state_source=state_loss_source,
+                        )
+
+                    # ----------------------------------------------
+                    # total
+                    # ----------------------------------------------
+
+                    step_loss = (
+                        lambda_rate
+                        * rate_loss
+
+                        + lambda_state
+                        * state_loss
+
+                        + lambda_element
+                        * loss_element
+
+                        + lambda_mass
+                        * loss_mass
+
+                        + lambda_positive
+                        * loss_positive
+                        + lambda_stability
+                        * stability_loss
+                        + lambda_radical
+                        * loss_radical
+                        + lambda_no
+                        * loss_no
+                    )
+
+                    # Accumulate a small detached chunk to reduce backward
+                    # engine launches while bounding retained activations.
+                    if not torch.isfinite(step_loss):
+                        print(f"DEBUG METRICS: rate={rate_loss}, state={state_loss}, element={loss_element}, mass={loss_mass}, pos={loss_positive}, rad={loss_radical}, no={loss_no}")
+                    chunk_loss = (
+                        step_loss
+                        if chunk_loss is None
+                        else chunk_loss + step_loss
+                    )
+                    chunk_steps += 1
+                    chunk_completed = False
+
+                    if (
+                        chunk_steps >= backward_chunk_steps
+                        or step == actual_H - 1
+                    ):
+                        step_valid, step_value = backward_loss_chunk(
+                            chunk_loss,
+                            actual_H,
+                        )
+                        if not step_valid:
+                            print(
+                                f"\n[WARNING] Non-finite loss; discarding batch "
+                                f"at epoch={epoch + 1}, "
+                                f"batch={n_train_batches + 1}, "
+                                f"step={step}."
+                            )
+                            batch_valid = False
+                            break
+                        batch_total += step_value
+                        chunk_loss = None
+                        chunk_steps = 0
+                        chunk_completed = True
+
+                    local_stats[
+                        "rate"
+                    ] += rate_loss.item()
+
+                    local_stats[
+                        "state"
+                    ] += state_loss.item()
+
+                    local_stats[
+                        "element"
+                    ] += loss_element.item()
+
+                    local_stats[
+                        "mass"
+                    ] += loss_mass.item()
+
+                    local_stats[
+                        "positive"
+                    ] += loss_positive.item()
+
+                    local_stats["stability"] += stability_loss.item()
+                    local_stats["radical"] += loss_radical.item()
+                    local_stats["no"] += loss_no.item()
+
+                    # Record the effective per-transition weighting so V3.1 can
+                    # be audited from the training log.  Legacy modes report 1.
+                    local_stats["transition_weight"] += (
+                        step_weights.mean().item()
+                        if step_weights is not None
+                        else 1.0
+                    )
+
+                    # ----------------------------------------------
+                    # V68 rollout: 连续预测尾段
+                    # ----------------------------------------------
+
+                    if step < actual_H - 1:
+
+                        base_next_X = (
+                            batch_X[
+                                :,
+                                step + 1,
+                                :
                             ]
                         )
 
-                    # V68: 连续预测尾段 - 每个样本根据 mask 选择
-                    # mask[b, step] = True 表示样本 b 在步 step 使用预测值
-                    use_pred = use_pred_mask[:, step].unsqueeze(1)  # (B, 1)
-
-                    selected_next_X = (
-                        base_next_X.clone()
-                    )
-
-                    selected_next_X[:, feedback_idx] = blend_feedback_state(
-                        base_next_X[:, feedback_idx],
-                        predicted_next_X[:, feedback_idx],
-                        use_pred,
-                        feedback_strength,
-                    )
-
-                    if feedback_noise_std > 0.0:
-                        selected_next_X[:, species_idx] = add_feedback_state_noise(
-                            selected_next_X[:, species_idx],
-                            feedback_noise_std * tail_fraction,
-                            use_pred,
+                        feed_macro, feed_micro_log = select_feedback_state(
+                            pred_state, feedback_state_source
+                        )
+                        predicted_next_X = (
+                            tools.state_to_input_scaled(
+                                base_next_X,
+                                feed_macro,
+                                feed_micro_log,
+                                temperature_mode=effective_temperature_mode,
+                                thermo_closure=thermo_closure,
+                                current_X_scaled=current_X,
+                                max_delta_temperature=max_delta_temperature,
+                                feedback_input_limit=(
+                                    RAW_FEEDBACK_INPUT_LIMIT
+                                    if feedback_state_source == "raw"
+                                    else None
+                                ),
+                            )
                         )
 
-                    current_X = (
-                        selected_next_X
-                    )
+                        species_idx = torch.cat(
+                            [
+                                tools.macro_idx,
+                                tools.micro_idx,
+                            ]
+                        )
+                        feedback_idx = species_idx
+                        if effective_temperature_mode == "autonomous":
+                            # V3.5 predicts T from composition energy change; T
+                            # must enter the next feedback state together with Y.
+                            feedback_idx = torch.cat(
+                                [
+                                    species_idx,
+                                    torch.tensor(
+                                        [tools.temperature_idx],
+                                        device=species_idx.device,
+                                        dtype=species_idx.dtype,
+                                    ),
+                                ]
+                            )
 
-                    # Keep gradients through predicted feedback within a
-                    # chunk; detach only after that chunk was backpropagated.
-                    if detach_rollout and chunk_completed:
-                        current_X = current_X.detach()
+                        # V68: 连续预测尾段 - 每个样本根据 mask 选择
+                        # mask[b, step] = True 表示样本 b 在步 step 使用预测值
+                        use_pred = use_pred_mask[:, step].unsqueeze(1)  # (B, 1)
 
-                if chunk_completed:
-                    previous_pred_state_scaled = pred_state_scaled.detach()
-                    previous_true_state_scaled = true_state_scaled.detach()
-                    previous_pred_rate_scaled = pred_rate_scaled.detach()
-                    previous_true_rate_scaled = true_rate_scaled.detach()
-                else:
-                    previous_pred_state_scaled = pred_state_scaled
-                    previous_true_state_scaled = true_state_scaled.detach()
-                    previous_pred_rate_scaled = pred_rate_scaled
-                    previous_true_rate_scaled = true_rate_scaled.detach()
+                        selected_next_X = (
+                            base_next_X.clone()
+                        )
+
+                        selected_next_X[:, feedback_idx] = blend_feedback_state(
+                            base_next_X[:, feedback_idx],
+                            predicted_next_X[:, feedback_idx],
+                            use_pred,
+                            feedback_strength,
+                        )
+
+                        if feedback_noise_std > 0.0:
+                            selected_next_X[:, species_idx] = add_feedback_state_noise(
+                                selected_next_X[:, species_idx],
+                                feedback_noise_std * tail_fraction,
+                                use_pred,
+                            )
+
+                        current_X = (
+                            selected_next_X
+                        )
+
+                        # Keep gradients through predicted feedback within a
+                        # chunk; detach only after that chunk was backpropagated.
+                        if detach_rollout and chunk_completed:
+                            current_X = current_X.detach()
+
+                    if chunk_completed:
+                        previous_pred_state_scaled = pred_state_scaled.detach()
+                        previous_true_state_scaled = true_state_scaled.detach()
+                        previous_pred_rate_scaled = pred_rate_scaled.detach()
+                        previous_true_rate_scaled = true_rate_scaled.detach()
+                    else:
+                        previous_pred_state_scaled = pred_state_scaled
+                        previous_true_state_scaled = true_state_scaled.detach()
+                        previous_pred_rate_scaled = pred_rate_scaled
+                        previous_true_rate_scaled = true_rate_scaled.detach()
+            except Exception as exc:
+                record_batch_failure(f"Forward/backward exception: {type(exc).__name__}: {exc}")
+                raise
 
             # ----------------------------------------------------
             # finalize accumulated gradients
@@ -7064,34 +7093,40 @@ def train_model_v68(
 
             if not batch_valid:
                 # Earlier steps may already have accumulated gradients.
+                record_batch_failure(f"Non-finite loss at rollout step {step}")
                 optimizer.zero_grad(set_to_none=True)
                 continue
 
             rollout_loss = torch.zeros((), device=batch_X.device)
             rollout_breakdown = {}
             if lambda_rollout > 0:
-                rollout_loss, rollout_breakdown = compute_training_rollout_loss(
-                    model,
-                    tools,
-                    batch_X,
-                    actual_H,
-                    experiment_mode,
-                    batch_Y=batch_Y,
-                    detach_interval=backward_chunk_steps,
-                    lambda_stability=lambda_stability,
-                    trust_region_fraction=trust_region_fraction,
-                    state_update_mode=state_update_mode,
-                    state_loss_source=state_loss_source,
-                    feedback_state_source=feedback_state_source,
-                    temperature_mode=effective_temperature_mode,
-                    thermo_closure=thermo_closure,
-                    max_delta_temperature=max_delta_temperature,
-                    feedback_noise_std=feedback_noise_std * tail_fraction,
-                    backward_callback=lambda chunk_loss: (
-                        lambda_rollout * chunk_loss
-                    ).backward(),
-                )
+                try:
+                    rollout_loss, rollout_breakdown = compute_training_rollout_loss(
+                        model,
+                        tools,
+                        batch_X,
+                        actual_H,
+                        experiment_mode,
+                        batch_Y=batch_Y,
+                        detach_interval=backward_chunk_steps,
+                        lambda_stability=lambda_stability,
+                        trust_region_fraction=trust_region_fraction,
+                        state_update_mode=state_update_mode,
+                        state_loss_source=state_loss_source,
+                        feedback_state_source=feedback_state_source,
+                        temperature_mode=effective_temperature_mode,
+                        thermo_closure=thermo_closure,
+                        max_delta_temperature=max_delta_temperature,
+                        feedback_noise_std=feedback_noise_std * tail_fraction,
+                        backward_callback=lambda chunk_loss: (
+                            lambda_rollout * chunk_loss
+                        ).backward(),
+                    )
+                except Exception as exc:
+                    record_batch_failure(f"Auxiliary rollout exception: {type(exc).__name__}: {exc}")
+                    raise
                 if not torch.isfinite(rollout_loss):
+                    record_batch_failure("Non-finite auxiliary rollout loss")
                     optimizer.zero_grad(set_to_none=True)
                     continue
                 # H=1 is the first curriculum stage, while the auxiliary
@@ -7111,25 +7146,18 @@ def train_model_v68(
                     f"\n[WARNING] Non-finite gradients ({grad_diag.get('non_finite_params')}) "
                     f"at epoch={epoch + 1}, attempted_batch={attempted_batch_idx}."
                 )
-                tracker.record_failure_and_check_budget(
-                    model=model,
-                    batch_X=batch_X,
-                    batch_Y=batch_Y,
-                    epoch=epoch + 1,
-                    optimizer=optimizer,
-                    error_msg=f"Non-finite gradients: {grad_diag.get('non_finite_params')}",
-                    diagnostics=grad_diag,
-                )
+                record_batch_failure(f"Non-finite gradients: {grad_diag.get('non_finite_params')}", grad_diag)
                 optimizer.zero_grad(set_to_none=True)
                 continue
 
-            tracker.record_success()
-            torch.nn.utils.clip_grad_norm_(
-                model.parameters(),
-                max_norm=1.0,
-            )
+            td.clip_gradients_stable(model, max_norm=1.0, total_norm=grad_norm_f64)
+            if not all(torch.isfinite(p.grad).all() for p in model.parameters() if p.grad is not None):
+                record_batch_failure("Non-finite gradient after clipping")
+                optimizer.zero_grad(set_to_none=True)
+                continue
 
             optimizer.step()
+            tracker.record_success()
 
             for key in transition_audit:
                 if key == "weight_max":
@@ -7257,7 +7285,7 @@ def train_model_v68(
 
         # Pure species-AR validation (用于评估长 horizon 累积误差)
         # 每 full_val_every epoch 运行一次完整的 pure-AR 验证
-        if (epoch + 1) % full_val_every == 0:
+        if epoch == start_epoch or (epoch + 1) % full_val_every == 0 or epoch == epochs - 1:
             val_stats_pure_ar = validate_model_v68(
                 model,
                 val_loader,
@@ -7294,9 +7322,11 @@ def train_model_v68(
         # objective; it excludes train-only transition/induction weights,
         # stability, and rollout losses.
         val_stats = val_stats_oracle
-        scheduler.step(
-            val_stats["total"]
-        )
+        primary_metrics = None
+        if val_stats_pure_ar is not None:
+            primary_metrics = val_stats_pure_ar["sentinel_metrics"][str(max(eval_horizons))]
+            selection_score = primary_metrics["composite_score"] if primary_metrics["is_valid_candidate"] else float("inf")
+            scheduler.step(selection_score)
 
         # --------------------------------------------------------
         # report
@@ -7465,17 +7495,15 @@ def train_model_v68(
                 "mass": val_stats_pure_ar["mass"],
                 "positive": val_stats_pure_ar["positive"],
                 "per_horizon": val_stats_pure_ar["per_horizon"],
+                "sentinel_metrics": val_stats_pure_ar["sentinel_metrics"],
             }
 
         history.append(history_entry)
 
         # --------------------------------------------------------
-        # save best - 原有总损失模型
-        # --------------------------------------------------------
-
-        # --------------------------------------------------------
         # save best - Fixed Horizon Sentinel Tracking & Model Selection
         # --------------------------------------------------------
+        primary_improved = False
         if val_stats_pure_ar is not None and "sentinel_metrics" in val_stats_pure_ar:
             for h_int in eval_horizons:
                 h_str = str(h_int)
@@ -7493,7 +7521,11 @@ def train_model_v68(
                                 "rollout_signature": ROLLOUT_SIGNATURE,
                                 "training_config": training_config,
                                 "manifest": experiment_manifest_data,
-                                "best_val_loss": val_stats["total"],
+                                "sentinel_tracker": sentinel_tracker.as_dict(),
+                                "best_val_loss_by_horizon": dict(sentinel_tracker.best_scores),
+
+                                "best_val_loss": h_metrics["composite_score"],
+                                "oracle_total_loss": val_stats["total"],
                                 "sentinel_score": h_metrics.get("composite_score"),
                                 "sentinel_metrics": h_metrics,
                                 "epoch": epoch + 1,
@@ -7502,39 +7534,19 @@ def train_model_v68(
                             h_path,
                         )
                         print(f"[SENTINEL] New best valid H={h_int} model -> {h_path.name} (score={h_metrics.get('composite_score'):.6e})")
+                        if h_int == max(eval_horizons):
+                            primary_improved = True
+                            default_path = weights_dir / f"best_v68_net_{mechanism}.pth"
+                            temporary_default = default_path.with_suffix(".tmp")
+                            temporary_default.write_bytes(h_path.read_bytes())
+                            temporary_default.replace(default_path)
 
-        horizon_best_loss = best_val_loss_by_horizon.get(active_horizon, float("inf"))
-        improved_horizon = val_stats["total"] < horizon_best_loss
-        if improved_horizon:
-            best_val_loss_by_horizon[active_horizon] = val_stats["total"]
-            best_val_loss = val_stats["total"]
-            patience_counter = 0
-
-            # Update overall benchmark model if this is a mature horizon (H >= 32 or max_horizon)
-            if active_horizon >= 32 or active_horizon == max_horizon:
-                best_path = weights_dir / f"best_v68_net_{mechanism}.pth"
-                torch.save(
-                    {
-                        "model_state_dict": model.state_dict(),
-                        "mechanism": mechanism,
-                        "feature_info": feature_info,
-                        "version": VERSION,
-                        "transform_signature": transform_signature,
-                        "rollout_signature": ROLLOUT_SIGNATURE,
-                        "training_config": training_config,
-                        "manifest": experiment_manifest_data,
-                        "best_val_loss": best_val_loss,
-                        "epoch": epoch + 1,
-                        "horizon": active_horizon,
-                    },
-                    best_path,
-                )
-                print(f"[SAVE] Best mature model -> {best_path.name}")
-        else:
-            patience_counter += 1
-            if patience_counter >= 20:
-                print("\nEarly stopping.")
-                break
+        stop_training = False
+        if primary_metrics is not None:
+            best_val_loss_by_horizon = dict(sentinel_tracker.best_scores)
+            best_val_loss = sentinel_tracker.best_scores[max(eval_horizons)]
+            patience_counter = 0 if primary_improved else patience_counter + 1
+            stop_training = patience_counter >= 20
 
         # --------------------------------------------------------
         # V68 多指标最佳模型保存
@@ -7555,6 +7567,9 @@ def train_model_v68(
                         "transform_signature": transform_signature,
                         "rollout_signature": ROLLOUT_SIGNATURE,
                         "training_config": training_config,
+                        "manifest": experiment_manifest_data,
+                        "sentinel_tracker": sentinel_tracker.as_dict(),
+                        "best_val_loss_by_horizon": dict(sentinel_tracker.best_scores),
                         "metric_name": "oracle_h128_rmse",
                         "metric_value": best_oracle_h128,
                         "epoch": epoch + 1,
@@ -7583,6 +7598,9 @@ def train_model_v68(
                         "transform_signature": transform_signature,
                         "rollout_signature": ROLLOUT_SIGNATURE,
                         "training_config": training_config,
+                        "manifest": experiment_manifest_data,
+                        "sentinel_tracker": sentinel_tracker.as_dict(),
+                        "best_val_loss_by_horizon": dict(sentinel_tracker.best_scores),
                         "metric_name": "oracle_avg_rmse",
                         "metric_value": best_oracle_avg,
                         "epoch": epoch + 1,
@@ -7608,6 +7626,9 @@ def train_model_v68(
                             "transform_signature": transform_signature,
                             "rollout_signature": ROLLOUT_SIGNATURE,
                             "training_config": training_config,
+                            "manifest": experiment_manifest_data,
+                            "sentinel_tracker": sentinel_tracker.as_dict(),
+                            "best_val_loss_by_horizon": dict(sentinel_tracker.best_scores),
                             "metric_name": "pure_ar_h128_rmse",
                             "metric_value": best_pure_ar_h128,
                             "epoch": epoch + 1,
@@ -7646,6 +7667,9 @@ def train_model_v68(
                             "transform_signature": transform_signature,
                             "rollout_signature": ROLLOUT_SIGNATURE,
                             "training_config": training_config,
+                            "manifest": experiment_manifest_data,
+                            "sentinel_tracker": sentinel_tracker.as_dict(),
+                            "best_val_loss_by_horizon": dict(sentinel_tracker.best_scores),
                             "metric_name": "composite",
                             "metric_value": best_composite,
                             "metric_formula": "0.2*oracle_h128 + 0.8*pure_ar_h128",
@@ -7689,6 +7713,9 @@ def train_model_v68(
                                 "transform_signature": transform_signature,
                                 "rollout_signature": ROLLOUT_SIGNATURE,
                                 "training_config": training_config,
+                                "manifest": experiment_manifest_data,
+                                "sentinel_tracker": sentinel_tracker.as_dict(),
+                                "best_val_loss_by_horizon": dict(sentinel_tracker.best_scores),
                                 "metric_name": "robust_raw_score",
                                 "metric_value": best_robust_raw,
                                 "metric_formula": "log1p(h128/ref_h128); mass/element are hard gates; rate is diagnostic only",
@@ -7759,6 +7786,9 @@ def train_model_v68(
 
                     "rollout_signature": ROLLOUT_SIGNATURE,
                     "training_config": training_config,
+                    "manifest": experiment_manifest_data,
+                    "sentinel_tracker": sentinel_tracker.as_dict(),
+                    "best_val_loss_by_horizon": dict(sentinel_tracker.best_scores),
 
                     "rng_states": {
                         "python": random.getstate(),
@@ -7814,6 +7844,9 @@ def train_model_v68(
 
                 "rollout_signature": ROLLOUT_SIGNATURE,
                 "training_config": training_config,
+                "manifest": experiment_manifest_data,
+                "sentinel_tracker": sentinel_tracker.as_dict(),
+                "best_val_loss_by_horizon": dict(sentinel_tracker.best_scores),
 
                 # V68: 保存多指标最佳值
                 "best_oracle_h128": best_oracle_h128,
@@ -7864,13 +7897,17 @@ def train_model_v68(
                 ensure_ascii=False,
             )
 
+        if stop_training:
+            print("Early stopping on the fixed sentinel score.")
+            break
+
     print("\n" + "=" * 90)
     print(
         "V68 training finished."
     )
 
     print(
-        f"Best validation loss (total) = "
+        f"Best fixed-horizon sentinel score = "
         f"{best_val_loss:.6e}"
     )
 
@@ -7917,6 +7954,10 @@ def get_training_arg_parser() -> argparse.ArgumentParser:
             "chemistry operator training"
         )
     )
+    parser.add_argument("--weight_decay", type=float, default=1e-5,
+                        help="AdamW weight decay (recorded in the experiment contract).")
+    parser.add_argument("--curriculum_warmup_epochs", type=int, default=None,
+                        help="First curriculum stage length; later stages start every 3 epochs. Mutually exclusive with curriculum_start_epochs.")
 
     parser.add_argument(
         "--data_dir",
@@ -8411,6 +8452,8 @@ def main():
         projection_mode=args.projection_mode,
         desentinelize_scaler=args.desentinelize_scaler,
         network_arch=args.network_arch,
+        weight_decay=args.weight_decay,
+        curriculum_warmup_epochs=args.curriculum_warmup_epochs,
         num_workers=args.num_workers,
     )
 
