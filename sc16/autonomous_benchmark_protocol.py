@@ -133,8 +133,8 @@ def compare_complete_trajectories(
         scores["species"][name] = stats
     # Explicit NOx performance: total NO+NO2 mass fraction, in addition to
     # each available species. Do not call NO alone "total NOx".
-    nox_indices = [species_names.index(name) for name in ("NO", "NO2") if name in species_names]
-    if nox_indices:
+    if all(name in species_names for name in ("NO", "NO2")):
+        nox_indices = [species_names.index(name) for name in ("NO", "NO2")]
         scores["species"]["NOx_mass_fraction"] = _trace_stats(
             t, yr[:, nox_indices].sum(axis=1), yn[:, nox_indices].sum(axis=1)
         )
