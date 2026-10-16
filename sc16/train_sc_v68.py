@@ -3752,10 +3752,15 @@ class CoarseOperatorTools:
             if not math.isfinite(limit) or limit <= 0.0:
                 raise ValueError("feedback_input_limit must be finite and positive")
             species_idx = torch.cat([self.macro_idx, self.micro_idx])
-            bounded_species = next_X_scaled.index_select(1, species_idx).clamp(
-                -limit,
-                limit,
-            )
+            original_species = next_X_scaled.index_select(1, species_idx)
+            bounded_species = original_species.clamp(-limit, limit)
+            if temperature_mode == "autonomous" and not torch.equal(
+                original_species, bounded_species
+            ):
+                raise RuntimeError(
+                    "Autonomous raw-feedback clipping would change the species "
+                    "after NASA7/EOS closure; select constrained feedback instead"
+                )
             next_X_scaled = next_X_scaled.index_copy(
                 1,
                 species_idx,
