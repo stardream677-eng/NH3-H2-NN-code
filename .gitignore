@@ -5,3 +5,9 @@ env/
 .env 
 .vscode/ 
 .idea/ 
+ 
+# 忽略模型检查点与权重产物 
+*.pth 
+*.pt 
+**/checkpoints_v68/ 
+**/weights_v68/ 
