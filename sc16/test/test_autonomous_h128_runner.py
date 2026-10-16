@@ -72,6 +72,7 @@ def test_benchmark_rejects_short_horizon_checkpoint_even_if_max_horizon_is_128(
             "temperature_mode": "autonomous",
             "pressure_feedback_contract": PRESSURE_FEEDBACK_CONTRACT,
             "projection_validation_contract": PROJECTION_VALIDATION_CONTRACT,
+            "autonomous_input_contract": "autonomous_tpy_inert_current_v1",
         },
     )
     with pytest.raises(ValueError, match="not an explicitly selected H=128"):
