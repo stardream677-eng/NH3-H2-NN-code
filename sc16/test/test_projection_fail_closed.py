@@ -234,3 +234,32 @@ def test_projection_source_is_in_manifest_hashes():
     hashes = em.compute_source_hashes(Path(tr.__file__).resolve().parent)
     assert "physical_projection_contract.py" in hashes
     assert len(hashes["physical_projection_contract.py"]) == 64
+
+
+def test_projection_contract_persisted_and_legacy_constrained_validation_rejected():
+    import validate_sc_v68 as validation
+
+    cfg = tr.build_training_config_record()
+    assert cfg["projection_validation_contract"] == ppc.PROJECTION_VALIDATION_CONTRACT
+
+    with pytest.raises(ValueError, match="Legacy constrained projection checkpoint"):
+        validation.checkpoint_rollout_config({
+            "training_config": {"feedback_state_source": "constrained"}
+        })
+
+    new_config = validation.checkpoint_rollout_config({
+        "training_config": {
+            "feedback_state_source": "constrained",
+            "projection_validation_contract": ppc.PROJECTION_VALIDATION_CONTRACT,
+        }
+    })
+    assert new_config["projection_validation_contract"] == ppc.PROJECTION_VALIDATION_CONTRACT
+
+    # Historical explicitly raw-only experiments do not use a constrained
+    # state and may still be evaluated for their original raw metrics.
+    legacy_raw = validation.checkpoint_rollout_config({
+        "training_config": {
+            "feedback_state_source": "raw", "state_loss_source": "raw"
+        }
+    })
+    assert legacy_raw["projection_validation_contract"] == "legacy_unverified"
