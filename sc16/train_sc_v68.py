@@ -6089,6 +6089,10 @@ def train_model_v68(
         ap.PRESSURE_FEEDBACK_CONTRACT if effective_temperature_mode == "autonomous"
         else "recorded_p_v1"
     )
+    training_config["autonomous_input_contract"] = (
+        ap.AUTONOMOUS_INPUT_CONTRACT if effective_temperature_mode == "autonomous"
+        else "recorded_tpy_v1"
+    )
 
     print(
         "\nSpecies summary:"
@@ -6577,6 +6581,7 @@ def train_model_v68(
                 # Old autonomous runs used *recorded* P even when T was predicted.
                 # Their optimizer history must not be reused under new EOS semantics.
                 resume_config_keys["pressure_feedback_contract"] = ap.PRESSURE_FEEDBACK_CONTRACT
+                resume_config_keys["autonomous_input_contract"] = ap.AUTONOMOUS_INPUT_CONTRACT
             if not checkpoint_compatible(
                 ckpt,
                 VERSION,
