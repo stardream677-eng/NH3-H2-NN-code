@@ -77,6 +77,20 @@ def test_nasa7_rejects_nonconvergence_and_unreachable_targets(layer, kind):
         solve(torch.tensor([[1e10]], dtype=torch.float64), y, initial)
 
 
+@pytest.mark.parametrize("kind", ["uv", "hp"])
+def test_nasa7_float32_return_has_bounded_energy_residual(layer, kind):
+    y = _mass_fractions()[:1]
+    expected_T = torch.tensor([[1350.0]], dtype=torch.float64)
+    cp, cv, h, u = layer.compute_mixture_properties(expected_T, y)
+    target = u if kind == "uv" else h
+    solve = layer.solve_temperature_uv if kind == "uv" else layer.solve_temperature_hp
+    recovered = solve(target, y.to(torch.float32), (expected_T + 220.0).to(torch.float32))
+    assert recovered.dtype == torch.float32
+    cp_r, cv_r, h_r, u_r = layer.compute_mixture_properties(recovered.to(torch.float64), y)
+    residual = ((u_r if kind == "uv" else h_r) - target).abs()
+    assert residual.max() < 5.0  # J/kg, including float32 temperature rounding
+
+
 def test_nasa7_temperature_gradient_is_finite(layer):
     y_ref = _mass_fractions()
     y_next = y_ref.clone().detach().requires_grad_(True)
@@ -122,6 +136,35 @@ def test_autonomous_update_rejects_absent_nasa7_instead_of_linear_fallback():
             heat_capacity=torch.tensor([[1000.0]]),
             thermo_closure={"nasa7_layer": None},
             Y_old_full=Y, Y_next_full=Y,
+        )
+
+
+def test_autonomous_closure_rejects_unknown_reactor_type(layer):
+    y = _mass_fractions()[:1]
+    T = torch.tensor([[1100.0]], dtype=torch.float64)
+    with pytest.raises(ValueError, match="Unsupported autonomous reactor"):
+        update_temperature_autonomous(
+            T, torch.zeros_like(y),
+            thermo_closure={"nasa7_layer": layer, "reactor_type": "SomeOtherReactor"},
+            Y_old_full=y, Y_next_full=y,
+        )
+
+
+def test_autonomous_builder_rejects_failed_nasa7_initialization(monkeypatch):
+    import thermo_nasa7_layer
+    import train_sc_v68 as training
+
+    class BrokenNASA:
+        def __init__(self, *args, **kwargs):
+            raise RuntimeError("test coefficient error")
+
+    monkeypatch.setattr(thermo_nasa7_layer, "ThermoNASA7Layer", BrokenNASA)
+    with pytest.raises(RuntimeError, match="refusing silent linear-temperature fallback"):
+        training.build_temperature_closure(
+            {"reactor_type": "IdealGasReactor"},
+            ["NH3", "H2", "O2", "N2", "H2O"],
+            data_dir=PROJECT,
+            mechanism="nuig_2024",
         )
 
 
