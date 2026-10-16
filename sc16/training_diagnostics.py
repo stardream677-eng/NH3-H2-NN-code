@@ -161,6 +161,68 @@ def replay_snapshot_with_anomaly_detection(
     }
 
 
+def capture_rollout_failure_state(
+    tools: Any,
+    current_X_scaled: torch.Tensor,
+    *,
+    step: Optional[int],
+    phase: str,
+    predicted_rate_scaled: Optional[torch.Tensor] = None,
+    predicted_state: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """Capture the physical state at the *failed* rollout step.
+
+    Unlike batch_X, this state already contains earlier predicted feedback.
+    This helper is only invoked after an error, so full batch-sized tensors can
+    be saved for diagnosis without retaining a graph in the training loop.
+    Both physical and scaled states are saved because the latter is the exact
+    input to the failed network/thermochemistry call.
+    """
+    if current_X_scaled.ndim != 2:
+        raise ValueError("Expected current_X_scaled with shape (batch, features)")
+
+    def to_cpu(value: torch.Tensor) -> torch.Tensor:
+        return value.detach().to("cpu").clone()
+
+    with torch.no_grad():
+        physical = tools.inverse_state(current_X_scaled)
+        columns = list(tools.feature_info["input_cols"])
+        if len(columns) != physical.shape[-1]:
+            raise ValueError("Input feature columns do not match recovered physical state")
+        if "T" not in columns or "P" not in columns or "log_dt" not in columns:
+            raise ValueError("Cannot identify T, P and log_dt from input feature contract")
+        t_idx, p_idx, dt_idx = (columns.index(name) for name in ("T", "P", "log_dt"))
+        log_dt = physical[:, dt_idx]
+        captured: Dict[str, Any] = {
+            "phase": str(phase),
+            "rollout_step_zero_based": None if step is None else int(step),
+            "batch_size": int(physical.shape[0]),
+            "input_columns": columns,
+            "current_input_scaled": to_cpu(current_X_scaled),
+            "current_input_physical": to_cpu(physical),
+            "temperature_K": to_cpu(physical[:, t_idx]),
+            "pressure_in_dataset_units": to_cpu(physical[:, p_idx]),
+            "log10_dt": to_cpu(log_dt),
+            "dt_seconds": to_cpu(torch.pow(10.0, log_dt.to(torch.float64))),
+            "current_macro_mass_fractions": to_cpu(physical.index_select(1, tools.macro_idx)),
+            "current_micro_log10_mass_fractions": to_cpu(physical.index_select(1, tools.micro_idx)),
+            "current_inert_mass_fractions": to_cpu(physical.index_select(1, tools.inert_idx)),
+        }
+        if predicted_rate_scaled is not None:
+            captured["predicted_rate_scaled"] = to_cpu(predicted_rate_scaled)
+        if isinstance(predicted_state, dict):
+            # Save the exact candidates used by the selected feedback policy.
+            for key in (
+                "Y_macro_next", "Y_macro_next_raw",
+                "logY_micro_next", "logY_micro_next_raw",
+                "Y_next_constrained_full", "Y_next_raw_full",
+            ):
+                value = predicted_state.get(key)
+                if isinstance(value, torch.Tensor):
+                    captured[key] = to_cpu(value)
+        return captured
+
+
 class TrainingDiagnosticTracker:
     """Monitors training batches, records snapshots on anomaly, and enforces skip budgets."""
 
