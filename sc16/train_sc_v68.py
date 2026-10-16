@@ -6631,16 +6631,43 @@ def train_model_v68(
                 "rng_before_forward": td.capture_rng_state(),
             }
 
+            current_X = batch_X[:, 0, :]
+            rollout_failure_step = None
+            rollout_failure_phase = "batch_initialization"
+            latest_pred_state = None
+            latest_pred_rate_scaled = None
+
             def record_batch_failure(reason, diagnostics=None):
+                diagnostic_payload = dict(diagnostics or {})
+                try:
+                    # The auxiliary loss helper has its own internal step loop:
+                    # do not mislabel the last primary state as its failing step.
+                    auxiliary = rollout_failure_phase == "auxiliary_rollout"
+                    state_for_capture = batch_X[:, 0, :] if auxiliary else current_X
+                    diagnostic_payload["failed_rollout_state"] = td.capture_rollout_failure_state(
+                        tools, state_for_capture,
+                        step=None if auxiliary else rollout_failure_step,
+                        phase=rollout_failure_phase,
+                        predicted_rate_scaled=None if auxiliary else latest_pred_rate_scaled,
+                        predicted_state=None if auxiliary else latest_pred_state,
+                    )
+                    diagnostic_payload["failure_state_semantics"] = (
+                        "auxiliary_initial_reference; internal failing step not available"
+                        if auxiliary else "current_predicted_rollout_input"
+                    )
+                except Exception as capture_error:
+                    # Never mask the original physics/gradient failure.
+                    diagnostic_payload["rollout_capture_error"] = (
+                        f"{type(capture_error).__name__}: {capture_error}"
+                    )
                 return tracker.record_failure_and_check_budget(
                     model=model, batch_X=batch_X, batch_Y=batch_Y,
                     sample_ids=batch_metadata["sample_id"],
                     window_start=batch_metadata["window_start"].tolist(),
                     epoch=epoch + 1, optimizer=optimizer, error_msg=reason,
-                    diagnostics=diagnostics, replay_context={**replay_context, "part": batch_metadata["part"]},
+                    diagnostics=diagnostic_payload,
+                    replay_context={**replay_context, "part": batch_metadata["part"]},
                 )
-
-            current_X = batch_X[:, 0, :]
 
             optimizer.zero_grad(
                 set_to_none=True
@@ -6678,6 +6705,10 @@ def train_model_v68(
 
             try:
                 for step in range(actual_H):
+                    rollout_failure_step = step
+                    rollout_failure_phase = "network_forward"
+                    latest_pred_state = None
+                    latest_pred_rate_scaled = None
 
                     # ----------------------------------------------
                     # network & disentangled parameter supervision
@@ -6692,6 +6723,8 @@ def train_model_v68(
                         pred_rate_scaled = model(current_X)
                         rate_pred_true = model(true_current_X)
 
+                    latest_pred_rate_scaled = pred_rate_scaled
+                    rollout_failure_phase = "state_update"
                     # ----------------------------------------------
                     # next state
                     # ----------------------------------------------
@@ -6706,6 +6739,9 @@ def train_model_v68(
                             state_update_mode=state_update_mode,
                         )
                     )
+
+                    latest_pred_state = pred_state
+                    rollout_failure_phase = "loss_and_backward"
 
                     # ✅ 修复：True endpoint of this transition
                     #
@@ -7036,6 +7072,11 @@ def train_model_v68(
                         feed_macro, feed_micro_log = select_feedback_state(
                             pred_state, feedback_state_source
                         )
+                        rollout_failure_phase = (
+                            "autonomous_feedback_state"
+                            if effective_temperature_mode == "autonomous"
+                            else "feedback_state_reconstruction"
+                        )
                         predicted_next_X = (
                             tools.state_to_input_scaled(
                                 base_next_X,
@@ -7132,6 +7173,10 @@ def train_model_v68(
             rollout_loss = torch.zeros((), device=batch_X.device)
             rollout_breakdown = {}
             if lambda_rollout > 0:
+                rollout_failure_phase = "auxiliary_rollout"
+                rollout_failure_step = None
+                latest_pred_state = None
+                latest_pred_rate_scaled = None
                 try:
                     rollout_loss, rollout_breakdown = compute_training_rollout_loss(
                         model,
@@ -7172,6 +7217,10 @@ def train_model_v68(
                     float(lambda_stability) * rollout_breakdown.get("stability", 0.0)
                 )
 
+            rollout_failure_phase = "gradient_validation"
+            rollout_failure_step = None
+            latest_pred_state = None
+            latest_pred_rate_scaled = None
             is_finite, grad_norm_f64, grad_diag = td.check_gradient_finite_and_norm(model)
             if not is_finite:
                 print(
