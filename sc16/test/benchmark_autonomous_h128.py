@@ -189,9 +189,9 @@ def decode_feedback_state(tools, scaled, names, gas):
 
 
 def generate_cantera_reference(initial_gas: ct.Solution, reactor_type: str,
-                               grid_s: np.ndarray) -> dict[str, np.ndarray]:
+                               grid_s: np.ndarray, mechanism_path: Path) -> dict[str, np.ndarray]:
     """Integrate a *separate* Cantera reactor at the exact NN sample times."""
-    gas = ct.Solution(initial_gas.source)
+    gas = ct.Solution(str(mechanism_path))
     gas.TPY = initial_gas.T, initial_gas.P, initial_gas.Y
     if reactor_type == "IdealGasReactor":
         reactor = ct.IdealGasReactor(gas)
@@ -282,7 +282,7 @@ def run_case(
     traces = {"time_s": times}
 
     try:
-        reference = generate_cantera_reference(gas_initial, reactor_type, times)
+        reference = generate_cantera_reference(gas_initial, reactor_type, times, mechanism_path)
     except Exception as exc:
         result.update(failure_step=0, failure_phase="reference_cantera",
                       failure_message=f"{type(exc).__name__}: {exc}")
@@ -290,10 +290,17 @@ def run_case(
 
     traces.update(ref_T_K=reference["T"], ref_P_atm=reference["P"], ref_Y=reference["Y"])
     auditor = ct.Solution(str(mechanism_path))
-    closure = tr.build_temperature_closure(
-        {"mechanism_path": str(mechanism_path), "reactor_type": reactor_type},
-        species_order=names,
-    )
+    try:
+        closure = tr.build_temperature_closure(
+            {"mechanism_path": str(mechanism_path), "reactor_type": reactor_type},
+            species_order=names,
+        )
+    except Exception as exc:
+        result.update(
+            failure_step=0, failure_phase="autonomous_thermo_initialization",
+            failure_message=f"{type(exc).__name__}: {exc}",
+        )
+        return result, traces
     current = physical_input(
         tools, gas_initial, float(case["T0_K"]), float(case["P0_atm"]), Y0, dt
     )
@@ -404,7 +411,16 @@ def main(argv=None) -> int:
     records = []
     for c in cases:
         print(f"[H128] {c['name']} reactor={c['reactor_type']} dt={c['dt_s']:.3g}s", flush=True)
-        record, traces = run_case(c, model, tools, mechanism_path, names, args.idt_rise_K)
+        try:
+            record, traces = run_case(c, model, tools, mechanism_path, names, args.idt_rise_K)
+        except Exception as exc:
+            record = {
+                "name": c["name"], "status": "failed",
+                "failure_step": None, "failure_phase": "benchmark_runner",
+                "failure_message": f"{type(exc).__name__}: {exc}",
+                "failure_traceback": traceback.format_exc(limit=8),
+            }
+            traces = {}
         records.append(record)
         np.savez_compressed(output / f"{c['name']}.npz", **traces)
         print(
