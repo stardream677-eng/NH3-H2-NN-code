@@ -24,6 +24,7 @@ CORE_SOURCE_FILES = (
     "enhanced_loss_and_weights.py",
     "thermo_nasa7_layer.py",
     "autonomous_pressure.py",
+    "physical_projection_contract.py",
     "chemistry_contract.py",
     "validate_sc_v68.py",
     "kinetics_parameterization.py",

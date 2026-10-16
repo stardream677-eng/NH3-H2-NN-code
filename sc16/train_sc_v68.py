@@ -46,6 +46,7 @@ import kinetics_parameterization as kp
 import species_validation_protocol as svp
 import experiment_manifest as em
 import autonomous_pressure as ap
+import physical_projection_contract as ppc
 import hashlib
 
 
@@ -359,7 +360,7 @@ def artifact_subdir(kind: str) -> str:
 
 STATE_UPDATE_MODES = ("legacy", "task8_conservative_state", "qssa", "qssa_asymptotic", "dual_branch", "dual_branch_pd_v1")
 DEFAULT_STATE_UPDATE_MODE = "legacy"
-TASK8_VERSION = "task8_v1"
+TASK8_VERSION = "task8_v2"
 STATE_CONSTRAINT_EPSILON = 1e-12
 
 
@@ -397,16 +398,12 @@ def project_physical_state(
 ) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any]]:
     """Pure function: Project physical species mass fractions onto the nonnegative mass-conserving simplex.
 
-    Task8 Core Guarantees:
-    1. Operates exclusively in physical Y space (never on 37-dim raw logits).
-    2. Guarantees nonnegativity: Y_constrained >= 0.
-    3. Guarantees mass conservation: sum(Y_dyn) + inert_sum == 1.0 (to machine precision).
-    4. Supports 'multiplicative_kl' (default): Element-potential information projection solving
-       Y_i = r_i * exp(A^T lambda)_i via damped Newton-Raphson. Strictly protects all trace radicals
-       from Euclidean zeroing and preserves positivity to machine precision.
-       Supports 'weighted_linear' as fallback.
-    5. Returns (Y_macro_constrained, Y_micro_constrained, diagnostics).
-    6. Does not modify or overwrite raw inputs; records intervention and correction norms.
+    The KL optimizer is the preferred trace-preserving path. Every returned
+    result must pass independent nonnegativity, mass and element residual
+    checks. If KL (or weighted_linear) cannot meet those constraints, try a
+    nonnegative affine Dykstra recovery. Infeasible or still-unconverged cases
+    raise ProjectionConstraintError instead of returning a mass-only surrogate.
+    Raw candidates are never overwritten by this routine.
     """
     orig_shape_macro = Y_macro_raw.shape
     if Y_macro_raw.ndim == 1:
@@ -419,6 +416,8 @@ def project_physical_state(
     dyn_raw = torch.cat([macro_raw, micro_raw], dim=-1)
     b_size, n_dyn = dyn_raw.shape
     n_macro = macro_raw.shape[-1]
+    if projection_mode not in ("multiplicative_kl", "weighted_linear"):
+        raise ValueError(f"Unsupported physical projection mode: {projection_mode!r}")
 
     if isinstance(inert_sum, torch.Tensor):
         i_sum = inert_sum.to(dtype=dyn_raw.dtype, device=dyn_raw.device)
@@ -429,6 +428,12 @@ def project_physical_state(
     else:
         i_sum = torch.full((b_size, 1), float(inert_sum), dtype=dyn_raw.dtype, device=dyn_raw.device)
 
+    # A physically impossible inert mass or element target must never be
+    # modified by clipping just to make a numerical projection return.
+    element_matrix, target_elements, target_sum = ppc.prepare_projection_constraints(
+        dyn_raw, i_sum, element_matrix, target_elements,
+    )
+
     # 1. Raw candidate diagnostics
     neg_mask = dyn_raw < 0.0
     neg_count = neg_mask.sum(dim=-1)
@@ -436,9 +441,8 @@ def project_physical_state(
     raw_mass_sum = dyn_raw.sum(dim=-1, keepdim=True) + i_sum
     mass_sum_deviation = (raw_mass_sum - 1.0).abs()
 
-    # Target sum for dynamic species
-    target_sum = torch.clamp(1.0 - i_sum, min=1e-8, max=1.0)
-
+    # Target sum exactly equals the reactive mass budget. A zero budget is
+    # legitimate (pure inert), and must produce an all-zero dynamic state.
     # 2. Nonnegative truncation
     pos_dyn = torch.clamp(dyn_raw, min=0.0)
     pos_sum = pos_dyn.sum(dim=-1, keepdim=True)
@@ -454,6 +458,11 @@ def project_physical_state(
     # 4. Optional elemental conservation projection
     projected_dyn = scaled_dyn
     proj_failed = False
+    primary_projection_error = None
+    projection_fallback_rows = torch.zeros(
+        b_size, dtype=torch.bool, device=scaled_dyn.device
+    )
+    projection_fallback_iterations = 0
     elem_res_max = torch.zeros(b_size, dtype=scaled_dyn.dtype, device=scaled_dyn.device)
     if element_matrix is not None and target_elements is not None:
         try:
@@ -537,10 +546,50 @@ def project_physical_state(
 
                 elem_res_max = (torch.matmul(p, A.T) - target_elem).abs().max(dim=-1).values
                 projected_dyn = p
-        except Exception:
+        except Exception as exc:
+            # Do not swallow the failed numerical solve as a valid projection:
+            # the conservative fallback and final audit below are mandatory.
             proj_failed = True
+            primary_projection_error = f"{type(exc).__name__}: {exc}"
             projected_dyn = scaled_dyn
-            elem_res_max = (torch.matmul(scaled_dyn, A.T) - target_elem).abs().max(dim=-1).values
+
+    # A KL iterate can satisfy elemental constraints *before* final mass
+    # renormalization but violate them afterwards. Audit the final tensor,
+    # not the solver's intermediate residual or the boolean failure flag.
+    primary_audit = ppc.projection_residuals(
+        projected_dyn, i_sum, element_matrix, target_elements
+    )
+    bad_rows = ~primary_audit["valid"]
+    if bool(bad_rows.any()) and element_matrix is not None:
+        projection_fallback_rows = bad_rows
+        try:
+            repaired, projection_fallback_iterations = ppc.recover_nonnegative_affine(
+                scaled_dyn[bad_rows], element_matrix, target_elements[bad_rows],
+                target_sum[bad_rows],
+            )
+            # Dykstra is a feasibility safeguard, not a differentiable KL
+            # Jacobian. Return its exact forward state with an explicit STE
+            # rather than retaining hundreds of recovery iterations in BPTT.
+            failed_candidate = scaled_dyn[bad_rows]
+            repaired_ste = failed_candidate + (repaired - failed_candidate).detach()
+            projected_dyn = projected_dyn.index_copy(
+                0, bad_rows.nonzero(as_tuple=False).reshape(-1), repaired_ste
+            )
+        except Exception as exc:
+            indices = bad_rows.nonzero(as_tuple=False).reshape(-1).cpu().tolist()
+            raise ppc.ProjectionConstraintError(
+                "fallback_failed", indices,
+                f"Dykstra recovery raised {type(exc).__name__}: {exc}; "
+                f"primary solver error: {primary_projection_error}",
+            ) from exc
+
+    # Fail closed even if the original solver reported success. This catches
+    # mass defects, negative species, and infeasible elemental constraints.
+    final_audit = ppc.require_projection_valid(
+        projected_dyn, i_sum, element_matrix, target_elements
+    )
+    elem_res_max = final_audit["element"].to(dtype=scaled_dyn.dtype)
+    proj_failed = False
 
     # 5. Separation into macro and micro
     macro_constrained = projected_dyn[..., :n_macro]
@@ -568,8 +617,13 @@ def project_physical_state(
         "constrained_mass_sum": (projected_dyn.sum(dim=-1, keepdim=True) + i_sum).squeeze(-1),
         "element_residual_max": elem_res_max,
         "projection_failed": proj_failed,
-        "projection_warning": (elem_res_max > 1e-4),
+        "projection_warning": (elem_res_max > ppc.ELEMENT_ATOL),
         "projection_mode": projection_mode,
+        "projection_fallback_used": projection_fallback_rows,
+        "projection_fallback_iterations": projection_fallback_iterations,
+        "projection_mass_residual": final_audit["mass"].to(dtype=scaled_dyn.dtype),
+        "projection_negative_residual": final_audit["negativity"].to(dtype=scaled_dyn.dtype),
+        "projection_primary_error": primary_projection_error,
     }
 
     if len(orig_shape_macro) == 1:
@@ -607,7 +661,7 @@ def apply_task8_state_update(
     tools: Any,
     current_X_scaled: torch.Tensor,
     rate_pred_scaled: torch.Tensor,
-    inert_sum: float | torch.Tensor = 0.0,
+    inert_sum: float | torch.Tensor | None = None,
     element_matrix: torch.Tensor | None = None,
     target_elements: torch.Tensor | None = None,
     iterations: int = 8,
@@ -632,12 +686,28 @@ def apply_task8_state_update(
     )
 
     # --- 2. Constrained Candidate (Task8 physical state projection) ---
+    # Infer the same reactor mass/element target as the main state-update
+    # path. An omitted inert_sum must not mean "there are no inerts".
+    inert_mass = inert_sum
+    if inert_mass is None:
+        inert_idx = getattr(tools, "inert_idx", None)
+        if inert_idx is not None and len(inert_idx) > 0:
+            inert_mass = current_X[:, inert_idx].sum(dim=-1, keepdim=True)
+        else:
+            inert_mass = 0.0
+    A = element_matrix if element_matrix is not None else getattr(tools, "A", None)
+    expected_elements = target_elements
+    if expected_elements is None and A is not None:
+        previous_dynamic = torch.cat([Y_macro_old, Y_micro_old], dim=-1)
+        expected_elements = previous_dynamic @ A.to(
+            device=previous_dynamic.device, dtype=previous_dynamic.dtype
+        ).T
     Y_macro_constrained, Y_micro_constrained, diagnostics = project_physical_state(
         Y_macro_raw=Y_macro_candidate_raw,
         Y_micro_raw=Y_micro_candidate_raw,
-        inert_sum=inert_sum,
-        element_matrix=element_matrix,
-        target_elements=target_elements,
+        inert_sum=inert_mass,
+        element_matrix=A,
+        target_elements=expected_elements,
         iterations=iterations,
         projection_mode=projection_mode,
     )
@@ -3356,7 +3426,7 @@ class CoarseOperatorTools:
                 tools=self,
                 current_X_scaled=current_X_scaled,
                 rate_pred_scaled=rate_pred_scaled,
-                inert_sum=inert_sum if inert_sum is not None else 0.0,
+                inert_sum=inert_sum,
                 element_matrix=element_matrix,
                 target_elements=target_elements,
                 iterations=iterations,
@@ -3538,16 +3608,60 @@ class CoarseOperatorTools:
         if inert_sum is None:
             if hasattr(self, "inert_idx") and len(self.inert_idx) > 0:
                 inert_idx_dev = self.inert_idx.to(current_X.device)
-                inert_sum_eff = torch.clamp_min(current_X[:, inert_idx_dev], 0.0).sum(dim=-1, keepdim=True)
+                inert_values = current_X[:, inert_idx_dev]
+                invalid_inert_rows = (
+                    (~torch.isfinite(inert_values)) | (inert_values < 0.0)
+                ).any(dim=1)
+                if bool(invalid_inert_rows.any()):
+                    raise ppc.ProjectionConstraintError(
+                        "invalid_inert_mass",
+                        invalid_inert_rows.nonzero(as_tuple=False).reshape(-1).cpu().tolist(),
+                        "inert species cannot be negative or non-finite; do not hide "
+                        "them by clamping before projection",
+                    )
+                inert_sum_eff = inert_values.sum(dim=-1, keepdim=True)
             else:
                 inert_sum_eff = 0.0
         else:
             inert_sum_eff = inert_sum
 
         eff_element_matrix = element_matrix if element_matrix is not None else getattr(self, "A", None)
+        projection_reference_mode = "current_physical_state"
+        projection_reference_mass_correction = None
         if target_elements is None and eff_element_matrix is not None:
             dyn_old = torch.cat([Y_macro_old, Y_micro_old], dim=-1)
-            eff_target_elements = torch.matmul(dyn_old, eff_element_matrix.to(dyn_old.device).T)
+            old_for_target = dyn_old
+            if not safe_for_rollout:
+                # In explicitly raw-feedback experiments the prior predicted Y
+                # may *deliberately* lie off the mass simplex. It is not a
+                # feasible elemental target for a normalized constrained
+                # diagnostic candidate. Reanchor this diagnostic only to a
+                # nonnegative unit-mass *reference*; the raw trajectory and
+                # raw conservation loss remain untouched. Actual constrained
+                # rollout feedback always uses the unmodified physical target.
+                inert_fraction = torch.as_tensor(
+                    inert_sum_eff, dtype=dyn_old.dtype, device=dyn_old.device
+                )
+                if inert_fraction.ndim == 0:
+                    inert_fraction = inert_fraction.expand(dyn_old.shape[0], 1)
+                elif inert_fraction.ndim == 1:
+                    inert_fraction = inert_fraction.unsqueeze(1)
+                mass_budget = 1.0 - inert_fraction
+                positive_old = dyn_old.clamp_min(0.0)
+                positive_total = positive_old.sum(dim=-1, keepdim=True)
+                normalized_old = torch.where(
+                    positive_total > 0.0,
+                    positive_old * (mass_budget / positive_total.clamp_min(1e-40)),
+                    torch.full_like(positive_old, 1.0 / positive_old.shape[1]) * mass_budget,
+                )
+                old_for_target = normalized_old
+                projection_reference_mode = "renormalized_raw_diagnostic"
+                projection_reference_mass_correction = (
+                    normalized_old - dyn_old
+                ).abs().sum(dim=-1).detach()
+            eff_target_elements = torch.matmul(
+                old_for_target, eff_element_matrix.to(dyn_old.device).T
+            )
         else:
             eff_target_elements = target_elements
 
@@ -3561,6 +3675,11 @@ class CoarseOperatorTools:
                 iterations=iterations,
                 projection_mode=eff_proj_mode,
             )
+        # Preserve diagnostic provenance: raw-feedback reference renormalization
+        # is not equivalent to conserving the original off-manifold raw state.
+        proj_diag["projection_reference_mode"] = projection_reference_mode
+        proj_diag["projection_reference_mass_correction"] = projection_reference_mass_correction
+
         # Straight-Through Estimator (STE): forward value is exact physical projection,
         # backward gradient flows cleanly via identity d(Y_proj)/d(Y_raw) = I.
         Y_macro_next_constrained = Y_macro_next_raw + (Y_macro_proj - Y_macro_next_raw).detach()
@@ -5522,6 +5641,7 @@ def build_training_config_record(
         "use_induction_weights": bool(use_induction_weights),
         "induction_boost": float(induction_boost),
         "projection_mode": str(projection_mode),
+        "projection_validation_contract": ppc.PROJECTION_VALIDATION_CONTRACT,
         "desentinelize_scaler": bool(desentinelize_scaler),
         "network_arch": str(network_arch),
     }
@@ -5744,6 +5864,23 @@ def train_model_v68(
         raise ValueError("trust_region_fraction must be in [0, 1]")
     if temperature_mode not in {"recorded", "autonomous"}:
         raise ValueError("temperature_mode must be 'recorded' or 'autonomous'")
+    if temperature_mode == "autonomous":
+        # Raw species and unprojected scaled-space noise do not in general
+        # satisfy element/mass conservation. NASA7/EOS pressure cannot rescue
+        # an invalid composition after the fact. Fail at startup rather than
+        # during a costly H=128 rollout.
+        if feedback_state_source != "constrained":
+            raise ValueError(
+                "Autonomous T/P training requires feedback_state_source='constrained' "
+                "to preserve the species mass/element projection contract"
+            )
+        if feedback_noise_std > 0.0:
+            raise ValueError(
+                "Autonomous T/P feedback_noise_std must be zero until noisy "
+                "species are reprojected onto the element/mass manifold"
+            )
+    if projection_mode not in {"multiplicative_kl", "weighted_linear"}:
+        raise ValueError("projection_mode must be 'multiplicative_kl' or 'weighted_linear'")
     if max_delta_temperature <= 0.0:
         raise ValueError("max_delta_temperature must be > 0")
     if rate_loss_kind not in {"mse", "huber"}:
@@ -6414,6 +6551,7 @@ def train_model_v68(
                     "rate_z_limit",
                     "micro_rate_z_limit",
                     "state_update_mode",
+                    "task8_version",
                     "state_loss_source",
                     "feedback_state_source",
                     "lambda_element",
@@ -6426,6 +6564,8 @@ def train_model_v68(
                     "detach_rollout",
                     "weight_decay",
                     "temperature_mode",
+                    "projection_mode",
+                    "projection_validation_contract",
                 )
             }
             if effective_temperature_mode == "autonomous":
@@ -7240,7 +7380,14 @@ def train_model_v68(
                         previous_pred_rate_scaled = pred_rate_scaled
                         previous_true_rate_scaled = true_rate_scaled.detach()
             except Exception as exc:
-                record_batch_failure(f"Forward/backward exception: {type(exc).__name__}: {exc}")
+                projection_diagnostics = (
+                    {"projection_reason": exc.reason, "projection_rows": list(exc.rows)}
+                    if isinstance(exc, ppc.ProjectionConstraintError) else None
+                )
+                record_batch_failure(
+                    f"Forward/backward exception: {type(exc).__name__}: {exc}",
+                    diagnostics=projection_diagnostics,
+                )
                 raise
 
             # ----------------------------------------------------
@@ -7283,7 +7430,14 @@ def train_model_v68(
                         ).backward(),
                     )
                 except Exception as exc:
-                    record_batch_failure(f"Auxiliary rollout exception: {type(exc).__name__}: {exc}")
+                    projection_diagnostics = (
+                        {"projection_reason": exc.reason, "projection_rows": list(exc.rows)}
+                        if isinstance(exc, ppc.ProjectionConstraintError) else None
+                    )
+                    record_batch_failure(
+                        f"Auxiliary rollout exception: {type(exc).__name__}: {exc}",
+                        diagnostics=projection_diagnostics,
+                    )
                     raise
                 if not torch.isfinite(rollout_loss):
                     record_batch_failure("Non-finite auxiliary rollout loss")

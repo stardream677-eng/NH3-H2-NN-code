@@ -158,7 +158,8 @@ def test_ste_gradient_flows_through_constrained_rollout():
         device="cpu",
     )
     # T, P, Y_N2, Y_H2, Y_O2, logY_OH, log_dt
-    current_X_scaled = torch.tensor([[1000.0, 1.0, 0.7, 0.05, 0.25, -5.0, -5.0]])
+    # N2 + H2 + O2 + OH(=1e-5) must sum to one for element projection.
+    current_X_scaled = torch.tensor([[1000.0, 1.0, 0.7, 0.05, 0.24999, -5.0, -5.0]])
     rate_pred_scaled = torch.tensor([[0.01, -0.01, 0.0]], requires_grad=True)
 
     result = tools.predict_next_state(
