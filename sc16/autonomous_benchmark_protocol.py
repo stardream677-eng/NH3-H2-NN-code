@@ -12,7 +12,7 @@ import numpy as np
 BENCHMARK_PROTOCOL = "autonomous_h128_trajectories_v1"
 DEFAULT_IDT_RISE_K = 400.0
 RADICALS = ("OH", "H", "O", "HO2", "NH2", "HNO")
-KEY_SPECIES = ("NH3", "H2", "O2", "H2O", "OH", "H", "O", "NO", "N2O")
+KEY_SPECIES = ("NH3", "H2", "O2", "H2O", "OH", "H", "O", "NO", "NO2", "N2O")
 
 
 def first_temperature_rise_time(
@@ -113,6 +113,8 @@ def compare_complete_trajectories(
         "idt_censored_at_s": float(t[-1]),
         "temperature_K": _trace_stats(t, rt, nt),
         "pressure_atm": _trace_stats(t, rp, np_),
+        "max_temperature_rise_ref_K": float(np.max(rt) - rt[0]),
+        "max_temperature_rise_nn_K": float(np.max(nt) - rt[0]),
         "species": {},
     }
     for index, name in enumerate(species_names):
@@ -129,6 +131,13 @@ def compare_complete_trajectories(
                 if active.any() else None
             )
         scores["species"][name] = stats
+    # Explicit NOx performance: total NO+NO2 mass fraction, in addition to
+    # each available species. Do not call NO alone "total NOx".
+    nox_indices = [species_names.index(name) for name in ("NO", "NO2") if name in species_names]
+    if nox_indices:
+        scores["species"]["NOx_mass_fraction"] = _trace_stats(
+            t, yr[:, nox_indices].sum(axis=1), yn[:, nox_indices].sum(axis=1)
+        )
     return scores
 
 
