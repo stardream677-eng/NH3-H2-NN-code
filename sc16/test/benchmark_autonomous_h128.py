@@ -127,6 +127,13 @@ def load_model_components(
             "This H=128 benchmark requires a checkpoint from a run configured "
             "for max_horizon >= 128; select an H128-trained candidate"
         )
+    if checkpoint.get("horizon") != 128:
+        raise ValueError(
+            "Checkpoint is not an explicitly selected H=128 Sentinel checkpoint; "
+            "use best_v68_net_<mechanism>_H128.pth, not latest or a short-H model"
+        )
+    if not bool((checkpoint.get("sentinel_metrics") or {}).get("is_valid_candidate", False)):
+        raise ValueError("H128 checkpoint has no valid frozen Sentinel selection record")
     fi = checkpoint["feature_info"]
     actual_hash = sha256(mechanism_path)
     expected_hash = (checkpoint.get("manifest") or {}).get("mechanism_sha256")
