@@ -210,10 +210,12 @@ def _collect_trajectory_metadata(folder: Path, gas=None, mechanism_error=None) -
                     if pd.notna(stratum_name) and str(stratum_name).strip()
                     else "unknown"
                 )
-                if "condition_group_id" in row and pd.notna(row["condition_group_id"]):
-                    values["condition_group_id"] = str(row["condition_group_id"]).strip()
-                else:
-                    values["condition_group_id"] = str(key)
+                condition_group_id = row.get("condition_group_id")
+                values["condition_group_id"] = (
+                    str(condition_group_id).strip()
+                    if pd.notna(condition_group_id) and str(condition_group_id).strip()
+                    else str(key)
+                )
                 actual, reason, _ = _conditions.actual_phi(row.to_dict(), gas, mechanism_error)
                 if actual is not None:
                     values["phi"] = actual
@@ -293,7 +295,8 @@ def _split_ids(ids: np.ndarray, rng: np.random.Generator, train: float, val: flo
 
     if "condition_group_id" in metadata:
         meta_ids = metadata.loc[ids]
-        cg = meta_ids["condition_group_id"].fillna(pd.Series(ids, index=ids)).astype(str)
+        cg = meta_ids["condition_group_id"].fillna(pd.Series(ids, index=ids)).astype(str).str.strip()
+        cg = cg.mask(cg.eq(""), ids.astype(str))
         if cg.nunique() < len(ids):
             group_to_ids: dict[str, list] = {}
             group_first_row: dict[str, pd.Series] = {}
