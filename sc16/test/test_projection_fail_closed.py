@@ -263,3 +263,20 @@ def test_projection_contract_persisted_and_legacy_constrained_validation_rejecte
         }
     })
     assert legacy_raw["projection_validation_contract"] == "legacy_unverified"
+
+
+def test_autonomous_requires_constrained_feedback_before_data_loading():
+    with pytest.raises(ValueError, match="feedback_state_source='constrained'"):
+        tr.train_model_v68(
+            data_dir="unused_directory_for_early_config_validation",
+            temperature_mode="autonomous", feedback_state_source="raw",
+        )
+
+
+def test_autonomous_rejects_unprojected_noise_at_startup():
+    with pytest.raises(ValueError, match="feedback_noise_std must be zero"):
+        tr.train_model_v68(
+            data_dir="unused_directory_for_early_config_validation",
+            temperature_mode="autonomous", feedback_state_source="constrained",
+            feedback_noise_std=0.01,
+        )
