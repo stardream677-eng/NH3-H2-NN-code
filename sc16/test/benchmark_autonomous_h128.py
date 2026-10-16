@@ -122,6 +122,11 @@ def load_model_components(
         raise ValueError("Checkpoint lacks the autonomous EOS pressure contract")
     if config["projection_validation_contract"] != tr.ppc.PROJECTION_VALIDATION_CONTRACT:
         raise ValueError("Checkpoint lacks the strict elemental projection contract")
+    if int(recorded.get("max_horizon", 0) or 0) < 128:
+        raise ValueError(
+            "This H=128 benchmark requires a checkpoint from a run configured "
+            "for max_horizon >= 128; select an H128-trained candidate"
+        )
     fi = checkpoint["feature_info"]
     actual_hash = sha256(mechanism_path)
     expected_hash = (checkpoint.get("manifest") or {}).get("mechanism_sha256")
@@ -277,6 +282,8 @@ def run_case(
         "reactor_type": reactor_type, "dt_s": dt, "steps": case["steps"],
         "t_end_s": float(times[-1]), "initial_T_K": float(case["T0_K"]),
         "initial_P_atm": float(case["P0_atm"]),
+        "phi": float(case["phi"]),
+        "h2_fraction": float(case["h2_fraction"]),
         "failure_phase": None, "failure_message": None,
     }
     traces = {"time_s": times}
@@ -437,6 +444,17 @@ def main(argv=None) -> int:
         "mechanism_path": str(mechanism_path),
         "mechanism_sha256": sha256(mechanism_path),
         "cases_path": str(cases_path), "cases_sha256": sha256(cases_path),
+        "device": str(args.device), "torch_version": str(torch.__version__),
+        "cantera_version": str(ct.__version__),
+        "species_order": list(names),
+        "source_hashes": {
+            file: sha256(ROOT / file) for file in (
+                "train_sc_v68.py", "thermo_nasa7_layer.py",
+                "autonomous_pressure.py", "physical_projection_contract.py",
+                "autonomous_benchmark_protocol.py",
+            )
+        },
+        "benchmark_runner_sha256": sha256(Path(__file__)),
         "source_training_config": {
             k: training_cfg.get(k) for k in (
                 "temperature_mode", "feedback_state_source", "state_update_mode",
