@@ -5848,6 +5848,23 @@ def train_model_v68(
         raise ValueError("trust_region_fraction must be in [0, 1]")
     if temperature_mode not in {"recorded", "autonomous"}:
         raise ValueError("temperature_mode must be 'recorded' or 'autonomous'")
+    if temperature_mode == "autonomous":
+        # Raw species and unprojected scaled-space noise do not in general
+        # satisfy element/mass conservation. NASA7/EOS pressure cannot rescue
+        # an invalid composition after the fact. Fail at startup rather than
+        # during a costly H=128 rollout.
+        if feedback_state_source != "constrained":
+            raise ValueError(
+                "Autonomous T/P training requires feedback_state_source='constrained' "
+                "to preserve the species mass/element projection contract"
+            )
+        if feedback_noise_std > 0.0:
+            raise ValueError(
+                "Autonomous T/P feedback_noise_std must be zero until noisy "
+                "species are reprojected onto the element/mass manifold"
+            )
+    if projection_mode not in {"multiplicative_kl", "weighted_linear"}:
+        raise ValueError("projection_mode must be 'multiplicative_kl' or 'weighted_linear'")
     if max_delta_temperature <= 0.0:
         raise ValueError("max_delta_temperature must be > 0")
     if rate_loss_kind not in {"mse", "huber"}:
