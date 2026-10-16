@@ -2,6 +2,7 @@
 
 These tests intentionally need only PyTorch, NumPy and the diagnostics module.
 """
+import pytest
 import torch
 
 import training_diagnostics as td
@@ -89,7 +90,7 @@ def test_failure_snapshot_roundtrips_step_and_predicted_state(tmp_path):
 def test_failed_rollout_capture_identifies_invalid_contract():
     tools = _FakeTools()
     tools.feature_info["input_cols"].remove("log_dt")
-    with __import__("pytest").raises(ValueError, match="feature columns"):
+    with pytest.raises(ValueError, match="feature columns"):
         td.capture_rollout_failure_state(
             tools, torch.zeros(1, 6), step=0, phase="state_update"
         )
