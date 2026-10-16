@@ -12,6 +12,7 @@ from __future__ import annotations
 import torch
 
 
+PROJECTION_VALIDATION_CONTRACT = "kl_dykstra_fail_closed_v1"
 MASS_ATOL = 5e-6
 ELEMENT_ATOL = 1e-6
 NEGATIVE_ATOL = 0.0
