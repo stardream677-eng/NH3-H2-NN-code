@@ -1597,6 +1597,16 @@ def load_trajectory_sample_ids(split_dir, mechanism: str, split: str) -> set[str
     return values
 
 
+def require_disjoint_split_ids(train_ids, validation_ids):
+    """Reject trajectory IDs shared between train and validation manifests."""
+    overlap = {str(s) for s in train_ids} & {str(s) for s in validation_ids}
+    if overlap:
+        raise ValueError(
+            f"Train/validation trajectory splits overlap ({len(overlap)} IDs); "
+            f"examples: {sorted(overlap)[:5]}"
+        )
+
+
 def trajectory_split_signature(split_dir, mechanism: str, split: str = "train") -> str:
     """Return a content-based signature for a split list."""
     path = Path(split_dir) / f"{mechanism}_{split}_sample_ids.csv"
@@ -5893,12 +5903,7 @@ def train_model_v68(
         )
         train_parts = list(parquet_files)
         val_parts = list(parquet_files)
-        overlap = train_sample_ids & val_sample_ids
-        if overlap:
-            raise ValueError(
-                f"Train/validation trajectory splits overlap ({len(overlap)} IDs); "
-                f"examples: {sorted(overlap)[:5]}"
-            )
+        require_disjoint_split_ids(train_sample_ids, val_sample_ids)
         print(
             f"\n[Split] Trajectory manifest: {resolved_split_dir}\n"
             f"  train sample_ids = {len(train_sample_ids):,}\n"
