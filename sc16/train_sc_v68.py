@@ -5165,6 +5165,44 @@ def blend_feedback_state(
     return base_state + alpha * (predicted_state - base_state)
 
 
+def reclose_blended_autonomous_feedback(
+    tools,
+    current_X_scaled: torch.Tensor,
+    mixed_next_X_scaled: torch.Tensor,
+    use_prediction: torch.Tensor,
+    thermo_closure: dict,
+    max_delta_temperature: float = 1000.0,
+    feedback_input_limit: float | None = None,
+) -> torch.Tensor:
+    """Recompute energy-closed T and EOS P after scheduled-sampling Y blending.
+
+    The blended T/P are not an EOS state in general. Treat blended *species*
+    as the new composition, then solve NASA7 and the pressure constraint from
+    the current state. Non-selected rows stay exactly on the recorded teacher
+    trajectory. Called only when blending or feedback noise actually changed
+    the predicted state; the default full-prediction path avoids a second solve.
+    """
+    selected = use_prediction.reshape(-1).bool()
+    if selected.shape[0] != mixed_next_X_scaled.shape[0]:
+        raise ValueError("Feedback mask batch size disagrees with mixed input")
+    selected_rows = torch.nonzero(selected, as_tuple=False).reshape(-1)
+    if selected_rows.numel() == 0:
+        return mixed_next_X_scaled
+
+    mixed = mixed_next_X_scaled.index_select(0, selected_rows)
+    current = current_X_scaled.index_select(0, selected_rows)
+    physical = tools.inverse_state(mixed)
+    Y_macro = physical.index_select(1, tools.macro_idx)
+    logY_micro = physical.index_select(1, tools.micro_idx)
+    closed = tools.state_to_input_scaled(
+        mixed, Y_macro, logY_micro,
+        temperature_mode="autonomous", thermo_closure=thermo_closure,
+        current_X_scaled=current, max_delta_temperature=max_delta_temperature,
+        feedback_input_limit=feedback_input_limit,
+    )
+    return mixed_next_X_scaled.index_copy(0, selected_rows, closed)
+
+
 def update_temperature_autonomous(
     temperature: torch.Tensor,
     delta_y: torch.Tensor,
@@ -7154,6 +7192,24 @@ def train_model_v68(
                                 selected_next_X[:, species_idx],
                                 feedback_noise_std * tail_fraction,
                                 use_pred,
+                            )
+
+                        if (
+                            effective_temperature_mode == "autonomous"
+                            and feedback_strength > 0.0
+                            and (feedback_strength < 1.0 or feedback_noise_std > 0.0)
+                        ):
+                            # Mixing recorded and predicted T/P (or perturbing Y)
+                            # breaks energy/EOS closure. Reclose *only* selected
+                            # rows from the actual blended/noisy composition.
+                            rollout_failure_phase = "autonomous_blended_feedback"
+                            selected_next_X = reclose_blended_autonomous_feedback(
+                                tools, current_X, selected_next_X, use_pred,
+                                thermo_closure, max_delta_temperature,
+                                feedback_input_limit=(
+                                    RAW_FEEDBACK_INPUT_LIMIT
+                                    if feedback_state_source == "raw" else None
+                                ),
                             )
 
                         current_X = (
