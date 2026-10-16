@@ -661,7 +661,7 @@ def apply_task8_state_update(
     tools: Any,
     current_X_scaled: torch.Tensor,
     rate_pred_scaled: torch.Tensor,
-    inert_sum: float | torch.Tensor = 0.0,
+    inert_sum: float | torch.Tensor | None = None,
     element_matrix: torch.Tensor | None = None,
     target_elements: torch.Tensor | None = None,
     iterations: int = 8,
@@ -686,12 +686,28 @@ def apply_task8_state_update(
     )
 
     # --- 2. Constrained Candidate (Task8 physical state projection) ---
+    # Infer the same reactor mass/element target as the main state-update
+    # path. An omitted inert_sum must not mean "there are no inerts".
+    inert_mass = inert_sum
+    if inert_mass is None:
+        inert_idx = getattr(tools, "inert_idx", None)
+        if inert_idx is not None and len(inert_idx) > 0:
+            inert_mass = current_X[:, inert_idx].sum(dim=-1, keepdim=True)
+        else:
+            inert_mass = 0.0
+    A = element_matrix if element_matrix is not None else getattr(tools, "A", None)
+    expected_elements = target_elements
+    if expected_elements is None and A is not None:
+        previous_dynamic = torch.cat([Y_macro_old, Y_micro_old], dim=-1)
+        expected_elements = previous_dynamic @ A.to(
+            device=previous_dynamic.device, dtype=previous_dynamic.dtype
+        ).T
     Y_macro_constrained, Y_micro_constrained, diagnostics = project_physical_state(
         Y_macro_raw=Y_macro_candidate_raw,
         Y_micro_raw=Y_micro_candidate_raw,
-        inert_sum=inert_sum,
-        element_matrix=element_matrix,
-        target_elements=target_elements,
+        inert_sum=inert_mass,
+        element_matrix=A,
+        target_elements=expected_elements,
         iterations=iterations,
         projection_mode=projection_mode,
     )
@@ -3410,7 +3426,7 @@ class CoarseOperatorTools:
                 tools=self,
                 current_X_scaled=current_X_scaled,
                 rate_pred_scaled=rate_pred_scaled,
-                inert_sum=inert_sum if inert_sum is not None else 0.0,
+                inert_sum=inert_sum,
                 element_matrix=element_matrix,
                 target_elements=target_elements,
                 iterations=iterations,
