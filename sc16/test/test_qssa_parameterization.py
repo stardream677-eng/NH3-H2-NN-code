@@ -119,10 +119,11 @@ def test_coarse_operator_tools_and_step():
     assert torch.allclose(Y_qssa[0, 2], torch.tensor([1e-4], device=tr.DEVICE), atol=1e-6)
     assert torch.allclose(D[0, 2], torch.tensor([1e6], device=tr.DEVICE), atol=1e-1)
     
-    # Synthetic current_X_scaled: [T=1500, P=40, Y_N2=0.7, Y_H2=0.1, Y_O2=0.2, logY_OH=-5.0, log_dt=-5.0]
+    # Synthetic current_X_scaled: [T=1500, P=40, Y_N2=0.7, Y_H2=0.1, Y_O2=0.19999, logY_OH=-5.0, log_dt=-5.0]
+    # Sum of input mass fractions includes OH=1e-5 and is exactly one.
     # dt = 1e-5 s -> D*dt = 10.0
     dt_val = 1e-5
-    current_row = [1500.0, 40.0, 0.7, 0.1, 0.2, -5.0, np.log10(dt_val)]
+    current_row = [1500.0, 40.0, 0.7, 0.1, 0.19999, -5.0, np.log10(dt_val)]
     current_X_scaled = torch.tensor([current_row], dtype=torch.float32, device=tr.DEVICE)
     
     pred_dict = tools.predict_next_state(
@@ -174,7 +175,7 @@ def test_autograd_differentiability():
     )
     
     dt_val = 1e-5
-    current_row = [1500.0, 40.0, 0.7, 0.1, 0.2, -5.0, np.log10(dt_val)]
+    current_row = [1500.0, 40.0, 0.7, 0.1, 0.19999, -5.0, np.log10(dt_val)]
     current_X_scaled = torch.tensor([current_row], dtype=torch.float32, device=tr.DEVICE)
     
     rate_pred_scaled = torch.tensor(
