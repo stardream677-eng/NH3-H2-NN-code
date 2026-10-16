@@ -44,6 +44,7 @@ import training_diagnostics as td
 import kinetics_parameterization as kp
 import species_validation_protocol as svp
 import experiment_manifest as em
+import autonomous_pressure as ap
 import hashlib
 
 
@@ -3040,6 +3041,7 @@ class CoarseOperatorTools:
             "log_dt"
         )
         self.temperature_idx = input_cols.index("T")
+        self.pressure_idx = input_cols.index("P")
 
         # output dimension:
         # macro rate + micro log-rate
@@ -3641,13 +3643,12 @@ class CoarseOperatorTools:
         max_delta_temperature=1000.0,
         feedback_input_limit: float | None = None,
     ):
-        """
-        使用：
-            true T_next
-            true P_next
-            true dt_next
+        """Encode the next autoregressive input without reference T/P leakage.
 
-        但 species 使用预测值。
+        Recorded mode retains reference T/P/dt and feeds back predicted species.
+        Autonomous mode conserves UV or HP via NASA7 and updates P using the
+        constant-volume EOS or the constant-pressure reactor constraint.
+        dt remains the prescribed next integration interval.
         """
 
         next_X = (
@@ -3686,26 +3687,24 @@ class CoarseOperatorTools:
             current_X, Y_macro_old, logY_micro_old, Y_micro_old = self.get_current_state(
                 current_X_scaled
             )
-            has_inert_in_closure = (
-                thermo_closure is not None
-                and "species_order" in thermo_closure
-                and hasattr(self, "inert_idx")
-                and len(self.inert_idx) > 0
-                and len(thermo_closure["species_order"]) == (len(self.inert_idx) + self.n_macro + self.n_micro)
+            expected_species_order = (
+                list(self.feature_info["inert_species"])
+                + list(self.macro_species)
+                + list(self.micro_species)
             )
-            if has_inert_in_closure:
-                Y_inert = current_X[:, self.inert_idx]
-                Y_old_full = torch.cat([Y_inert, Y_macro_old, Y_micro_old], dim=1)
-                Y_next_full = torch.cat(
-                    [Y_inert, Y_macro_next, torch.pow(10.0, torch.clamp(logY_micro_next, MICRO_LOG_MIN, MICRO_LOG_MAX))],
-                    dim=1,
+            if list(thermo_closure.get("species_order", ())) != expected_species_order:
+                raise ValueError(
+                    "Autonomous thermochemical closure species order must match "
+                    "inert + macro + micro features; never omit inert gas from EOS"
                 )
-            else:
-                Y_old_full = torch.cat([Y_macro_old, Y_micro_old], dim=1)
-                Y_next_full = torch.cat(
-                    [Y_macro_next, torch.pow(10.0, torch.clamp(logY_micro_next, MICRO_LOG_MIN, MICRO_LOG_MAX))],
-                    dim=1,
-                )
+            Y_inert = current_X[:, self.inert_idx]
+            Y_old_full = torch.cat([Y_inert, Y_macro_old, Y_micro_old], dim=1)
+            Y_next_full = torch.cat(
+                [Y_inert, Y_macro_next, torch.pow(
+                    10.0, torch.clamp(logY_micro_next, MICRO_LOG_MIN, MICRO_LOG_MAX)
+                )],
+                dim=1,
+            )
             delta_y = Y_next_full - Y_old_full
             heat_capacity_coeff = torch.as_tensor(
                 thermo_closure["heat_capacity_coeff"],
@@ -3732,7 +3731,16 @@ class CoarseOperatorTools:
                 Y_old_full=Y_old_full,
                 Y_next_full=Y_next_full,
             )
+            # Dataset pressure is in atm; EOS ratios avoid unit conversions.
+            current_pressure = current_X[:, self.pressure_idx:self.pressure_idx + 1]
+            next_pressure = ap.autonomous_pressure_next(
+                current_pressure, current_temperature, next_temperature,
+                Y_old_full, Y_next_full,
+                thermo_closure["nasa7_layer"].W,
+                thermo_closure.get("reactor_type", "IdealGasReactor"),
+            )
             current_unscaled[:, self.temperature_idx:self.temperature_idx + 1] = next_temperature
+            current_unscaled[:, self.pressure_idx:self.pressure_idx + 1] = next_pressure
 
         next_X_scaled = (
             current_unscaled
@@ -5887,6 +5895,10 @@ def train_model_v68(
             f"{len(thermo_closure['species_order'])} species incl inert)"
         )
     training_config["effective_temperature_mode"] = effective_temperature_mode
+    training_config["pressure_feedback_contract"] = (
+        ap.PRESSURE_FEEDBACK_CONTRACT if effective_temperature_mode == "autonomous"
+        else "recorded_p_v1"
+    )
 
     print(
         "\nSpecies summary:"
@@ -6365,6 +6377,8 @@ def train_model_v68(
                     "feedback_noise_std",
                     "detach_rollout",
                     "weight_decay",
+                    "temperature_mode",
+                    "pressure_feedback_contract",
                 )
             }
             if not checkpoint_compatible(
