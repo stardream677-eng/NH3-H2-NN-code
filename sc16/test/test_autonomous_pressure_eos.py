@@ -179,6 +179,73 @@ def test_autonomous_feedback_replaces_both_recorded_temperature_and_pressure(
         )
 
 
+def test_scheduled_sampling_blend_recloses_selected_rows_only(cantera_tools):
+    import cantera as ct
+    import train_sc_v68 as train
+
+    tools, closure = cantera_tools
+    current_row = torch.tensor([[1150., 12., .75, .04, .20, .01, -20., -6.]])
+    current = torch.cat([current_row, current_row], dim=0)
+    # Same mass-normalized mixed species, but deliberately wrong blended T/P.
+    mixed = torch.tensor([
+        [1700., 400., .75, .0395, .1995, .011, -20., -5.5],
+        [1300., 230., .75, .0395, .1995, .011, -20., -5.5],
+    ])
+    selected = torch.tensor([[True], [False]])
+    closed = train.reclose_blended_autonomous_feedback(
+        tools, current, mixed, selected, closure,
+    )
+    # Teacher row is untouched, even when its reference pressure is unrelated
+    # to the current predicted thermodynamic state.
+    torch.testing.assert_close(closed[1], mixed[1])
+    assert closed[0, 0] != mixed[0, 0]
+    assert closed[0, 1] != mixed[0, 1]
+    torch.testing.assert_close(closed[0, [2, 3, 4, 5, 6, 7]], mixed[0, [2, 3, 4, 5, 6, 7]])
+
+    gas = ct.Solution(str(ROOT / "NUIG2024.yaml"))
+    names = ["N2", "H2", "O2", "H2O", "OH"]
+    y0 = dict(zip(names, [0.75, .04, .20, .01, 1e-20]))
+    y1 = dict(zip(names, [0.75, .0395, .1995, .011, 1e-20]))
+    gas.TPY = 1150., 12. * ct.one_atm, y0
+    rho0 = gas.density
+    u0 = gas.int_energy_mass
+    gas.TDY = float(closed[0, 0]), rho0, y1
+    assert float(closed[0, 1]) * ct.one_atm == pytest.approx(gas.P, rel=5e-6)
+    assert gas.int_energy_mass == pytest.approx(u0, rel=1e-6, abs=0.5)
+
+
+def test_no_prediction_mask_skips_reclosure(cantera_tools):
+    import train_sc_v68 as train
+    tools, closure = cantera_tools
+    x = torch.tensor([[1150., 12., .75, .04, .20, .01, -20., -6.]])
+    recorded = x.clone()
+    recorded[0, 0] = 2000.
+    recorded[0, 1] = 500.
+    closed = train.reclose_blended_autonomous_feedback(
+        tools, x, recorded, torch.tensor([[False]]), closure,
+    )
+    torch.testing.assert_close(closed, recorded)
+
+
+def test_legacy_autonomous_checkpoint_rejected_by_validator():
+    import validate_sc_v68 as validator
+    with pytest.raises(ValueError, match="Legacy autonomous checkpoint"):
+        validator.checkpoint_rollout_config({
+            "training_config": {"temperature_mode": "autonomous"}
+        })
+    valid = validator.checkpoint_rollout_config({
+        "training_config": {
+            "temperature_mode": "autonomous",
+            "pressure_feedback_contract": PRESSURE_FEEDBACK_CONTRACT,
+        }
+    })
+    assert valid["temperature_mode"] == "autonomous"
+    recorded = validator.checkpoint_rollout_config({
+        "training_config": {"temperature_mode": "recorded"}
+    })
+    assert recorded["temperature_mode"] == "recorded"
+
+
 def test_recorded_mode_retains_teacher_T_and_P(cantera_tools):
     tools, closure = cantera_tools
     current = torch.tensor([[1150., 12., .75, .04, .20, .01, -20., -6.]])
