@@ -5625,6 +5625,7 @@ def build_training_config_record(
         "use_induction_weights": bool(use_induction_weights),
         "induction_boost": float(induction_boost),
         "projection_mode": str(projection_mode),
+        "projection_validation_contract": ppc.PROJECTION_VALIDATION_CONTRACT,
         "desentinelize_scaler": bool(desentinelize_scaler),
         "network_arch": str(network_arch),
     }
@@ -6529,6 +6530,8 @@ def train_model_v68(
                     "detach_rollout",
                     "weight_decay",
                     "temperature_mode",
+                    "projection_mode",
+                    "projection_validation_contract",
                 )
             }
             if effective_temperature_mode == "autonomous":
