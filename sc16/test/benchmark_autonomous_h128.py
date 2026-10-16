@@ -122,6 +122,8 @@ def load_model_components(
         raise ValueError("Checkpoint lacks the autonomous EOS pressure contract")
     if config["projection_validation_contract"] != tr.ppc.PROJECTION_VALIDATION_CONTRACT:
         raise ValueError("Checkpoint lacks the strict elemental projection contract")
+    if config["autonomous_input_contract"] != tr.ap.AUTONOMOUS_INPUT_CONTRACT:
+        raise ValueError("Checkpoint was not trained with leak-free autonomous inert feedback")
     if int(recorded.get("max_horizon", 0) or 0) < 128:
         raise ValueError(
             "This H=128 benchmark requires a checkpoint from a run configured "
@@ -469,7 +471,8 @@ def main(argv=None) -> int:
             k: training_cfg.get(k) for k in (
                 "temperature_mode", "feedback_state_source", "state_update_mode",
                 "projection_mode", "projection_validation_contract",
-                "pressure_feedback_contract", "max_horizon",
+                "pressure_feedback_contract", "autonomous_input_contract",
+                "max_horizon",
             )
         },
         "independence_from_training": "unverified: explicit holdout condition audit required",
