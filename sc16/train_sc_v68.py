@@ -360,7 +360,7 @@ def artifact_subdir(kind: str) -> str:
 
 STATE_UPDATE_MODES = ("legacy", "task8_conservative_state", "qssa", "qssa_asymptotic", "dual_branch", "dual_branch_pd_v1")
 DEFAULT_STATE_UPDATE_MODE = "legacy"
-TASK8_VERSION = "task8_v1"
+TASK8_VERSION = "task8_v2"
 STATE_CONSTRAINT_EPSILON = 1e-12
 
 
@@ -6551,6 +6551,7 @@ def train_model_v68(
                     "rate_z_limit",
                     "micro_rate_z_limit",
                     "state_update_mode",
+                    "task8_version",
                     "state_loss_source",
                     "feedback_state_source",
                     "lambda_element",
