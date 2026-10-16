@@ -1,6 +1,6 @@
 """Differentiable NASA-7 Polynomial Thermochemistry Layer for PyTorch.
 
-Provides GPU-accelerated, machine-precision, fully differentiable thermodynamic
+Provides GPU-capable, differentiable thermodynamic
 calculations directly from Cantera mechanism files (e.g. NUIG2024.yaml, TH2024.yaml, UCF2024.yaml):
   - Heat capacity (cp, cv)
   - Specific enthalpy (h)
@@ -8,8 +8,8 @@ calculations directly from Cantera mechanism files (e.g. NUIG2024.yaml, TH2024.y
   - Const-Volume energy closure: solves T from internal energy u(T, Y) = u_0
   - Const-Pressure energy closure: solves T from enthalpy h(T, Y) = h_0
 
-Eliminates the legacy 1000 K constant-cp approximation, providing exact (< 1e-10 K)
-temperature closure on GPU during autonomous training rollouts and CFD inference.
+Replaces the legacy 1000 K constant-cp approximation with an iterative NASA-7
+energy closure that verifies the final energy residual and rejects failed solves.
 """
 
 from __future__ import annotations
@@ -161,79 +161,109 @@ class ThermoNASA7Layer(nn.Module):
         
         return cp_mix, cv_mix, h_mix, u_mix
 
+    def _solve_temperature_energy(
+        self,
+        target: torch.Tensor,
+        Y: torch.Tensor,
+        T_init: torch.Tensor,
+        mode: str,
+        max_iters: int = 24,
+        tol: float = 1e-4,
+    ) -> torch.Tensor:
+        """Newton energy closure with an explicit *final* residual check.
+
+        Newton iterations use float64 and bounded temperature steps; the final
+        residual is checked after converting to the caller's temperature dtype.
+        The returned tensor remains differentiable.  Unreachable targets or
+        failed solves raise RuntimeError instead of returning a clipped state.
+        """
+        if max_iters < 1 or not np.isfinite(tol) or tol <= 0.0:
+            raise ValueError("max_iters must be >= 1 and tol must be finite and positive")
+        if mode not in ("uv", "hp"):
+            raise ValueError(f"Unsupported energy closure mode: {mode}")
+
+        original_dtype = T_init.dtype
+        work_dtype = torch.float64
+        T = T_init.reshape(-1, 1).to(dtype=work_dtype)
+        Y_work = Y.to(device=T.device, dtype=work_dtype)
+        target_work = torch.as_tensor(target, device=T.device, dtype=work_dtype)
+        if target_work.ndim == 0:
+            target_work = target_work.reshape(1, 1)
+        elif target_work.ndim == 1:
+            target_work = target_work[:, None]
+        try:
+            target_work = torch.broadcast_to(target_work, T.shape)
+        except RuntimeError as exc:
+            raise ValueError("Energy target must broadcast to the temperature batch") from exc
+        if Y_work.ndim != 2 or Y_work.shape != (T.shape[0], self.n_species):
+            raise ValueError("Y must have shape (batch, n_species)")
+        if not (
+            torch.isfinite(T).all()
+            and torch.isfinite(Y_work).all()
+            and torch.isfinite(target_work).all()
+        ):
+            raise ValueError("Energy closure requires finite temperatures, fractions and targets")
+        if (T < 200.0).any() or (T > 5000.0).any():
+            raise ValueError("Initial temperatures must lie in [200, 5000] K")
+
+        def energy_and_capacity(T_current):
+            cp, cv, h, u = self.compute_mixture_properties(T_current, Y_work)
+            return (u, cv) if mode == "uv" else (h, cp)
+
+        for _ in range(max_iters):
+            energy, capacity = energy_and_capacity(T)
+            residual = energy - target_work
+            if not (torch.isfinite(residual).all() and torch.isfinite(capacity).all()):
+                raise RuntimeError("NASA7 energy closure produced non-finite values")
+            if (capacity <= 0.0).any():
+                raise RuntimeError("NASA7 energy closure requires positive heat capacity")
+            # tol is a temperature-equivalent tolerance; also bound the
+            # absolute/relative energy residual in J/kg.
+            energy_tol = 0.1 + 1e-8 * torch.maximum(energy.abs(), target_work.abs())
+            energy_tol = torch.maximum(energy_tol, capacity * float(tol))
+            if bool((residual.abs() <= energy_tol).all()):
+                break
+            step = torch.clamp(residual / capacity, min=-500.0, max=500.0)
+            T = torch.clamp(T - step, min=200.0, max=5000.0)
+
+        # Check the *returned* state: float32 rounding may be larger than
+        # the residual at an intermediate float64 Newton iterate.
+        final_T = T.to(original_dtype)
+        energy, capacity = energy_and_capacity(final_T.to(work_dtype))
+        residual = (energy - target_work).abs()
+        rounding_K = 2.0 * torch.finfo(original_dtype).eps * final_T.to(work_dtype).abs()
+        energy_tol = torch.maximum(
+            0.1 + 1e-8 * torch.maximum(energy.abs(), target_work.abs()),
+            capacity.abs() * (float(tol) + rounding_K),
+        )
+        if not torch.isfinite(residual).all() or not bool((residual <= energy_tol).all()):
+            max_abs = float(residual.detach().max())
+            max_limit = float(energy_tol.detach().max())
+            raise RuntimeError(
+                f"NASA7 {mode} energy closure did not converge within {max_iters} iterations "
+                f"(max residual={max_abs:.6e} J/kg, allowed={max_limit:.6e} J/kg); "
+                "reduce the integration interval or inspect the predicted composition"
+            )
+        return final_T
+
     def solve_temperature_uv(
         self,
         u_target: torch.Tensor,
         Y: torch.Tensor,
         T_init: torch.Tensor,
-        max_iters: int = 6,
+        max_iters: int = 24,
         tol: float = 1e-4,
     ) -> torch.Tensor:
-        """Exact Newton-Raphson solver for constant-volume internal energy closure:
-        u(T, Y) = u_target.
-        
-        u_target: (B, 1) or scalar
-        Y: (B, N_sp)
-        T_init: (B, 1) or (B,) initial temperature guess
-        """
-        if T_init.ndim == 1:
-            T = T_init.unsqueeze(-1).clone()
-        else:
-            T = T_init.clone()
-            
-        if u_target.ndim == 1:
-            u_tgt = u_target.unsqueeze(-1)
-        elif u_target.ndim == 0:
-            u_tgt = u_target.view(1, 1).expand_as(T)
-        else:
-            u_tgt = u_target
-
-        for _ in range(max_iters):
-            _, cv_mix, _, u_mix = self.compute_mixture_properties(T, Y)
-            res = u_mix - u_tgt
-            dT = res / cv_mix.clamp_min(1e-4)
-            # Step limiter for robustness
-            dT_clamped = torch.clamp(dT, -500.0, 500.0)
-            T = torch.clamp(T - dT_clamped, min=200.0, max=5000.0)
-            if dT.abs().max() < tol:
-                break
-                
-        return T
+        """Solve constant-volume u(T,Y)=u_target; reject non-converged states."""
+        return self._solve_temperature_energy(u_target, Y, T_init, "uv", max_iters, tol)
 
     def solve_temperature_hp(
         self,
         h_target: torch.Tensor,
         Y: torch.Tensor,
         T_init: torch.Tensor,
-        max_iters: int = 6,
+        max_iters: int = 24,
         tol: float = 1e-4,
     ) -> torch.Tensor:
-        """Exact Newton-Raphson solver for constant-pressure enthalpy closure:
-        h(T, Y) = h_target.
-        
-        h_target: (B, 1) or scalar
-        Y: (B, N_sp)
-        T_init: (B, 1) or (B,) initial temperature guess
-        """
-        if T_init.ndim == 1:
-            T = T_init.unsqueeze(-1).clone()
-        else:
-            T = T_init.clone()
-            
-        if h_target.ndim == 1:
-            h_tgt = h_target.unsqueeze(-1)
-        elif h_target.ndim == 0:
-            h_tgt = h_target.view(1, 1).expand_as(T)
-        else:
-            h_tgt = h_target
-
-        for _ in range(max_iters):
-            cp_mix, _, h_mix, _ = self.compute_mixture_properties(T, Y)
-            res = h_mix - h_tgt
-            dT = res / cp_mix.clamp_min(1e-4)
-            dT_clamped = torch.clamp(dT, -500.0, 500.0)
-            T = torch.clamp(T - dT_clamped, min=200.0, max=5000.0)
-            if dT.abs().max() < tol:
-                break
-                
-        return T
+        """Solve constant-pressure h(T,Y)=h_target; reject non-converged states."""
+        return self._solve_temperature_energy(h_target, Y, T_init, "hp", max_iters, tol)
