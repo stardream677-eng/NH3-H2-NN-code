@@ -174,13 +174,24 @@ def load_checkpoint(path: Path, mechanism: str | None = None):
 def checkpoint_rollout_config(checkpoint: dict) -> dict:
     """Return rollout settings saved with a V3.x checkpoint."""
     config = checkpoint.get("training_config") or {}
+    mode = config.get("effective_temperature_mode", config.get("temperature_mode", "recorded"))
+    if (
+        mode == "autonomous"
+        and config.get("pressure_feedback_contract")
+        != tr.ap.PRESSURE_FEEDBACK_CONTRACT
+    ):
+        raise ValueError(
+            "Legacy autonomous checkpoint used recorded pressure; "
+            "refusing to reinterpret it as fully EOS-coupled T/P. "
+            "Start a new experiment with the current pressure feedback contract."
+        )
     return {
         "experiment_mode": config.get("experiment_mode", "baseline"),
         "state_update_mode": config.get("state_update_mode", "legacy"),
         "trust_region_fraction": float(config.get("trust_region_fraction", 0.0) or 0.0),
-        "temperature_mode": config.get(
-            "effective_temperature_mode",
-            config.get("temperature_mode", "recorded"),
+        "temperature_mode": mode,
+        "pressure_feedback_contract": config.get(
+            "pressure_feedback_contract", "recorded_p_v1"
         ),
         "max_delta_temperature": float(config.get("max_delta_temperature", 1000.0) or 1000.0),
         "feedback_blend_start": float(config.get("feedback_blend_start", 1.0) or 1.0),

@@ -23,6 +23,7 @@ CORE_SOURCE_FILES = (
     "dual_branch_network.py",
     "enhanced_loss_and_weights.py",
     "thermo_nasa7_layer.py",
+    "autonomous_pressure.py",
     "chemistry_contract.py",
     "validate_sc_v68.py",
     "kinetics_parameterization.py",

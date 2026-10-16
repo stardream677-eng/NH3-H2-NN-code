@@ -6,10 +6,11 @@ Macro targets use a complete, invertible representation:
     z_i = asinh(dYdt_i / rate_scale_i)
     target_i = standardize(z_i)
 
-Rollout uses external recorded T/P/dt sequence from the trajectory; only species
-states are predicted autoregressively. Training uses continuous prediction-tail
-scheduled sampling over dynamic horizons up to 128 steps. Validation reports
-both oracle one-step and pure species-AR metrics at multiple horizons.
+In recorded mode rollout conditions on external reference T/P/dt. In autonomous
+mode NASA7 supplies energy-closed T, the ideal-gas EOS supplies constant-volume
+pressure (or holds P constant for a constant-pressure reactor), and only dt is
+externally prescribed. Training supports continuous prediction-tail scheduled
+sampling up to H=128; validation reports oracle and pure-AR modes separately.
 """
 
 from __future__ import annotations
@@ -44,6 +45,7 @@ import training_diagnostics as td
 import kinetics_parameterization as kp
 import species_validation_protocol as svp
 import experiment_manifest as em
+import autonomous_pressure as ap
 import hashlib
 
 
@@ -3040,6 +3042,7 @@ class CoarseOperatorTools:
             "log_dt"
         )
         self.temperature_idx = input_cols.index("T")
+        self.pressure_idx = input_cols.index("P")
 
         # output dimension:
         # macro rate + micro log-rate
@@ -3641,13 +3644,12 @@ class CoarseOperatorTools:
         max_delta_temperature=1000.0,
         feedback_input_limit: float | None = None,
     ):
-        """
-        使用：
-            true T_next
-            true P_next
-            true dt_next
+        """Encode the next autoregressive input without reference T/P leakage.
 
-        但 species 使用预测值。
+        Recorded mode retains reference T/P/dt and feeds back predicted species.
+        Autonomous mode conserves UV or HP via NASA7 and updates P using the
+        constant-volume EOS or the constant-pressure reactor constraint.
+        dt remains the prescribed next integration interval.
         """
 
         next_X = (
@@ -3686,26 +3688,24 @@ class CoarseOperatorTools:
             current_X, Y_macro_old, logY_micro_old, Y_micro_old = self.get_current_state(
                 current_X_scaled
             )
-            has_inert_in_closure = (
-                thermo_closure is not None
-                and "species_order" in thermo_closure
-                and hasattr(self, "inert_idx")
-                and len(self.inert_idx) > 0
-                and len(thermo_closure["species_order"]) == (len(self.inert_idx) + self.n_macro + self.n_micro)
+            expected_species_order = (
+                list(self.feature_info["inert_species"])
+                + list(self.macro_species)
+                + list(self.micro_species)
             )
-            if has_inert_in_closure:
-                Y_inert = current_X[:, self.inert_idx]
-                Y_old_full = torch.cat([Y_inert, Y_macro_old, Y_micro_old], dim=1)
-                Y_next_full = torch.cat(
-                    [Y_inert, Y_macro_next, torch.pow(10.0, torch.clamp(logY_micro_next, MICRO_LOG_MIN, MICRO_LOG_MAX))],
-                    dim=1,
+            if list(thermo_closure.get("species_order", ())) != expected_species_order:
+                raise ValueError(
+                    "Autonomous thermochemical closure species order must match "
+                    "inert + macro + micro features; never omit inert gas from EOS"
                 )
-            else:
-                Y_old_full = torch.cat([Y_macro_old, Y_micro_old], dim=1)
-                Y_next_full = torch.cat(
-                    [Y_macro_next, torch.pow(10.0, torch.clamp(logY_micro_next, MICRO_LOG_MIN, MICRO_LOG_MAX))],
-                    dim=1,
-                )
+            Y_inert = current_X[:, self.inert_idx]
+            Y_old_full = torch.cat([Y_inert, Y_macro_old, Y_micro_old], dim=1)
+            Y_next_full = torch.cat(
+                [Y_inert, Y_macro_next, torch.pow(
+                    10.0, torch.clamp(logY_micro_next, MICRO_LOG_MIN, MICRO_LOG_MAX)
+                )],
+                dim=1,
+            )
             delta_y = Y_next_full - Y_old_full
             heat_capacity_coeff = torch.as_tensor(
                 thermo_closure["heat_capacity_coeff"],
@@ -3732,7 +3732,16 @@ class CoarseOperatorTools:
                 Y_old_full=Y_old_full,
                 Y_next_full=Y_next_full,
             )
+            # Dataset pressure is in atm; EOS ratios avoid unit conversions.
+            current_pressure = current_X[:, self.pressure_idx:self.pressure_idx + 1]
+            next_pressure = ap.autonomous_pressure_next(
+                current_pressure, current_temperature, next_temperature,
+                Y_old_full, Y_next_full,
+                thermo_closure["nasa7_layer"].W,
+                thermo_closure.get("reactor_type", "IdealGasReactor"),
+            )
             current_unscaled[:, self.temperature_idx:self.temperature_idx + 1] = next_temperature
+            current_unscaled[:, self.pressure_idx:self.pressure_idx + 1] = next_pressure
 
         next_X_scaled = (
             current_unscaled
@@ -3744,10 +3753,15 @@ class CoarseOperatorTools:
             if not math.isfinite(limit) or limit <= 0.0:
                 raise ValueError("feedback_input_limit must be finite and positive")
             species_idx = torch.cat([self.macro_idx, self.micro_idx])
-            bounded_species = next_X_scaled.index_select(1, species_idx).clamp(
-                -limit,
-                limit,
-            )
+            original_species = next_X_scaled.index_select(1, species_idx)
+            bounded_species = original_species.clamp(-limit, limit)
+            if temperature_mode == "autonomous" and not torch.equal(
+                original_species, bounded_species
+            ):
+                raise RuntimeError(
+                    "Autonomous raw-feedback clipping would change the species "
+                    "after NASA7/EOS closure; select constrained feedback instead"
+                )
             next_X_scaled = next_X_scaled.index_copy(
                 1,
                 species_idx,
@@ -4532,7 +4546,8 @@ def validate_model_v68(
     """
     V68 双模式验证：
     - mode="oracle": Oracle one-step，每步用真实物种，验证单步准确性
-    - mode="pure_ar": Pure species-AR，完全自回归，T/P/dt 保持真实
+    - mode="pure_ar": species-AR；recorded 时真实 T/P/dt，
+      autonomous 时仅 dt 取记录值，T/P 使用 NASA7/EOS 闭环
 
     返回：
     - mode="oracle": 标准 loss dict + per-horizon oracle metrics
@@ -5157,6 +5172,44 @@ def blend_feedback_state(
     return base_state + alpha * (predicted_state - base_state)
 
 
+def reclose_blended_autonomous_feedback(
+    tools,
+    current_X_scaled: torch.Tensor,
+    mixed_next_X_scaled: torch.Tensor,
+    use_prediction: torch.Tensor,
+    thermo_closure: dict,
+    max_delta_temperature: float = 1000.0,
+    feedback_input_limit: float | None = None,
+) -> torch.Tensor:
+    """Recompute energy-closed T and EOS P after scheduled-sampling Y blending.
+
+    The blended T/P are not an EOS state in general. Treat blended *species*
+    as the new composition, then solve NASA7 and the pressure constraint from
+    the current state. Non-selected rows stay exactly on the recorded teacher
+    trajectory. Called only when blending or feedback noise actually changed
+    the predicted state; the default full-prediction path avoids a second solve.
+    """
+    selected = use_prediction.reshape(-1).bool()
+    if selected.shape[0] != mixed_next_X_scaled.shape[0]:
+        raise ValueError("Feedback mask batch size disagrees with mixed input")
+    selected_rows = torch.nonzero(selected, as_tuple=False).reshape(-1)
+    if selected_rows.numel() == 0:
+        return mixed_next_X_scaled
+
+    mixed = mixed_next_X_scaled.index_select(0, selected_rows)
+    current = current_X_scaled.index_select(0, selected_rows)
+    physical = tools.inverse_state(mixed)
+    Y_macro = physical.index_select(1, tools.macro_idx)
+    logY_micro = physical.index_select(1, tools.micro_idx)
+    closed = tools.state_to_input_scaled(
+        mixed, Y_macro, logY_micro,
+        temperature_mode="autonomous", thermo_closure=thermo_closure,
+        current_X_scaled=current, max_delta_temperature=max_delta_temperature,
+        feedback_input_limit=feedback_input_limit,
+    )
+    return mixed_next_X_scaled.index_copy(0, selected_rows, closed)
+
+
 def update_temperature_autonomous(
     temperature: torch.Tensor,
     delta_y: torch.Tensor,
@@ -5331,6 +5384,8 @@ def build_temperature_closure(
     molecular_weights = gas.molecular_weights[species_indices]
     gas_constant = ct.gas_constant
     reactor_type = metadata.get("reactor_type", "IdealGasReactor")
+    if reactor_type not in {"IdealGasReactor", "IdealGasConstPressureReactor"}:
+        raise ValueError(f"Unsupported autonomous reactor type: {reactor_type!r}")
     if reactor_type == "IdealGasConstPressureReactor":
         energy_molar = gas.standard_enthalpies_RT[species_indices] * gas_constant * reference_temperature
         heat_capacity = gas.standard_cp_R[species_indices] * gas_constant / molecular_weights
@@ -5611,7 +5666,8 @@ def train_model_v68(
     curriculum_warmup_epochs: int | None = None,
 ):
     """
-    V68 训练入口：长 horizon 物种自回归，外部真实 T/P/dt。
+    V68 训练入口：长 horizon 物种自回归；
+    recorded 使用真实 T/P/dt，autonomous 使用 NASA7/EOS T/P 和真实 dt。
 
     核心改进：
     - 连续预测尾段 scheduled sampling（vs V68 独立步 teacher forcing）
@@ -5887,6 +5943,10 @@ def train_model_v68(
             f"{len(thermo_closure['species_order'])} species incl inert)"
         )
     training_config["effective_temperature_mode"] = effective_temperature_mode
+    training_config["pressure_feedback_contract"] = (
+        ap.PRESSURE_FEEDBACK_CONTRACT if effective_temperature_mode == "autonomous"
+        else "recorded_p_v1"
+    )
 
     print(
         "\nSpecies summary:"
@@ -6365,8 +6425,13 @@ def train_model_v68(
                     "feedback_noise_std",
                     "detach_rollout",
                     "weight_decay",
+                    "temperature_mode",
                 )
             }
+            if effective_temperature_mode == "autonomous":
+                # Old autonomous runs used *recorded* P even when T was predicted.
+                # Their optimizer history must not be reused under new EOS semantics.
+                resume_config_keys["pressure_feedback_contract"] = ap.PRESSURE_FEEDBACK_CONTRACT
             if not checkpoint_compatible(
                 ckpt,
                 VERSION,
@@ -7108,7 +7173,7 @@ def train_model_v68(
                                 [
                                     species_idx,
                                     torch.tensor(
-                                        [tools.temperature_idx],
+                                        [tools.temperature_idx, tools.pressure_idx],
                                         device=species_idx.device,
                                         dtype=species_idx.dtype,
                                     ),
@@ -7135,6 +7200,24 @@ def train_model_v68(
                                 selected_next_X[:, species_idx],
                                 feedback_noise_std * tail_fraction,
                                 use_pred,
+                            )
+
+                        if (
+                            effective_temperature_mode == "autonomous"
+                            and feedback_strength > 0.0
+                            and (feedback_strength < 1.0 or feedback_noise_std > 0.0)
+                        ):
+                            # Mixing recorded and predicted T/P (or perturbing Y)
+                            # breaks energy/EOS closure. Reclose *only* selected
+                            # rows from the actual blended/noisy composition.
+                            rollout_failure_phase = "autonomous_blended_feedback"
+                            selected_next_X = reclose_blended_autonomous_feedback(
+                                tools, current_X, selected_next_X, use_pred,
+                                thermo_closure, max_delta_temperature,
+                                feedback_input_limit=(
+                                    RAW_FEEDBACK_INPUT_LIMIT
+                                    if feedback_state_source == "raw" else None
+                                ),
                             )
 
                         current_X = (
