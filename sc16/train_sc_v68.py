@@ -46,6 +46,7 @@ import kinetics_parameterization as kp
 import species_validation_protocol as svp
 import experiment_manifest as em
 import autonomous_pressure as ap
+import physical_projection_contract as ppc
 import hashlib
 
 
@@ -397,16 +398,12 @@ def project_physical_state(
 ) -> tuple[torch.Tensor, torch.Tensor, dict[str, Any]]:
     """Pure function: Project physical species mass fractions onto the nonnegative mass-conserving simplex.
 
-    Task8 Core Guarantees:
-    1. Operates exclusively in physical Y space (never on 37-dim raw logits).
-    2. Guarantees nonnegativity: Y_constrained >= 0.
-    3. Guarantees mass conservation: sum(Y_dyn) + inert_sum == 1.0 (to machine precision).
-    4. Supports 'multiplicative_kl' (default): Element-potential information projection solving
-       Y_i = r_i * exp(A^T lambda)_i via damped Newton-Raphson. Strictly protects all trace radicals
-       from Euclidean zeroing and preserves positivity to machine precision.
-       Supports 'weighted_linear' as fallback.
-    5. Returns (Y_macro_constrained, Y_micro_constrained, diagnostics).
-    6. Does not modify or overwrite raw inputs; records intervention and correction norms.
+    The KL optimizer is the preferred trace-preserving path. Every returned
+    result must pass independent nonnegativity, mass and element residual
+    checks. If KL (or weighted_linear) cannot meet those constraints, try a
+    nonnegative affine Dykstra recovery. Infeasible or still-unconverged cases
+    raise ProjectionConstraintError instead of returning a mass-only surrogate.
+    Raw candidates are never overwritten by this routine.
     """
     orig_shape_macro = Y_macro_raw.shape
     if Y_macro_raw.ndim == 1:
@@ -419,6 +416,8 @@ def project_physical_state(
     dyn_raw = torch.cat([macro_raw, micro_raw], dim=-1)
     b_size, n_dyn = dyn_raw.shape
     n_macro = macro_raw.shape[-1]
+    if projection_mode not in ("multiplicative_kl", "weighted_linear"):
+        raise ValueError(f"Unsupported physical projection mode: {projection_mode!r}")
 
     if isinstance(inert_sum, torch.Tensor):
         i_sum = inert_sum.to(dtype=dyn_raw.dtype, device=dyn_raw.device)
@@ -429,6 +428,12 @@ def project_physical_state(
     else:
         i_sum = torch.full((b_size, 1), float(inert_sum), dtype=dyn_raw.dtype, device=dyn_raw.device)
 
+    # A physically impossible inert mass or element target must never be
+    # modified by clipping just to make a numerical projection return.
+    element_matrix, target_elements, target_sum = ppc.prepare_projection_constraints(
+        dyn_raw, i_sum, element_matrix, target_elements,
+    )
+
     # 1. Raw candidate diagnostics
     neg_mask = dyn_raw < 0.0
     neg_count = neg_mask.sum(dim=-1)
@@ -436,9 +441,8 @@ def project_physical_state(
     raw_mass_sum = dyn_raw.sum(dim=-1, keepdim=True) + i_sum
     mass_sum_deviation = (raw_mass_sum - 1.0).abs()
 
-    # Target sum for dynamic species
-    target_sum = torch.clamp(1.0 - i_sum, min=1e-8, max=1.0)
-
+    # Target sum exactly equals the reactive mass budget. A zero budget is
+    # legitimate (pure inert), and must produce an all-zero dynamic state.
     # 2. Nonnegative truncation
     pos_dyn = torch.clamp(dyn_raw, min=0.0)
     pos_sum = pos_dyn.sum(dim=-1, keepdim=True)
@@ -454,6 +458,11 @@ def project_physical_state(
     # 4. Optional elemental conservation projection
     projected_dyn = scaled_dyn
     proj_failed = False
+    primary_projection_error = None
+    projection_fallback_rows = torch.zeros(
+        b_size, dtype=torch.bool, device=scaled_dyn.device
+    )
+    projection_fallback_iterations = 0
     elem_res_max = torch.zeros(b_size, dtype=scaled_dyn.dtype, device=scaled_dyn.device)
     if element_matrix is not None and target_elements is not None:
         try:
@@ -537,10 +546,45 @@ def project_physical_state(
 
                 elem_res_max = (torch.matmul(p, A.T) - target_elem).abs().max(dim=-1).values
                 projected_dyn = p
-        except Exception:
+        except Exception as exc:
+            # Do not swallow the failed numerical solve as a valid projection:
+            # the conservative fallback and final audit below are mandatory.
             proj_failed = True
+            primary_projection_error = f"{type(exc).__name__}: {exc}"
             projected_dyn = scaled_dyn
-            elem_res_max = (torch.matmul(scaled_dyn, A.T) - target_elem).abs().max(dim=-1).values
+
+    # A KL iterate can satisfy elemental constraints *before* final mass
+    # renormalization but violate them afterwards. Audit the final tensor,
+    # not the solver's intermediate residual or the boolean failure flag.
+    primary_audit = ppc.projection_residuals(
+        projected_dyn, i_sum, element_matrix, target_elements
+    )
+    bad_rows = ~primary_audit["valid"]
+    if bool(bad_rows.any()) and element_matrix is not None:
+        projection_fallback_rows = bad_rows
+        try:
+            repaired, projection_fallback_iterations = ppc.recover_nonnegative_affine(
+                scaled_dyn[bad_rows], element_matrix, target_elements[bad_rows],
+                target_sum[bad_rows],
+            )
+            projected_dyn = projected_dyn.index_copy(
+                0, bad_rows.nonzero(as_tuple=False).reshape(-1), repaired
+            )
+        except Exception as exc:
+            indices = bad_rows.nonzero(as_tuple=False).reshape(-1).cpu().tolist()
+            raise ppc.ProjectionConstraintError(
+                "fallback_failed", indices,
+                f"Dykstra recovery raised {type(exc).__name__}: {exc}; "
+                f"primary solver error: {primary_projection_error}",
+            ) from exc
+
+    # Fail closed even if the original solver reported success. This catches
+    # mass defects, negative species, and infeasible elemental constraints.
+    final_audit = ppc.require_projection_valid(
+        projected_dyn, i_sum, element_matrix, target_elements
+    )
+    elem_res_max = final_audit["element"].to(dtype=scaled_dyn.dtype)
+    proj_failed = False
 
     # 5. Separation into macro and micro
     macro_constrained = projected_dyn[..., :n_macro]
@@ -568,8 +612,13 @@ def project_physical_state(
         "constrained_mass_sum": (projected_dyn.sum(dim=-1, keepdim=True) + i_sum).squeeze(-1),
         "element_residual_max": elem_res_max,
         "projection_failed": proj_failed,
-        "projection_warning": (elem_res_max > 1e-4),
+        "projection_warning": (elem_res_max > ppc.ELEMENT_ATOL),
         "projection_mode": projection_mode,
+        "projection_fallback_used": projection_fallback_rows,
+        "projection_fallback_iterations": projection_fallback_iterations,
+        "projection_mass_residual": final_audit["mass"].to(dtype=scaled_dyn.dtype),
+        "projection_negative_residual": final_audit["negativity"].to(dtype=scaled_dyn.dtype),
+        "projection_primary_error": primary_projection_error,
     }
 
     if len(orig_shape_macro) == 1:
