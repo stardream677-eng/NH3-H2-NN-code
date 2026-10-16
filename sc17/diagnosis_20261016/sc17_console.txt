@@ -1,0 +1,152 @@
+Using device: cuda
+{
+  "version": "sc17",
+  "root": "C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc17",
+  "rows": 4800,
+  "environment": {
+    "python": "C:\\Users\\123\\.conda\\envs\\cantera\\python.exe",
+    "cantera": "3.0.1",
+    "torch": "2.11.0.dev20260120+cu130",
+    "device": "cuda"
+  },
+  "mini_sha256": "3300190749eae46981f02170fd6b6cd918b89c8a5c875764a781be34cc19d186",
+  "inert_input": {
+    "original_minimum": -6.616802074464553e-26,
+    "original_negative_rows": 948,
+    "reconstructed_negative_rows": 789,
+    "reconstructed_minimum": -6.616801954134563e-26
+  },
+  "default_input_decode": {
+    "type": "ProjectionConstraintError",
+    "message": "Physical projection invalid_inert_mass for batch rows [161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176]...: inert species cannot be negative or non-finite; do not hide them by clamping before projection",
+    "reason": "invalid_inert_mass"
+  },
+  "perfect_targets": {
+    "NH3_raw": {
+      "rmse": 0.0012302354057732363,
+      "max_abs": 0.04799047050763682
+    },
+    "NH3_projected": {
+      "rmse": 0.0009571159835175366,
+      "max_abs": 0.037935789057508267
+    },
+    "macro_clipped_counts": {
+      "H2": 0,
+      "H2O": 1,
+      "N2": 1,
+      "NH3": 14,
+      "NO": 2,
+      "O2": 0
+    },
+    "control": "explicit_nonnegative_inert_sum_same_for_all_versions"
+  },
+  "exact_endpoint_projection": {
+    "micro_log_error": {
+      "rmse": 6.199228152504932e-08,
+      "max_abs": 3.814697265625e-06
+    },
+    "lifted_above1e32": 0
+  },
+  "projection_stress_32": {
+    "returned": 7,
+    "rejected": 25,
+    "fallback_used": 7,
+    "invalid_returned": 0,
+    "max_mass_error": 1.0970979928970337e-06,
+    "max_element_error": 7.615958637074982e-07,
+    "trace_values_zeroed": 136,
+    "errors": [
+      {
+        "type": "ProjectionConstraintError",
+        "message": "Physical projection not_converged for batch rows [0]: mass_error=3.625e-04 (allowed 5.0e-06), element_error=2.857e-04 (allowed 1.0e-06), negative_mass=0.000e+00. Reduce dt, inspect the raw predicted Y, or re-evaluate kinetics; a smaller physical integration step requires new rate evaluations",
+        "reason": "not_converged"
+      },
+      {
+        "type": "ProjectionConstraintError",
+        "message": "Physical projection not_converged for batch rows [0]: mass_error=3.701e-06 (allowed 5.0e-06), element_error=2.781e-06 (allowed 1.0e-06), negative_mass=0.000e+00. Reduce dt, inspect the raw predicted Y, or re-evaluate kinetics; a smaller physical integration step requires new rate evaluations",
+        "reason": "not_converged"
+      }
+    ]
+  },
+  "saturated_conservation_loss": {
+    "element": 100.0,
+    "mass": 100.0,
+    "max_abs_gradient": 0.0
+  },
+  "thermal": {
+    "uncapped": {
+      "rmse": 1.810057607028422e-08,
+      "max_abs": 1.0589046723907813e-06
+    },
+    "real_steps_over500": 13,
+    "500": {
+      "returned": false,
+      "type": "RuntimeError",
+      "message": "Autonomous energy-closed temperature exceeds the configured max_delta_temperature; reduce dt or use smaller integration substeps",
+      "reason": null
+    },
+    "3000": {
+      "returned": true,
+      "error": {
+        "rmse": 1.810057607028422e-08,
+        "max_abs": 1.0589046723907813e-06
+      }
+    }
+  },
+  "input_roundoff": {
+    "negative_macro_rows": 305,
+    "negative_macro_values": 305,
+    "minimum_macro": -3.725290298461914e-09,
+    "near_identity_feedback": {
+      "type": "ValueError",
+      "message": "EOS cannot use negative mass fractions",
+      "reason": null
+    }
+  },
+  "preset": {
+    "output_parameterization": "dual_branch",
+    "rate_decode_mode": "dual_branch",
+    "state_update_mode": "dual_branch",
+    "temperature_mode": "autonomous",
+    "feedback_noise_std": 0.005,
+    "feedback_state_source": "constrained",
+    "max_delta_temperature": 500.0
+  },
+  "preset_start_guard": {
+    "type": "ValueError",
+    "message": "Autonomous T/P feedback_noise_std must be zero until noisy species are reprojected onto the element/mass manifold",
+    "reason": null
+  },
+  "scaled_noise": {
+    "rows": 128,
+    "off_mass_tolerance_rows": 127,
+    "max_mass_error": 0.0021251440048217773,
+    "decoder": {
+      "type": "ProjectionConstraintError",
+      "message": "Physical projection infeasible_target for batch rows [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16]...: sum(target_elements) disagrees with 1 - inert_sum",
+      "reason": "infeasible_target"
+    }
+  },
+  "eos_vs_cantera": {
+    "rmse": 3.0786153249199884e-14,
+    "max_abs": 2.8421709430404007e-13
+  },
+  "future_reference_pressure_invariance": {
+    "max_scaled_difference": 0.0
+  },
+  "unstratified_group_split": {
+    "group_overlap": false,
+    "sizes": {
+      "train": 12,
+      "validation": 4,
+      "test": 4
+    }
+  },
+  "benchmark_missing_ignition": {
+    "ref_ignited": true,
+    "nn_ignited": false,
+    "idt_nn_s": null,
+    "idt_abs_error_s": null,
+    "ignition_agreement": false
+  }
+}

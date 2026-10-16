@@ -1,0 +1,2712 @@
+{
+  "overall": {
+    "oracle": {
+      "total_predictions": 12,
+      "negative_predictions": 2,
+      "negative_ratio": 0.16666666666666666,
+      "total_values": 72,
+      "negative_values": 2,
+      "negative_value_ratio": 0.027777777777777776,
+      "total_clamp_magnitude": 4.827256816497538e-06,
+      "mean_clamp_magnitude": 2.413628408248769e-06,
+      "max_clamp_magnitude": 3.2208026823354885e-06,
+      "clamp_magnitude_rmse": 4.2417018341217025e-07,
+      "raw_vs_true": {
+        "per_species": {
+          "H2": {
+            "n": 12,
+            "mae": 1.7427626062271884e-06,
+            "rmse": 5.232407266969458e-06,
+            "bias": 1.461580798907865e-06,
+            "r2": 0.9999891114234871,
+            "relative_mae": 0.0006026502942996938
+          },
+          "H2O": {
+            "n": 12,
+            "mae": 2.9435846954584122e-05,
+            "rmse": 9.494056980043341e-05,
+            "bias": -2.6497524231672287e-05,
+            "r2": 0.9999885059343778,
+            "relative_mae": 0.0007412882766947118
+          },
+          "N2": {
+            "n": 12,
+            "mae": 5.513429641723633e-06,
+            "rmse": 1.2381493108550399e-05,
+            "bias": 5.513429641723633e-06,
+            "r2": 0.9999999545910108,
+            "relative_mae": 8.224728083635616e-06
+          },
+          "NH3": {
+            "n": 12,
+            "mae": 1.2505898515276688e-06,
+            "rmse": 1.7770020679495213e-06,
+            "bias": -9.610261410368064e-07,
+            "r2": 0.999999959049059,
+            "relative_mae": 8.033388521260537e-05
+          },
+          "NO": {
+            "n": 12,
+            "mae": 1.8369920093223395e-06,
+            "rmse": 3.3124811951610956e-06,
+            "bias": -1.0587663338649614e-08,
+            "r2": 0.9999982239474158,
+            "relative_mae": 0.0016513781740371233
+          },
+          "O2": {
+            "n": 12,
+            "mae": 1.960185666879018e-05,
+            "rmse": 5.0205612595394365e-05,
+            "bias": -1.8694127599398296e-05,
+            "r2": 0.9999903834394542,
+            "relative_mae": 0.0001645880554020567
+          }
+        },
+        "nonfinite_values": 0
+      },
+      "clamped_vs_true": {
+        "per_species": {
+          "H2": {
+            "n": 12,
+            "mae": 1.7427626062271884e-06,
+            "rmse": 5.232407266969458e-06,
+            "bias": 1.461580798907865e-06,
+            "r2": 0.9999891114234871,
+            "relative_mae": 0.0006026502942996938
+          },
+          "H2O": {
+            "n": 12,
+            "mae": 2.9435846954584122e-05,
+            "rmse": 9.494056980043341e-05,
+            "bias": -2.6497524231672287e-05,
+            "r2": 0.9999885059343778,
+            "relative_mae": 0.0007412882766947118
+          },
+          "N2": {
+            "n": 12,
+            "mae": 5.513429641723633e-06,
+            "rmse": 1.2381493108550399e-05,
+            "bias": 5.513429641723633e-06,
+            "r2": 0.9999999545910108,
+            "relative_mae": 8.224728083635616e-06
+          },
+          "NH3": {
+            "n": 12,
+            "mae": 8.48318450152874e-07,
+            "rmse": 1.4416012911070072e-06,
+            "bias": -5.587547396620115e-07,
+            "r2": 0.9999999730487853,
+            "relative_mae": 5.449325925287865e-05
+          },
+          "NO": {
+            "n": 12,
+            "mae": 1.8369920093223395e-06,
+            "rmse": 3.3124811951610956e-06,
+            "bias": -1.0587663338649614e-08,
+            "r2": 0.9999982239474158,
+            "relative_mae": 0.0016513781740371233
+          },
+          "O2": {
+            "n": 12,
+            "mae": 1.960185666879018e-05,
+            "rmse": 5.0205612595394365e-05,
+            "bias": -1.8694127599398296e-05,
+            "r2": 0.9999903834394542,
+            "relative_mae": 0.0001645880554020567
+          }
+        },
+        "nonfinite_values": 0
+      },
+      "per_species": {
+        "H2": {
+          "total_predictions": 12,
+          "negative_values": 0,
+          "negative_ratio": 0.0,
+          "mean_negative_value": null,
+          "minimum_raw_value": 5.3903031584923156e-06,
+          "total_clamp_magnitude": 0.0,
+          "mean_clamp_magnitude": 0.0,
+          "max_clamp_magnitude": 0.0
+        },
+        "H2O": {
+          "total_predictions": 12,
+          "negative_values": 0,
+          "negative_ratio": 0.0,
+          "mean_negative_value": null,
+          "minimum_raw_value": 0.020462654531002045,
+          "total_clamp_magnitude": 0.0,
+          "mean_clamp_magnitude": 0.0,
+          "max_clamp_magnitude": 0.0
+        },
+        "N2": {
+          "total_predictions": 12,
+          "negative_values": 0,
+          "negative_ratio": 0.0,
+          "mean_negative_value": null,
+          "minimum_raw_value": 0.5868633985519409,
+          "total_clamp_magnitude": 0.0,
+          "mean_clamp_magnitude": 0.0,
+          "max_clamp_magnitude": 0.0
+        },
+        "NH3": {
+          "total_predictions": 12,
+          "negative_values": 2,
+          "negative_ratio": 0.16666666666666666,
+          "mean_negative_value": -2.413628408248769e-06,
+          "minimum_raw_value": -3.2208026823354885e-06,
+          "total_clamp_magnitude": 4.827256816497538e-06,
+          "mean_clamp_magnitude": 2.413628408248769e-06,
+          "max_clamp_magnitude": 3.2208026823354885e-06
+        },
+        "NO": {
+          "total_predictions": 12,
+          "negative_values": 0,
+          "negative_ratio": 0.0,
+          "mean_negative_value": null,
+          "minimum_raw_value": 8.911582582982192e-09,
+          "total_clamp_magnitude": 0.0,
+          "mean_clamp_magnitude": 0.0,
+          "max_clamp_magnitude": 0.0
+        },
+        "O2": {
+          "total_predictions": 12,
+          "negative_values": 0,
+          "negative_ratio": 0.0,
+          "mean_negative_value": null,
+          "minimum_raw_value": 0.08549942821264267,
+          "total_clamp_magnitude": 0.0,
+          "mean_clamp_magnitude": 0.0,
+          "max_clamp_magnitude": 0.0
+        }
+      }
+    },
+    "pure_ar": {
+      "total_predictions": 12,
+      "negative_predictions": 5,
+      "negative_ratio": 0.4166666666666667,
+      "total_values": 72,
+      "negative_values": 5,
+      "negative_value_ratio": 0.06944444444444445,
+      "total_clamp_magnitude": 5.873924342481018e-07,
+      "mean_clamp_magnitude": 1.1747848684962037e-07,
+      "max_clamp_magnitude": 4.6572924361498735e-07,
+      "clamp_magnitude_rmse": 5.5427100033370077e-08,
+      "raw_vs_true": {
+        "per_species": {
+          "H2": {
+            "n": 12,
+            "mae": 0.000248299038503319,
+            "rmse": 0.0005729964053601648,
+            "bias": 0.00022404398381089172,
+            "r2": 0.8694214559718214,
+            "relative_mae": 0.08586223280995123
+          },
+          "H2O": {
+            "n": 12,
+            "mae": 0.003942349459975958,
+            "rmse": 0.009241239040433747,
+            "bias": -0.003639763997246822,
+            "r2": 0.8910993648202437,
+            "relative_mae": 0.09928090201796588
+          },
+          "N2": {
+            "n": 12,
+            "mae": 0.000438620646794637,
+            "rmse": 0.0010167704531516685,
+            "bias": -0.00039070844650268555,
+            "r2": 0.9996937743048584,
+            "relative_mae": 0.0006543178722103843
+          },
+          "NH3": {
+            "n": 12,
+            "mae": 0.0011804737926771243,
+            "rmse": 0.002801742639618182,
+            "bias": 0.0011247321187208097,
+            "r2": 0.8982007687637228,
+            "relative_mae": 0.07582985424163655
+          },
+          "NO": {
+            "n": 12,
+            "mae": 0.00110363373256539,
+            "rmse": 0.002700818371405857,
+            "bias": -0.001102147462649657,
+            "r2": -0.18070046746475987,
+            "relative_mae": 0.9921200793692778
+          },
+          "O2": {
+            "n": 12,
+            "mae": 0.004362207526961963,
+            "rmse": 0.010283685811794433,
+            "bias": 0.004087462400396665,
+            "r2": 0.5965285322289262,
+            "relative_mae": 0.03662751270220347
+          }
+        },
+        "nonfinite_values": 0
+      },
+      "clamped_vs_true": {
+        "per_species": {
+          "H2": {
+            "n": 12,
+            "mae": 0.000248299038503319,
+            "rmse": 0.0005729964053601648,
+            "bias": 0.00022404398381089172,
+            "r2": 0.8694214559718214,
+            "relative_mae": 0.08586223280995123
+          },
+          "H2O": {
+            "n": 12,
+            "mae": 0.003942349459975958,
+            "rmse": 0.009241239040433747,
+            "bias": -0.003639763997246822,
+            "r2": 0.8910993648202437,
+            "relative_mae": 0.09928090201796588
+          },
+          "N2": {
+            "n": 12,
+            "mae": 0.000438620646794637,
+            "rmse": 0.0010167704531516685,
+            "bias": -0.00039070844650268555,
+            "r2": 0.9996937743048584,
+            "relative_mae": 0.0006543178722103843
+          },
+          "NH3": {
+            "n": 12,
+            "mae": 0.0011804737926771243,
+            "rmse": 0.002801742639618182,
+            "bias": 0.0011247321187208097,
+            "r2": 0.8982007687637228,
+            "relative_mae": 0.07582985424163655
+          },
+          "NO": {
+            "n": 12,
+            "mae": 0.0011035847831958694,
+            "rmse": 0.002700818367993376,
+            "bias": -0.0011020985132801364,
+            "r2": -0.18070046448113275,
+            "relative_mae": 0.9920760759549738
+          },
+          "O2": {
+            "n": 12,
+            "mae": 0.004362207526961963,
+            "rmse": 0.010283685811794433,
+            "bias": 0.004087462400396665,
+            "r2": 0.5965285322289262,
+            "relative_mae": 0.03662751270220347
+          }
+        },
+        "nonfinite_values": 0
+      },
+      "per_species": {
+        "H2": {
+          "total_predictions": 12,
+          "negative_values": 0,
+          "negative_ratio": 0.0,
+          "mean_negative_value": null,
+          "minimum_raw_value": 0.0014181071892380714,
+          "total_clamp_magnitude": 0.0,
+          "mean_clamp_magnitude": 0.0,
+          "max_clamp_magnitude": 0.0
+        },
+        "H2O": {
+          "total_predictions": 12,
+          "negative_values": 0,
+          "negative_ratio": 0.0,
+          "mean_negative_value": null,
+          "minimum_raw_value": 0.02046513371169567,
+          "total_clamp_magnitude": 0.0,
+          "mean_clamp_magnitude": 0.0,
+          "max_clamp_magnitude": 0.0
+        },
+        "N2": {
+          "total_predictions": 12,
+          "negative_values": 0,
+          "negative_ratio": 0.0,
+          "mean_negative_value": null,
+          "minimum_raw_value": 0.5868657231330872,
+          "total_clamp_magnitude": 0.0,
+          "mean_clamp_magnitude": 0.0,
+          "max_clamp_magnitude": 0.0
+        },
+        "NH3": {
+          "total_predictions": 12,
+          "negative_values": 0,
+          "negative_ratio": 0.0,
+          "mean_negative_value": null,
+          "minimum_raw_value": 0.006756160873919725,
+          "total_clamp_magnitude": 0.0,
+          "mean_clamp_magnitude": 0.0,
+          "max_clamp_magnitude": 0.0
+        },
+        "NO": {
+          "total_predictions": 12,
+          "negative_values": 5,
+          "negative_ratio": 0.4166666666666667,
+          "mean_negative_value": -1.1747848684962037e-07,
+          "minimum_raw_value": -4.6572924361498735e-07,
+          "total_clamp_magnitude": 5.873924342481018e-07,
+          "mean_clamp_magnitude": 1.1747848684962037e-07,
+          "max_clamp_magnitude": 4.6572924361498735e-07
+        },
+        "O2": {
+          "total_predictions": 12,
+          "negative_values": 0,
+          "negative_ratio": 0.0,
+          "mean_negative_value": null,
+          "minimum_raw_value": 0.11095450073480606,
+          "total_clamp_magnitude": 0.0,
+          "mean_clamp_magnitude": 0.0,
+          "max_clamp_magnitude": 0.0
+        }
+      }
+    },
+    "pure_ar_raw": {
+      "total_predictions": 3,
+      "negative_predictions": 0,
+      "negative_ratio": 0.0,
+      "total_values": 18,
+      "negative_values": 0,
+      "negative_value_ratio": 0.0,
+      "total_clamp_magnitude": 0.0,
+      "mean_clamp_magnitude": 0.0,
+      "max_clamp_magnitude": 0.0,
+      "clamp_magnitude_rmse": 0.0,
+      "raw_vs_true": {
+        "per_species": {
+          "H2": {
+            "n": 3,
+            "mae": 3.057842453320821e-07,
+            "rmse": 3.736331451690868e-07,
+            "bias": -3.057842453320821e-07,
+            "r2": 0.9999999025870486,
+            "relative_mae": 9.770367595946002e-05
+          },
+          "H2O": {
+            "n": 3,
+            "mae": 2.8293579816818237e-06,
+            "rmse": 3.4637696642476647e-06,
+            "bias": 2.824390927950541e-06,
+            "r2": 0.9999999746757331,
+            "relative_mae": 7.890869739039223e-05
+          },
+          "N2": {
+            "n": 3,
+            "mae": 1.5695889790852864e-06,
+            "rmse": 1.926192440687237e-06,
+            "bias": 1.5695889790852864e-06,
+            "r2": 0.9999999989240083,
+            "relative_mae": 2.34299327712186e-06
+          },
+          "NH3": {
+            "n": 3,
+            "mae": 2.0194177826245627e-06,
+            "rmse": 2.4690913023077667e-06,
+            "bias": -2.0194177826245627e-06,
+            "r2": 0.9999998712342527,
+            "relative_mae": 0.00012058603217417005
+          },
+          "NO": {
+            "n": 3,
+            "mae": 2.673190128514117e-06,
+            "rmse": 3.2704109152122228e-06,
+            "bias": 2.673190128514117e-06,
+            "r2": null,
+            "relative_mae": 8.019570385542351e+24
+          },
+          "O2": {
+            "n": 3,
+            "mae": 1.2973944346110025e-05,
+            "rmse": 1.5896105443967687e-05,
+            "bias": -1.2973944346110025e-05,
+            "r2": 0.9999964036064091,
+            "relative_mae": 0.0001051529388505266
+          }
+        },
+        "nonfinite_values": 0
+      },
+      "clamped_vs_true": {
+        "per_species": {
+          "H2": {
+            "n": 3,
+            "mae": 3.057842453320821e-07,
+            "rmse": 3.736331451690868e-07,
+            "bias": -3.057842453320821e-07,
+            "r2": 0.9999999025870486,
+            "relative_mae": 9.770367595946002e-05
+          },
+          "H2O": {
+            "n": 3,
+            "mae": 2.8293579816818237e-06,
+            "rmse": 3.4637696642476647e-06,
+            "bias": 2.824390927950541e-06,
+            "r2": 0.9999999746757331,
+            "relative_mae": 7.890869739039223e-05
+          },
+          "N2": {
+            "n": 3,
+            "mae": 1.5695889790852864e-06,
+            "rmse": 1.926192440687237e-06,
+            "bias": 1.5695889790852864e-06,
+            "r2": 0.9999999989240083,
+            "relative_mae": 2.34299327712186e-06
+          },
+          "NH3": {
+            "n": 3,
+            "mae": 2.0194177826245627e-06,
+            "rmse": 2.4690913023077667e-06,
+            "bias": -2.0194177826245627e-06,
+            "r2": 0.9999998712342527,
+            "relative_mae": 0.00012058603217417005
+          },
+          "NO": {
+            "n": 3,
+            "mae": 2.673190128514117e-06,
+            "rmse": 3.2704109152122228e-06,
+            "bias": 2.673190128514117e-06,
+            "r2": null,
+            "relative_mae": 8.019570385542351e+24
+          },
+          "O2": {
+            "n": 3,
+            "mae": 1.2973944346110025e-05,
+            "rmse": 1.5896105443967687e-05,
+            "bias": -1.2973944346110025e-05,
+            "r2": 0.9999964036064091,
+            "relative_mae": 0.0001051529388505266
+          }
+        },
+        "nonfinite_values": 0
+      },
+      "per_species": {
+        "H2": {
+          "total_predictions": 3,
+          "negative_values": 0,
+          "negative_ratio": 0.0,
+          "mean_negative_value": null,
+          "minimum_raw_value": 0.0014362814836204052,
+          "total_clamp_magnitude": 0.0,
+          "mean_clamp_magnitude": 0.0,
+          "max_clamp_magnitude": 0.0
+        },
+        "H2O": {
+          "total_predictions": 3,
+          "negative_values": 0,
+          "negative_ratio": 0.0,
+          "mean_negative_value": null,
+          "minimum_raw_value": 0.02046513557434082,
+          "total_clamp_magnitude": 0.0,
+          "mean_clamp_magnitude": 0.0,
+          "max_clamp_magnitude": 0.0
+        },
+        "N2": {
+          "total_predictions": 3,
+          "negative_values": 0,
+          "negative_ratio": 0.0,
+          "mean_negative_value": null,
+          "minimum_raw_value": 0.5868657231330872,
+          "total_clamp_magnitude": 0.0,
+          "mean_clamp_magnitude": 0.0,
+          "max_clamp_magnitude": 0.0
+        },
+        "NH3": {
+          "total_predictions": 3,
+          "negative_values": 0,
+          "negative_ratio": 0.0,
+          "mean_negative_value": null,
+          "minimum_raw_value": 0.0070127444341778755,
+          "total_clamp_magnitude": 0.0,
+          "mean_clamp_magnitude": 0.0,
+          "max_clamp_magnitude": 0.0
+        },
+        "NO": {
+          "total_predictions": 3,
+          "negative_values": 0,
+          "negative_ratio": 0.0,
+          "mean_negative_value": null,
+          "minimum_raw_value": 8.911582582982192e-09,
+          "total_clamp_magnitude": 0.0,
+          "mean_clamp_magnitude": 0.0,
+          "max_clamp_magnitude": 0.0
+        },
+        "O2": {
+          "total_predictions": 3,
+          "negative_values": 0,
+          "negative_ratio": 0.0,
+          "mean_negative_value": null,
+          "minimum_raw_value": 0.11150708049535751,
+          "total_clamp_magnitude": 0.0,
+          "mean_clamp_magnitude": 0.0,
+          "max_clamp_magnitude": 0.0
+        }
+      }
+    }
+  },
+  "by_horizon": {
+    "oracle": {
+      "1": {
+        "total_predictions": 3,
+        "negative_predictions": 0,
+        "negative_ratio": 0.0,
+        "total_values": 18,
+        "negative_values": 0,
+        "negative_value_ratio": 0.0,
+        "total_clamp_magnitude": 0.0,
+        "mean_clamp_magnitude": 0.0,
+        "max_clamp_magnitude": 0.0,
+        "clamp_magnitude_rmse": 0.0,
+        "raw_vs_true": {
+          "per_species": {
+            "H2": {
+              "n": 3,
+              "mae": 3.057842453320821e-07,
+              "rmse": 3.736331451690868e-07,
+              "bias": -3.057842453320821e-07,
+              "r2": 0.9999999025870486,
+              "relative_mae": 9.770367595946002e-05
+            },
+            "H2O": {
+              "n": 3,
+              "mae": 2.8293579816818237e-06,
+              "rmse": 3.4637696642476647e-06,
+              "bias": 2.824390927950541e-06,
+              "r2": 0.9999999746757331,
+              "relative_mae": 7.890869739039223e-05
+            },
+            "N2": {
+              "n": 3,
+              "mae": 1.5695889790852864e-06,
+              "rmse": 1.926192440687237e-06,
+              "bias": 1.5695889790852864e-06,
+              "r2": 0.9999999989240083,
+              "relative_mae": 2.34299327712186e-06
+            },
+            "NH3": {
+              "n": 3,
+              "mae": 2.0194177826245627e-06,
+              "rmse": 2.4690913023077667e-06,
+              "bias": -2.0194177826245627e-06,
+              "r2": 0.9999998712342527,
+              "relative_mae": 0.00012058603217417005
+            },
+            "NO": {
+              "n": 3,
+              "mae": 2.673190128514117e-06,
+              "rmse": 3.2704109152122228e-06,
+              "bias": 2.673190128514117e-06,
+              "r2": null,
+              "relative_mae": 8.019570385542351e+24
+            },
+            "O2": {
+              "n": 3,
+              "mae": 1.2973944346110025e-05,
+              "rmse": 1.5896105443967687e-05,
+              "bias": -1.2973944346110025e-05,
+              "r2": 0.9999964036064091,
+              "relative_mae": 0.0001051529388505266
+            }
+          },
+          "nonfinite_values": 0
+        },
+        "clamped_vs_true": {
+          "per_species": {
+            "H2": {
+              "n": 3,
+              "mae": 3.057842453320821e-07,
+              "rmse": 3.736331451690868e-07,
+              "bias": -3.057842453320821e-07,
+              "r2": 0.9999999025870486,
+              "relative_mae": 9.770367595946002e-05
+            },
+            "H2O": {
+              "n": 3,
+              "mae": 2.8293579816818237e-06,
+              "rmse": 3.4637696642476647e-06,
+              "bias": 2.824390927950541e-06,
+              "r2": 0.9999999746757331,
+              "relative_mae": 7.890869739039223e-05
+            },
+            "N2": {
+              "n": 3,
+              "mae": 1.5695889790852864e-06,
+              "rmse": 1.926192440687237e-06,
+              "bias": 1.5695889790852864e-06,
+              "r2": 0.9999999989240083,
+              "relative_mae": 2.34299327712186e-06
+            },
+            "NH3": {
+              "n": 3,
+              "mae": 2.0194177826245627e-06,
+              "rmse": 2.4690913023077667e-06,
+              "bias": -2.0194177826245627e-06,
+              "r2": 0.9999998712342527,
+              "relative_mae": 0.00012058603217417005
+            },
+            "NO": {
+              "n": 3,
+              "mae": 2.673190128514117e-06,
+              "rmse": 3.2704109152122228e-06,
+              "bias": 2.673190128514117e-06,
+              "r2": null,
+              "relative_mae": 8.019570385542351e+24
+            },
+            "O2": {
+              "n": 3,
+              "mae": 1.2973944346110025e-05,
+              "rmse": 1.5896105443967687e-05,
+              "bias": -1.2973944346110025e-05,
+              "r2": 0.9999964036064091,
+              "relative_mae": 0.0001051529388505266
+            }
+          },
+          "nonfinite_values": 0
+        },
+        "per_species": {
+          "H2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.0014362814836204052,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "H2O": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.02046513557434082,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "N2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.5868657231330872,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "NH3": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.0070127444341778755,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "NO": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 8.911582582982192e-09,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "O2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.11150708049535751,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          }
+        }
+      },
+      "8": {
+        "total_predictions": 3,
+        "negative_predictions": 0,
+        "negative_ratio": 0.0,
+        "total_values": 18,
+        "negative_values": 0,
+        "negative_value_ratio": 0.0,
+        "total_clamp_magnitude": 0.0,
+        "mean_clamp_magnitude": 0.0,
+        "max_clamp_magnitude": 0.0,
+        "clamp_magnitude_rmse": 0.0,
+        "raw_vs_true": {
+          "per_species": {
+            "H2": {
+              "n": 3,
+              "mae": 1.632918914159139e-07,
+              "rmse": 2.4687808028862507e-07,
+              "bias": 1.2014061212539673e-07,
+              "r2": 0.9999999584769305,
+              "relative_mae": 5.234531647993271e-05
+            },
+            "H2O": {
+              "n": 3,
+              "mae": 1.405055324236552e-06,
+              "rmse": 2.3327023512748993e-06,
+              "bias": -1.405055324236552e-06,
+              "r2": 0.9999999886485939,
+              "relative_mae": 3.908699684257209e-05
+            },
+            "N2": {
+              "n": 3,
+              "mae": 1.7881393432617188e-07,
+              "rmse": 1.97686242482388e-07,
+              "bias": 1.7881393432617188e-07,
+              "r2": 0.9999999999886665,
+              "relative_mae": 2.6692326890250493e-07
+            },
+            "NH3": {
+              "n": 3,
+              "mae": 6.697761515776316e-07,
+              "rmse": 1.009221732411149e-06,
+              "bias": 4.884786903858185e-07,
+              "r2": 0.9999999788362322,
+              "relative_mae": 4.009020491213993e-05
+            },
+            "NO": {
+              "n": 3,
+              "mae": 1.8946693103316647e-07,
+              "rmse": 2.0106592358428809e-07,
+              "bias": 1.686591607115891e-09,
+              "r2": 0.9972967557835457,
+              "relative_mae": 0.06928713224109702
+            },
+            "O2": {
+              "n": 3,
+              "mae": 2.0985802014668784e-06,
+              "rmse": 3.1636730394352513e-06,
+              "bias": 1.5323360761006672e-06,
+              "r2": 0.9999998633302823,
+              "relative_mae": 1.702597347514525e-05
+            }
+          },
+          "nonfinite_values": 0
+        },
+        "clamped_vs_true": {
+          "per_species": {
+            "H2": {
+              "n": 3,
+              "mae": 1.632918914159139e-07,
+              "rmse": 2.4687808028862507e-07,
+              "bias": 1.2014061212539673e-07,
+              "r2": 0.9999999584769305,
+              "relative_mae": 5.234531647993271e-05
+            },
+            "H2O": {
+              "n": 3,
+              "mae": 1.405055324236552e-06,
+              "rmse": 2.3327023512748993e-06,
+              "bias": -1.405055324236552e-06,
+              "r2": 0.9999999886485939,
+              "relative_mae": 3.908699684257209e-05
+            },
+            "N2": {
+              "n": 3,
+              "mae": 1.7881393432617188e-07,
+              "rmse": 1.97686242482388e-07,
+              "bias": 1.7881393432617188e-07,
+              "r2": 0.9999999999886665,
+              "relative_mae": 2.6692326890250493e-07
+            },
+            "NH3": {
+              "n": 3,
+              "mae": 6.697761515776316e-07,
+              "rmse": 1.009221732411149e-06,
+              "bias": 4.884786903858185e-07,
+              "r2": 0.9999999788362322,
+              "relative_mae": 4.009020491213993e-05
+            },
+            "NO": {
+              "n": 3,
+              "mae": 1.8946693103316647e-07,
+              "rmse": 2.0106592358428809e-07,
+              "bias": 1.686591607115891e-09,
+              "r2": 0.9972967557835457,
+              "relative_mae": 0.06928713224109702
+            },
+            "O2": {
+              "n": 3,
+              "mae": 2.0985802014668784e-06,
+              "rmse": 3.1636730394352513e-06,
+              "bias": 1.5323360761006672e-06,
+              "r2": 0.9999998633302823,
+              "relative_mae": 1.702597347514525e-05
+            }
+          },
+          "nonfinite_values": 0
+        },
+        "per_species": {
+          "H2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.0014065615832805634,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "H2O": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.020465025678277016,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "N2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.5868633985519409,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "NH3": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.006897650193423033,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "NO": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 1.229064849894712e-07,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "O2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.11116065084934235,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          }
+        }
+      },
+      "32": {
+        "total_predictions": 3,
+        "negative_predictions": 1,
+        "negative_ratio": 0.3333333333333333,
+        "total_values": 18,
+        "negative_values": 1,
+        "negative_value_ratio": 0.05555555555555555,
+        "total_clamp_magnitude": 3.2208026823354885e-06,
+        "mean_clamp_magnitude": 3.2208026823354885e-06,
+        "max_clamp_magnitude": 3.2208026823354885e-06,
+        "clamp_magnitude_rmse": 7.591504725144152e-07,
+        "raw_vs_true": {
+          "per_species": {
+            "H2": {
+              "n": 3,
+              "mae": 6.247011090939243e-06,
+              "rmse": 1.044699134627562e-05,
+              "bias": 5.808358158295353e-06,
+              "r2": 0.9999682236028852,
+              "relative_mae": 0.002343442847939525
+            },
+            "H2O": {
+              "n": 3,
+              "mae": 0.00011039463182290395,
+              "rmse": 0.0001897616872782466,
+              "bias": -0.00011039463182290395,
+              "r2": 0.9999655467899708,
+              "relative_mae": 0.0025480423998566013
+            },
+            "N2": {
+              "n": 3,
+              "mae": 1.5556812286376953e-05,
+              "rmse": 2.334826360764267e-05,
+              "bias": 1.5556812286376953e-05,
+              "r2": 0.9999998349996713,
+              "relative_mae": 2.3191925773989795e-05
+            },
+            "NH3": {
+              "n": 3,
+              "mae": 1.7155925888800994e-06,
+              "rmse": 2.15631888295505e-06,
+              "bias": -1.7155925888800994e-06,
+              "r2": 0.9999999552036,
+              "relative_mae": 0.00011907147538881784
+            },
+            "NO": {
+              "n": 3,
+              "mae": 4.03127728295279e-06,
+              "rmse": 5.714082208862774e-06,
+              "bias": -2.3548016111855454e-06,
+              "r2": 0.9999966975501973,
+              "relative_mae": 0.0018131314757257823
+            },
+            "O2": {
+              "n": 3,
+              "mae": 6.037205457687378e-05,
+              "rmse": 9.897643781732288e-05,
+              "bias": -6.037205457687378e-05,
+              "r2": 0.9999768504367943,
+              "relative_mae": 0.0005260599071629454
+            }
+          },
+          "nonfinite_values": 0
+        },
+        "clamped_vs_true": {
+          "per_species": {
+            "H2": {
+              "n": 3,
+              "mae": 6.247011090939243e-06,
+              "rmse": 1.044699134627562e-05,
+              "bias": 5.808358158295353e-06,
+              "r2": 0.9999682236028852,
+              "relative_mae": 0.002343442847939525
+            },
+            "H2O": {
+              "n": 3,
+              "mae": 0.00011039463182290395,
+              "rmse": 0.0001897616872782466,
+              "bias": -0.00011039463182290395,
+              "r2": 0.9999655467899708,
+              "relative_mae": 0.0025480423998566013
+            },
+            "N2": {
+              "n": 3,
+              "mae": 1.5556812286376953e-05,
+              "rmse": 2.334826360764267e-05,
+              "bias": 1.5556812286376953e-05,
+              "r2": 0.9999998349996713,
+              "relative_mae": 2.3191925773989795e-05
+            },
+            "NH3": {
+              "n": 3,
+              "mae": 6.419916947682699e-07,
+              "rmse": 1.0917208825864585e-06,
+              "bias": -6.419916947682699e-07,
+              "r2": 0.9999999885173962,
+              "relative_mae": 4.455772237470769e-05
+            },
+            "NO": {
+              "n": 3,
+              "mae": 4.03127728295279e-06,
+              "rmse": 5.714082208862774e-06,
+              "bias": -2.3548016111855454e-06,
+              "r2": 0.9999966975501973,
+              "relative_mae": 0.0018131314757257823
+            },
+            "O2": {
+              "n": 3,
+              "mae": 6.037205457687378e-05,
+              "rmse": 9.897643781732288e-05,
+              "bias": -6.037205457687378e-05,
+              "r2": 0.9999768504367943,
+              "relative_mae": 0.0005260599071629454
+            }
+          },
+          "nonfinite_values": 0
+        },
+        "per_species": {
+          "H2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 6.29029527772218e-05,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "H2O": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.020462654531002045,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "N2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.5895374417304993,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "NH3": {
+            "total_predictions": 3,
+            "negative_values": 1,
+            "negative_ratio": 0.3333333333333333,
+            "mean_negative_value": -3.2208026823354885e-06,
+            "minimum_raw_value": -3.2208026823354885e-06,
+            "total_clamp_magnitude": 3.2208026823354885e-06,
+            "mean_clamp_magnitude": 3.2208026823354885e-06,
+            "max_clamp_magnitude": 3.2208026823354885e-06
+          },
+          "NO": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 2.6339641578942974e-08,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "O2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.08549942821264267,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          }
+        }
+      },
+      "128": {
+        "total_predictions": 3,
+        "negative_predictions": 1,
+        "negative_ratio": 0.3333333333333333,
+        "total_values": 18,
+        "negative_values": 1,
+        "negative_value_ratio": 0.05555555555555555,
+        "total_clamp_magnitude": 1.6064541341620497e-06,
+        "mean_clamp_magnitude": 1.6064541341620497e-06,
+        "max_clamp_magnitude": 1.6064541341620497e-06,
+        "clamp_magnitude_rmse": 3.786448706437164e-07,
+        "raw_vs_true": {
+          "per_species": {
+            "H2": {
+              "n": 3,
+              "mae": 2.5496319722151384e-07,
+              "rmse": 4.1492713442909504e-07,
+              "bias": 2.2360867054279274e-07,
+              "r2": 0.9999999508819891,
+              "relative_mae": 9.612698280920157e-05
+            },
+            "H2O": {
+              "n": 3,
+              "mae": 3.11434268951416e-06,
+              "rmse": 5.2829931752949305e-06,
+              "bias": 2.985199292500814e-06,
+              "r2": 0.9999999741682402,
+              "relative_mae": 7.125350599637459e-05
+            },
+            "N2": {
+              "n": 3,
+              "mae": 4.74850336710612e-06,
+              "rmse": 8.019649351893478e-06,
+              "bias": 4.74850336710612e-06,
+              "r2": 0.9999999805285982,
+              "relative_mae": 7.078962209922863e-06
+            },
+            "NH3": {
+              "n": 3,
+              "mae": 5.975728830283818e-07,
+              "rmse": 9.307491115741989e-07,
+              "bias": -5.975728830283818e-07,
+              "r2": 0.9999999916539227,
+              "relative_mae": 4.147481476414313e-05
+            },
+            "NO": {
+              "n": 3,
+              "mae": 4.540336947892835e-07,
+              "rmse": 7.094900447331118e-07,
+              "bias": -3.62425762290286e-07,
+              "r2": 0.9999999490910204,
+              "relative_mae": 0.00020419916979725407
+            },
+            "O2": {
+              "n": 3,
+              "mae": 2.9628475507100425e-06,
+              "rmse": 4.83569084234235e-06,
+              "bias": -2.9628475507100425e-06,
+              "r2": 0.9999999430217151,
+              "relative_mae": 2.5767487754611615e-05
+            }
+          },
+          "nonfinite_values": 0
+        },
+        "clamped_vs_true": {
+          "per_species": {
+            "H2": {
+              "n": 3,
+              "mae": 2.5496319722151384e-07,
+              "rmse": 4.1492713442909504e-07,
+              "bias": 2.2360867054279274e-07,
+              "r2": 0.9999999508819891,
+              "relative_mae": 9.612698280920157e-05
+            },
+            "H2O": {
+              "n": 3,
+              "mae": 3.11434268951416e-06,
+              "rmse": 5.2829931752949305e-06,
+              "bias": 2.985199292500814e-06,
+              "r2": 0.9999999741682402,
+              "relative_mae": 7.125350599637459e-05
+            },
+            "N2": {
+              "n": 3,
+              "mae": 4.74850336710612e-06,
+              "rmse": 8.019649351893478e-06,
+              "bias": 4.74850336710612e-06,
+              "r2": 0.9999999805285982,
+              "relative_mae": 7.078962209922863e-06
+            },
+            "NH3": {
+              "n": 3,
+              "mae": 6.20881716410319e-08,
+              "rmse": 7.786064671822525e-08,
+              "bias": -6.20881716410319e-08,
+              "r2": 0.9999999999415946,
+              "relative_mae": 4.309257483047166e-06
+            },
+            "NO": {
+              "n": 3,
+              "mae": 4.540336947892835e-07,
+              "rmse": 7.094900447331118e-07,
+              "bias": -3.62425762290286e-07,
+              "r2": 0.9999999490910204,
+              "relative_mae": 0.00020419916979725407
+            },
+            "O2": {
+              "n": 3,
+              "mae": 2.9628475507100425e-06,
+              "rmse": 4.83569084234235e-06,
+              "bias": -2.9628475507100425e-06,
+              "r2": 0.9999999430217151,
+              "relative_mae": 2.5767487754611615e-05
+            }
+          },
+          "nonfinite_values": 0
+        },
+        "per_species": {
+          "H2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 5.3903031584923156e-06,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "H2O": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.020465020090341568,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "N2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.5895270109176636,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "NH3": {
+            "total_predictions": 3,
+            "negative_values": 1,
+            "negative_ratio": 0.3333333333333333,
+            "mean_negative_value": -1.6064541341620497e-06,
+            "minimum_raw_value": -1.6064541341620497e-06,
+            "total_clamp_magnitude": 1.6064541341620497e-06,
+            "mean_clamp_magnitude": 1.6064541341620497e-06,
+            "max_clamp_magnitude": 1.6064541341620497e-06
+          },
+          "NO": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 4.84111915000085e-08,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "O2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.08632596582174301,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          }
+        }
+      }
+    },
+    "pure_ar": {
+      "1": {
+        "total_predictions": 3,
+        "negative_predictions": 0,
+        "negative_ratio": 0.0,
+        "total_values": 18,
+        "negative_values": 0,
+        "negative_value_ratio": 0.0,
+        "total_clamp_magnitude": 0.0,
+        "mean_clamp_magnitude": 0.0,
+        "max_clamp_magnitude": 0.0,
+        "clamp_magnitude_rmse": 0.0,
+        "raw_vs_true": {
+          "per_species": {
+            "H2": {
+              "n": 3,
+              "mae": 3.057842453320821e-07,
+              "rmse": 3.736331451690868e-07,
+              "bias": -3.057842453320821e-07,
+              "r2": 0.9999999025870486,
+              "relative_mae": 9.770367595946002e-05
+            },
+            "H2O": {
+              "n": 3,
+              "mae": 2.8293579816818237e-06,
+              "rmse": 3.4637696642476647e-06,
+              "bias": 2.824390927950541e-06,
+              "r2": 0.9999999746757331,
+              "relative_mae": 7.890869739039223e-05
+            },
+            "N2": {
+              "n": 3,
+              "mae": 1.5695889790852864e-06,
+              "rmse": 1.926192440687237e-06,
+              "bias": 1.5695889790852864e-06,
+              "r2": 0.9999999989240083,
+              "relative_mae": 2.34299327712186e-06
+            },
+            "NH3": {
+              "n": 3,
+              "mae": 2.0194177826245627e-06,
+              "rmse": 2.4690913023077667e-06,
+              "bias": -2.0194177826245627e-06,
+              "r2": 0.9999998712342527,
+              "relative_mae": 0.00012058603217417005
+            },
+            "NO": {
+              "n": 3,
+              "mae": 2.673190128514117e-06,
+              "rmse": 3.2704109152122228e-06,
+              "bias": 2.673190128514117e-06,
+              "r2": null,
+              "relative_mae": 8.019570385542351e+24
+            },
+            "O2": {
+              "n": 3,
+              "mae": 1.2973944346110025e-05,
+              "rmse": 1.5896105443967687e-05,
+              "bias": -1.2973944346110025e-05,
+              "r2": 0.9999964036064091,
+              "relative_mae": 0.0001051529388505266
+            }
+          },
+          "nonfinite_values": 0
+        },
+        "clamped_vs_true": {
+          "per_species": {
+            "H2": {
+              "n": 3,
+              "mae": 3.057842453320821e-07,
+              "rmse": 3.736331451690868e-07,
+              "bias": -3.057842453320821e-07,
+              "r2": 0.9999999025870486,
+              "relative_mae": 9.770367595946002e-05
+            },
+            "H2O": {
+              "n": 3,
+              "mae": 2.8293579816818237e-06,
+              "rmse": 3.4637696642476647e-06,
+              "bias": 2.824390927950541e-06,
+              "r2": 0.9999999746757331,
+              "relative_mae": 7.890869739039223e-05
+            },
+            "N2": {
+              "n": 3,
+              "mae": 1.5695889790852864e-06,
+              "rmse": 1.926192440687237e-06,
+              "bias": 1.5695889790852864e-06,
+              "r2": 0.9999999989240083,
+              "relative_mae": 2.34299327712186e-06
+            },
+            "NH3": {
+              "n": 3,
+              "mae": 2.0194177826245627e-06,
+              "rmse": 2.4690913023077667e-06,
+              "bias": -2.0194177826245627e-06,
+              "r2": 0.9999998712342527,
+              "relative_mae": 0.00012058603217417005
+            },
+            "NO": {
+              "n": 3,
+              "mae": 2.673190128514117e-06,
+              "rmse": 3.2704109152122228e-06,
+              "bias": 2.673190128514117e-06,
+              "r2": null,
+              "relative_mae": 8.019570385542351e+24
+            },
+            "O2": {
+              "n": 3,
+              "mae": 1.2973944346110025e-05,
+              "rmse": 1.5896105443967687e-05,
+              "bias": -1.2973944346110025e-05,
+              "r2": 0.9999964036064091,
+              "relative_mae": 0.0001051529388505266
+            }
+          },
+          "nonfinite_values": 0
+        },
+        "per_species": {
+          "H2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.0014362814836204052,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "H2O": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.02046513557434082,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "N2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.5868657231330872,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "NH3": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.0070127444341778755,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "NO": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 8.911582582982192e-09,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "O2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.11150708049535751,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          }
+        }
+      },
+      "8": {
+        "total_predictions": 3,
+        "negative_predictions": 1,
+        "negative_ratio": 0.3333333333333333,
+        "total_values": 18,
+        "negative_values": 1,
+        "negative_value_ratio": 0.05555555555555555,
+        "total_clamp_magnitude": 4.3326657817033265e-08,
+        "mean_clamp_magnitude": 4.3326657817033265e-08,
+        "max_clamp_magnitude": 4.3326657817033265e-08,
+        "clamp_magnitude_rmse": 1.0212191182857787e-08,
+        "raw_vs_true": {
+          "per_species": {
+            "H2": {
+              "n": 3,
+              "mae": 1.0253977961838245e-05,
+              "rmse": 1.7155027491849747e-05,
+              "bias": 9.543378837406635e-06,
+              "r2": 0.999799503302106,
+              "relative_mae": 0.0032870445490985885
+            },
+            "H2O": {
+              "n": 3,
+              "mae": 8.815589050451915e-05,
+              "rmse": 0.00014412877789408507,
+              "bias": -7.796349624792735e-05,
+              "r2": 0.9999566656369546,
+              "relative_mae": 0.002452393834154926
+            },
+            "N2": {
+              "n": 3,
+              "mae": 2.9802322387695312e-06,
+              "rmse": 3.606286253224458e-06,
+              "bias": 2.9802322387695312e-06,
+              "r2": 0.9999999962283548,
+              "relative_mae": 4.448721148375083e-06
+            },
+            "NH3": {
+              "n": 3,
+              "mae": 3.8280151784420013e-05,
+              "rmse": 6.382282132053814e-05,
+              "bias": 3.536200771729151e-05,
+              "r2": 0.999915360751774,
+              "relative_mae": 0.002291301542299449
+            },
+            "NO": {
+              "n": 3,
+              "mae": 1.321563589821532e-06,
+              "rmse": 1.8210622364710882e-06,
+              "bias": -7.228641839181668e-07,
+              "r2": 0.7782529182119884,
+              "relative_mae": 0.483289356689661
+            },
+            "O2": {
+              "n": 3,
+              "mae": 0.00012133767207463582,
+              "rmse": 0.00020173716373076658,
+              "bias": 0.00011141349871953328,
+              "r2": 0.9994442737243678,
+              "relative_mae": 0.0009844236521599663
+            }
+          },
+          "nonfinite_values": 0
+        },
+        "clamped_vs_true": {
+          "per_species": {
+            "H2": {
+              "n": 3,
+              "mae": 1.0253977961838245e-05,
+              "rmse": 1.7155027491849747e-05,
+              "bias": 9.543378837406635e-06,
+              "r2": 0.999799503302106,
+              "relative_mae": 0.0032870445490985885
+            },
+            "H2O": {
+              "n": 3,
+              "mae": 8.815589050451915e-05,
+              "rmse": 0.00014412877789408507,
+              "bias": -7.796349624792735e-05,
+              "r2": 0.9999566656369546,
+              "relative_mae": 0.002452393834154926
+            },
+            "N2": {
+              "n": 3,
+              "mae": 2.9802322387695312e-06,
+              "rmse": 3.606286253224458e-06,
+              "bias": 2.9802322387695312e-06,
+              "r2": 0.9999999962283548,
+              "relative_mae": 4.448721148375083e-06
+            },
+            "NH3": {
+              "n": 3,
+              "mae": 3.8280151784420013e-05,
+              "rmse": 6.382282132053814e-05,
+              "bias": 3.536200771729151e-05,
+              "r2": 0.999915360751774,
+              "relative_mae": 0.002291301542299449
+            },
+            "NO": {
+              "n": 3,
+              "mae": 1.3071213705491875e-06,
+              "rmse": 1.8208904239433382e-06,
+              "bias": -7.084219646458223e-07,
+              "r2": 0.7782947587692328,
+              "relative_mae": 0.47800790756753064
+            },
+            "O2": {
+              "n": 3,
+              "mae": 0.00012133767207463582,
+              "rmse": 0.00020173716373076658,
+              "bias": 0.00011141349871953328,
+              "r2": 0.9994442737243678,
+              "relative_mae": 0.0009844236521599663
+            }
+          },
+          "nonfinite_values": 0
+        },
+        "per_species": {
+          "H2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.0014358324697241187,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "H2O": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.02046513371169567,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "N2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.5868686437606812,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "NH3": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.007006376050412655,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "NO": {
+            "total_predictions": 3,
+            "negative_values": 1,
+            "negative_ratio": 0.3333333333333333,
+            "mean_negative_value": -4.3326657817033265e-08,
+            "minimum_raw_value": -4.3326657817033265e-08,
+            "total_clamp_magnitude": 4.3326657817033265e-08,
+            "mean_clamp_magnitude": 4.3326657817033265e-08,
+            "max_clamp_magnitude": 4.3326657817033265e-08
+          },
+          "O2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.11150433123111725,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          }
+        }
+      },
+      "32": {
+        "total_predictions": 3,
+        "negative_predictions": 2,
+        "negative_ratio": 0.6666666666666666,
+        "total_values": 18,
+        "negative_values": 2,
+        "negative_value_ratio": 0.1111111111111111,
+        "total_clamp_magnitude": 4.779507429830687e-07,
+        "mean_clamp_magnitude": 2.3897537149153436e-07,
+        "max_clamp_magnitude": 4.6572924361498735e-07,
+        "clamp_magnitude_rmse": 1.0981122524207732e-07,
+        "raw_vs_true": {
+          "per_species": {
+            "H2": {
+              "n": 3,
+              "mae": 0.00047517905477434397,
+              "rmse": 0.0008031772366062907,
+              "bias": 0.0004521058484291037,
+              "r2": 0.8121786459929284,
+              "relative_mae": 0.17825403880212676
+            },
+            "H2O": {
+              "n": 3,
+              "mae": 0.007569244752327601,
+              "rmse": 0.012863976273935694,
+              "bias": -0.007283413161834081,
+              "r2": 0.8416700458772591,
+              "relative_mae": 0.17470737702864747
+            },
+            "N2": {
+              "n": 3,
+              "mae": 0.0008646845817565918,
+              "rmse": 0.0014569902230935248,
+              "bias": -0.0008173584938049316,
+              "r2": 0.9993574766597295,
+              "relative_mae": 0.0012890623264493102
+            },
+            "NH3": {
+              "n": 3,
+              "mae": 0.0023474812818070254,
+              "rmse": 0.004021146972706474,
+              "bias": 0.002295592955003182,
+              "r2": 0.8442180857369372,
+              "relative_mae": 0.16292799437590189
+            },
+            "NO": {
+              "n": 3,
+              "mae": 0.0022166525657665304,
+              "rmse": 0.0038390789310683896,
+              "bias": -0.0022166525657665304,
+              "r2": -0.4907243277268767,
+              "relative_mae": 0.9969749673968724
+            },
+            "O2": {
+              "n": 3,
+              "mae": 0.008704212804635366,
+              "rmse": 0.014855318391042555,
+              "bias": 0.008448270459969839,
+              "r2": 0.4785134749428044,
+              "relative_mae": 0.07584531306786131
+            }
+          },
+          "nonfinite_values": 0
+        },
+        "clamped_vs_true": {
+          "per_species": {
+            "H2": {
+              "n": 3,
+              "mae": 0.00047517905477434397,
+              "rmse": 0.0008031772366062907,
+              "bias": 0.0004521058484291037,
+              "r2": 0.8121786459929284,
+              "relative_mae": 0.17825403880212676
+            },
+            "H2O": {
+              "n": 3,
+              "mae": 0.007569244752327601,
+              "rmse": 0.012863976273935694,
+              "bias": -0.007283413161834081,
+              "r2": 0.8416700458772591,
+              "relative_mae": 0.17470737702864747
+            },
+            "N2": {
+              "n": 3,
+              "mae": 0.0008646845817565918,
+              "rmse": 0.0014569902230935248,
+              "bias": -0.0008173584938049316,
+              "r2": 0.9993574766597295,
+              "relative_mae": 0.0012890623264493102
+            },
+            "NH3": {
+              "n": 3,
+              "mae": 0.0023474812818070254,
+              "rmse": 0.004021146972706474,
+              "bias": 0.002295592955003182,
+              "r2": 0.8442180857369372,
+              "relative_mae": 0.16292799437590189
+            },
+            "NO": {
+              "n": 3,
+              "mae": 0.0022164932488522027,
+              "rmse": 0.0038390789216454224,
+              "bias": -0.0022164932488522027,
+              "r2": -0.4907243204089513,
+              "relative_mae": 0.9969033120649
+            },
+            "O2": {
+              "n": 3,
+              "mae": 0.008704212804635366,
+              "rmse": 0.014855318391042555,
+              "bias": 0.008448270459969839,
+              "r2": 0.4785134749428044,
+              "relative_mae": 0.07584531306786131
+            }
+          },
+          "nonfinite_values": 0
+        },
+        "per_species": {
+          "H2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.0014357472537085414,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "H2O": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.02066388726234436,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "N2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.5869745016098022,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "NH3": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.006964611355215311,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "NO": {
+            "total_predictions": 3,
+            "negative_values": 2,
+            "negative_ratio": 0.6666666666666666,
+            "mean_negative_value": -2.3897537149153436e-07,
+            "minimum_raw_value": -4.6572924361498735e-07,
+            "total_clamp_magnitude": 4.779507429830687e-07,
+            "mean_clamp_magnitude": 2.3897537149153436e-07,
+            "max_clamp_magnitude": 4.6572924361498735e-07
+          },
+          "O2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.11139930039644241,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          }
+        }
+      },
+      "128": {
+        "total_predictions": 3,
+        "negative_predictions": 2,
+        "negative_ratio": 0.6666666666666666,
+        "total_values": 18,
+        "negative_values": 2,
+        "negative_value_ratio": 0.1111111111111111,
+        "total_clamp_magnitude": 6.611503344799985e-08,
+        "mean_clamp_magnitude": 3.3057516723999925e-08,
+        "max_clamp_magnitude": 3.9377113125738106e-08,
+        "clamp_magnitude_rmse": 1.1218718042422559e-08,
+        "raw_vs_true": {
+          "per_species": {
+            "H2": {
+              "n": 3,
+              "mae": 0.0005074573370317618,
+              "rmse": 0.00081725847456615,
+              "bias": 0.00043483249222238857,
+              "r2": 0.8094469245335384,
+              "relative_mae": 0.19132307425088754
+            },
+            "H2O": {
+              "n": 3,
+              "mae": 0.008109167839090029,
+              "rmse": 0.013270242097680407,
+              "bias": -0.007200503721833229,
+              "r2": 0.8370135171767785,
+              "relative_mae": 0.18553084771102943
+            },
+            "N2": {
+              "n": 3,
+              "mae": 0.0008852481842041016,
+              "rmse": 0.001418608963703888,
+              "bias": -0.0007500251134236654,
+              "r2": 0.9993907271028597,
+              "relative_mae": 0.0013197081180975861
+            },
+            "NH3": {
+              "n": 3,
+              "mae": 0.0023341143193344274,
+              "rmse": 0.003901966792475177,
+              "bias": 0.0021699929299453893,
+              "r2": 0.8533154811656711,
+              "relative_mae": 0.16200025433237664
+            },
+            "NO": {
+              "n": 3,
+              "mae": 0.002193887610776694,
+              "rmse": 0.0037998866365281346,
+              "bias": -0.002193887610776694,
+              "r2": -0.4603032818370594,
+              "relative_mae": 0.9866889481781607
+            },
+            "O2": {
+              "n": 3,
+              "mae": 0.008610305686791738,
+              "rmse": 0.014223056648771487,
+              "bias": 0.007803139587243398,
+              "r2": 0.5070780056329993,
+              "relative_mae": 0.07488267369500634
+            }
+          },
+          "nonfinite_values": 0
+        },
+        "clamped_vs_true": {
+          "per_species": {
+            "H2": {
+              "n": 3,
+              "mae": 0.0005074573370317618,
+              "rmse": 0.00081725847456615,
+              "bias": 0.00043483249222238857,
+              "r2": 0.8094469245335384,
+              "relative_mae": 0.19132307425088754
+            },
+            "H2O": {
+              "n": 3,
+              "mae": 0.008109167839090029,
+              "rmse": 0.013270242097680407,
+              "bias": -0.007200503721833229,
+              "r2": 0.8370135171767785,
+              "relative_mae": 0.18553084771102943
+            },
+            "N2": {
+              "n": 3,
+              "mae": 0.0008852481842041016,
+              "rmse": 0.001418608963703888,
+              "bias": -0.0007500251134236654,
+              "r2": 0.9993907271028597,
+              "relative_mae": 0.0013197081180975861
+            },
+            "NH3": {
+              "n": 3,
+              "mae": 0.0023341143193344274,
+              "rmse": 0.003901966792475177,
+              "bias": 0.0021699929299453893,
+              "r2": 0.8533154811656711,
+              "relative_mae": 0.16200025433237664
+            },
+            "NO": {
+              "n": 3,
+              "mae": 0.002193865572432211,
+              "rmse": 0.0037998866364287688,
+              "bias": -0.002193865572432211,
+              "r2": -0.46030328176068624,
+              "relative_mae": 0.9866790365533216
+            },
+            "O2": {
+              "n": 3,
+              "mae": 0.008610305686791738,
+              "rmse": 0.014223056648771487,
+              "bias": 0.007803139587243398,
+              "r2": 0.5070780056329993,
+              "relative_mae": 0.07488267369500634
+            }
+          },
+          "nonfinite_values": 0
+        },
+        "per_species": {
+          "H2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.0014181071892380714,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "H2O": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.021130841225385666,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "N2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.5870602130889893,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "NH3": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.006756160873919725,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "NO": {
+            "total_predictions": 3,
+            "negative_values": 2,
+            "negative_ratio": 0.6666666666666666,
+            "mean_negative_value": -3.3057516723999925e-08,
+            "minimum_raw_value": -3.9377113125738106e-08,
+            "total_clamp_magnitude": 6.611503344799985e-08,
+            "mean_clamp_magnitude": 3.3057516723999925e-08,
+            "max_clamp_magnitude": 3.9377113125738106e-08
+          },
+          "O2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.11095450073480606,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          }
+        }
+      }
+    },
+    "pure_ar_raw": {
+      "1": {
+        "total_predictions": 3,
+        "negative_predictions": 0,
+        "negative_ratio": 0.0,
+        "total_values": 18,
+        "negative_values": 0,
+        "negative_value_ratio": 0.0,
+        "total_clamp_magnitude": 0.0,
+        "mean_clamp_magnitude": 0.0,
+        "max_clamp_magnitude": 0.0,
+        "clamp_magnitude_rmse": 0.0,
+        "raw_vs_true": {
+          "per_species": {
+            "H2": {
+              "n": 3,
+              "mae": 3.057842453320821e-07,
+              "rmse": 3.736331451690868e-07,
+              "bias": -3.057842453320821e-07,
+              "r2": 0.9999999025870486,
+              "relative_mae": 9.770367595946002e-05
+            },
+            "H2O": {
+              "n": 3,
+              "mae": 2.8293579816818237e-06,
+              "rmse": 3.4637696642476647e-06,
+              "bias": 2.824390927950541e-06,
+              "r2": 0.9999999746757331,
+              "relative_mae": 7.890869739039223e-05
+            },
+            "N2": {
+              "n": 3,
+              "mae": 1.5695889790852864e-06,
+              "rmse": 1.926192440687237e-06,
+              "bias": 1.5695889790852864e-06,
+              "r2": 0.9999999989240083,
+              "relative_mae": 2.34299327712186e-06
+            },
+            "NH3": {
+              "n": 3,
+              "mae": 2.0194177826245627e-06,
+              "rmse": 2.4690913023077667e-06,
+              "bias": -2.0194177826245627e-06,
+              "r2": 0.9999998712342527,
+              "relative_mae": 0.00012058603217417005
+            },
+            "NO": {
+              "n": 3,
+              "mae": 2.673190128514117e-06,
+              "rmse": 3.2704109152122228e-06,
+              "bias": 2.673190128514117e-06,
+              "r2": null,
+              "relative_mae": 8.019570385542351e+24
+            },
+            "O2": {
+              "n": 3,
+              "mae": 1.2973944346110025e-05,
+              "rmse": 1.5896105443967687e-05,
+              "bias": -1.2973944346110025e-05,
+              "r2": 0.9999964036064091,
+              "relative_mae": 0.0001051529388505266
+            }
+          },
+          "nonfinite_values": 0
+        },
+        "clamped_vs_true": {
+          "per_species": {
+            "H2": {
+              "n": 3,
+              "mae": 3.057842453320821e-07,
+              "rmse": 3.736331451690868e-07,
+              "bias": -3.057842453320821e-07,
+              "r2": 0.9999999025870486,
+              "relative_mae": 9.770367595946002e-05
+            },
+            "H2O": {
+              "n": 3,
+              "mae": 2.8293579816818237e-06,
+              "rmse": 3.4637696642476647e-06,
+              "bias": 2.824390927950541e-06,
+              "r2": 0.9999999746757331,
+              "relative_mae": 7.890869739039223e-05
+            },
+            "N2": {
+              "n": 3,
+              "mae": 1.5695889790852864e-06,
+              "rmse": 1.926192440687237e-06,
+              "bias": 1.5695889790852864e-06,
+              "r2": 0.9999999989240083,
+              "relative_mae": 2.34299327712186e-06
+            },
+            "NH3": {
+              "n": 3,
+              "mae": 2.0194177826245627e-06,
+              "rmse": 2.4690913023077667e-06,
+              "bias": -2.0194177826245627e-06,
+              "r2": 0.9999998712342527,
+              "relative_mae": 0.00012058603217417005
+            },
+            "NO": {
+              "n": 3,
+              "mae": 2.673190128514117e-06,
+              "rmse": 3.2704109152122228e-06,
+              "bias": 2.673190128514117e-06,
+              "r2": null,
+              "relative_mae": 8.019570385542351e+24
+            },
+            "O2": {
+              "n": 3,
+              "mae": 1.2973944346110025e-05,
+              "rmse": 1.5896105443967687e-05,
+              "bias": -1.2973944346110025e-05,
+              "r2": 0.9999964036064091,
+              "relative_mae": 0.0001051529388505266
+            }
+          },
+          "nonfinite_values": 0
+        },
+        "per_species": {
+          "H2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.0014362814836204052,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "H2O": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.02046513557434082,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "N2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.5868657231330872,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "NH3": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.0070127444341778755,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "NO": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 8.911582582982192e-09,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "O2": {
+            "total_predictions": 3,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": 0.11150708049535751,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          }
+        }
+      },
+      "8": {
+        "total_predictions": 0,
+        "negative_predictions": 0,
+        "negative_ratio": 0.0,
+        "total_values": 0,
+        "negative_values": 0,
+        "negative_value_ratio": 0.0,
+        "total_clamp_magnitude": 0.0,
+        "mean_clamp_magnitude": 0.0,
+        "max_clamp_magnitude": 0.0,
+        "clamp_magnitude_rmse": 0.0,
+        "raw_vs_true": {
+          "per_species": {
+            "H2": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "H2O": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "N2": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "NH3": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "NO": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "O2": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            }
+          },
+          "nonfinite_values": 0
+        },
+        "clamped_vs_true": {
+          "per_species": {
+            "H2": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "H2O": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "N2": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "NH3": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "NO": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "O2": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            }
+          },
+          "nonfinite_values": 0
+        },
+        "per_species": {
+          "H2": {
+            "total_predictions": 0,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": null,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "H2O": {
+            "total_predictions": 0,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": null,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "N2": {
+            "total_predictions": 0,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": null,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "NH3": {
+            "total_predictions": 0,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": null,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "NO": {
+            "total_predictions": 0,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": null,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "O2": {
+            "total_predictions": 0,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": null,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          }
+        }
+      },
+      "32": {
+        "total_predictions": 0,
+        "negative_predictions": 0,
+        "negative_ratio": 0.0,
+        "total_values": 0,
+        "negative_values": 0,
+        "negative_value_ratio": 0.0,
+        "total_clamp_magnitude": 0.0,
+        "mean_clamp_magnitude": 0.0,
+        "max_clamp_magnitude": 0.0,
+        "clamp_magnitude_rmse": 0.0,
+        "raw_vs_true": {
+          "per_species": {
+            "H2": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "H2O": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "N2": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "NH3": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "NO": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "O2": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            }
+          },
+          "nonfinite_values": 0
+        },
+        "clamped_vs_true": {
+          "per_species": {
+            "H2": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "H2O": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "N2": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "NH3": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "NO": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "O2": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            }
+          },
+          "nonfinite_values": 0
+        },
+        "per_species": {
+          "H2": {
+            "total_predictions": 0,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": null,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "H2O": {
+            "total_predictions": 0,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": null,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "N2": {
+            "total_predictions": 0,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": null,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "NH3": {
+            "total_predictions": 0,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": null,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "NO": {
+            "total_predictions": 0,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": null,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "O2": {
+            "total_predictions": 0,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": null,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          }
+        }
+      },
+      "128": {
+        "total_predictions": 0,
+        "negative_predictions": 0,
+        "negative_ratio": 0.0,
+        "total_values": 0,
+        "negative_values": 0,
+        "negative_value_ratio": 0.0,
+        "total_clamp_magnitude": 0.0,
+        "mean_clamp_magnitude": 0.0,
+        "max_clamp_magnitude": 0.0,
+        "clamp_magnitude_rmse": 0.0,
+        "raw_vs_true": {
+          "per_species": {
+            "H2": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "H2O": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "N2": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "NH3": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "NO": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "O2": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            }
+          },
+          "nonfinite_values": 0
+        },
+        "clamped_vs_true": {
+          "per_species": {
+            "H2": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "H2O": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "N2": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "NH3": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "NO": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            },
+            "O2": {
+              "n": 0,
+              "mae": null,
+              "rmse": null,
+              "bias": null,
+              "r2": null,
+              "relative_mae": null
+            }
+          },
+          "nonfinite_values": 0
+        },
+        "per_species": {
+          "H2": {
+            "total_predictions": 0,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": null,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "H2O": {
+            "total_predictions": 0,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": null,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "N2": {
+            "total_predictions": 0,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": null,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "NH3": {
+            "total_predictions": 0,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": null,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "NO": {
+            "total_predictions": 0,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": null,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          },
+          "O2": {
+            "total_predictions": 0,
+            "negative_values": 0,
+            "negative_ratio": 0.0,
+            "mean_negative_value": null,
+            "minimum_raw_value": null,
+            "total_clamp_magnitude": 0.0,
+            "mean_clamp_magnitude": 0.0,
+            "max_clamp_magnitude": 0.0
+          }
+        }
+      }
+    }
+  }
+}

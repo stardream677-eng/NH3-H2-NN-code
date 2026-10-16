@@ -1,0 +1,104 @@
+FF.FFFFFFFFFFF                                                           [100%]
+================================== FAILURES ===================================
+E   assert tensor(0.0480) < 2e-06
+     +  where tensor(0.0480) = <built-in method max of Tensor object at 0x0000025C2758FDE0>()
+     +    where <built-in method max of Tensor object at 0x0000025C2758FDE0> = tensor([[0.0000e+00, 0.0000e+00, 0.0000e+00, 0.0000e+00, 4.2009e-20, 0.0000e+00],\n        [0.0000e+00, 0.0000e+00, 0.0...0.0000e+00, 2.1157e-14, 0.0000e+00],\n        [0.0000e+00, 4.6566e-10, 0.0000e+00, 0.0000e+00, 2.1238e-14, 0.0000e+00]]).max
+     +      where tensor([[0.0000e+00, 0.0000e+00, 0.0000e+00, 0.0000e+00, 4.2009e-20, 0.0000e+00],\n        [0.0000e+00, 0.0000e+00, 0.0...0.0000e+00, 2.1157e-14, 0.0000e+00],\n        [0.0000e+00, 4.6566e-10, 0.0000e+00, 0.0000e+00, 2.1238e-14, 0.0000e+00]]) = <built-in method abs of Tensor object at 0x0000025C2758FFC0>()
+     +        where <built-in method abs of Tensor object at 0x0000025C2758FFC0> = (tensor([[1.4684e-02, 1.0407e-02, 6.0187e-01, 1.7110e-01, 3.5429e-19, 1.6820e-01],\n        [1.4684e-02, 1.0407e-02, 6.0...5.3866e-02, 8.0471e-17, 1.6884e-01],\n        [7.4404e-03, 4.6775e-03, 7.6518e-01, 5.3866e-02, 2.1328e-16, 1.6884e-01]]) - tensor([[1.4684e-02, 1.0407e-02, 6.0187e-01, 1.7110e-01, 3.1228e-19, 1.6820e-01],\n        [1.4684e-02, 1.0407e-02, 6.0...5.3866e-02, 2.1238e-14, 1.6884e-01],\n        [7.4404e-03, 4.6775e-03, 7.6518e-01, 5.3866e-02, 2.1451e-14, 1.6884e-01]])).abs
+C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\tests\test_numerical_repairs.py:19: assert tensor(0.0480) < 2e-06
+E   assert tensor(False)
+     +  where tensor(False) = <built-in method all of Tensor object at 0x0000025C2762FA20>()
+     +    where <built-in method all of Tensor object at 0x0000025C2762FA20> = tensor([[0.0337, 0.0000, 0.0147,  ..., 0.1711, 0.0000, 0.1682],\n        [0.0337, 0.0000, 0.0147,  ..., 0.1711, 0.0000,...0.0000, 0.0000, 0.0074,  ..., 0.0539, 0.0000, 0.1688],\n        [0.0000, 0.0000, 0.0074,  ..., 0.0539, 0.0000, 0.1688]]) >= 0.all
+C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\tests\test_numerical_repairs.py:24: assert tensor(False)
+E   assert (tensor(True) and tensor(False))
+     +  where tensor(True) = <built-in method all of Tensor object at 0x0000025C2749C4B0>()
+     +    where <built-in method all of Tensor object at 0x0000025C2749C4B0> = tensor([[True, True, True, True, True, True, True, True, True, True, True, True,\n         True, True, True, True, True... True, True, True, True, True, True, True, True, True, True, True,\n         True, True, True, True, True, True, True]]).all
+     +      where tensor([[True, True, True, True, True, True, True, True, True, True, True, True,\n         True, True, True, True, True... True, True, True, True, True, True, True, True, True, True, True,\n         True, True, True, True, True, True, True]]) = <built-in method isfinite of type object at 0x00007FFD675BCF40>(tensor([[0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,\n         0., ... 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,\n         0., 0., 0., 0., 0., 0., 0.]]))
+     +        where <built-in method isfinite of type object at 0x00007FFD675BCF40> = torch.isfinite
+     +  and   tensor(False) = <built-in method all of Tensor object at 0x0000025C2749DF90>()
+     +    where <built-in method all of Tensor object at 0x0000025C2749DF90> = tensor([[0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,\n         0., ... 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,\n         0., 0., 0., 0., 0., 0., 0.]]) > 0.all
+     +      where tensor([[0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,\n         0., ... 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,\n         0., 0., 0., 0., 0., 0., 0.]]) = <built-in method abs of Tensor object at 0x0000025C2749DA90>()
+     +        where <built-in method abs of Tensor object at 0x0000025C2749DA90> = tensor([[0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,\n         0., ... 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,\n         0., 0., 0., 0., 0., 0., 0.]]).abs
+C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\tests\test_numerical_repairs.py:43: assert (tensor(True) and tensor(False))
+E   physical_projection_contract.ProjectionConstraintError: Physical projection not_converged for batch rows [0]: mass_error=1.676e-03 (allowed 5.0e-06), element_error=1.001e-03 (allowed 1.0e-06), negative_mass=-0.000e+00. Reduce dt, inspect the raw predicted Y, or re-evaluate kinetics; a smaller physical integration step requires new rate evaluations
+C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\physical_projection_contract.py:209: physical_projection_contract.ProjectionConstraintError: Physical projection not_converged for batch rows [0]: mass_error=1.676e-03 (allowed 5.0e-06), element_error=1.001e-03 (allowed 1.0e-06), negative_mass=-0.000e+00. Reduce dt, inspect the raw predicted Y, or re-evaluate kinetics; a smaller physical integration step requires new rate evaluations
+E   physical_projection_contract.ProjectionConstraintError: Physical projection not_converged for batch rows [0, 1, 2, 4, 5, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18]...: mass_error=1.652e-02 (allowed 5.0e-06), element_error=1.216e-02 (allowed 1.0e-06), negative_mass=-0.000e+00. Reduce dt, inspect the raw predicted Y, or re-evaluate kinetics; a smaller physical integration step requires new rate evaluations
+C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\physical_projection_contract.py:209: physical_projection_contract.ProjectionConstraintError: Physical projection not_converged for batch rows [0, 1, 2, 4, 5, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18]...: mass_error=1.652e-02 (allowed 5.0e-06), element_error=1.216e-02 (allowed 1.0e-06), negative_mass=-0.000e+00. Reduce dt, inspect the raw predicted Y, or re-evaluate kinetics; a smaller physical integration step requires new rate evaluations
+E   assert (tensor(False))
+     +  where tensor(False) = <built-in method all of Tensor object at 0x0000025C2758F930>()
+     +    where <built-in method all of Tensor object at 0x0000025C2758F930> = tensor([[False]]).all
+     +      where tensor([[False]]) = <built-in method isfinite of type object at 0x00007FFD675BCF40>(tensor([[nan]], grad_fn=<AddBackward0>))
+     +        where <built-in method isfinite of type object at 0x00007FFD675BCF40> = torch.isfinite
+C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\tests\test_numerical_repairs.py:71: assert (tensor(False))
+E   assert (tensor(False))
+     +  where tensor(False) = <built-in method all of Tensor object at 0x0000025C2758FF70>()
+     +    where <built-in method all of Tensor object at 0x0000025C2758FF70> = tensor([[False]]).all
+     +      where tensor([[False]]) = <built-in method isfinite of type object at 0x00007FFD675BCF40>(tensor([[inf]], grad_fn=<AddBackward0>))
+     +        where <built-in method isfinite of type object at 0x00007FFD675BCF40> = torch.isfinite
+C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\tests\test_numerical_repairs.py:71: assert (tensor(False))
+E   assert False
+     +  where False = all(<generator object test_pd_extreme_finite_predictions_have_finite_gradients.<locals>.<genexpr> at 0x0000025C27466810>)
+C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\tests\test_numerical_repairs.py:73: assert False
+E   RuntimeError: Autonomous energy-closed temperature exceeds the configured max_delta_temperature; reduce dt or use smaller integration substeps
+C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\train_sc_v68.py:5384: RuntimeError: Autonomous energy-closed temperature exceeds the configured max_delta_temperature; reduce dt or use smaller integration substeps
+E   AssertionError: v72_dual_branch
+    assert 0.005 == 0
+     +  where 0.005 = <built-in method get of dict object at 0x0000025C29438C00>('feedback_noise_std', 0)
+     +    where <built-in method get of dict object at 0x0000025C29438C00> = {'name': 'v72_dual_branch', 'experiment_mode': 'qssa', 'state_update_mode': 'dual_branch', 'lambda_rate': 1.0, ...}.get
+C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\tests\test_numerical_repairs.py:90: AssertionError: v72_dual_branch
+E   AssertionError: Traceback (most recent call last):
+        File "C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\data_pipeline\build_training_dataset_v72.py", line 36, in <module>
+          bench_spec.loader.exec_module(bench_mod)
+        File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+        File "<frozen importlib._bootstrap_external>", line 1132, in get_code
+        File "<frozen importlib._bootstrap_external>", line 1190, in get_data
+      FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc17\\data_pipeline\\test\\benchmark_cfd_closed_loop.py'
+      
+    assert 1 == 0
+     +  where 1 = CompletedProcess(args=['C:\\Users\\123\\.conda\\envs\\cantera\\python.exe', 'C:\\Users\\123\\Desktop\\2STest\\second c...esktop\\\\2STest\\\\second chapter\\\\009\\\\xl1\\\\sc17\\\\data_pipeline\\\\test\\\\benchmark_cfd_closed_loop.py\'\n').returncode
+C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\tests\test_numerical_repairs.py:98: AssertionError: Traceback (most recent call last):
+E   AssertionError: usage: validate_all_best_models_v68.py [-h] [--base_dir BASE_DIR]
+                                             [--data_dir DATA_DIR]
+                                             [--output_root OUTPUT_ROOT]
+                                             [--mechanism MECHANISM]
+                                             [--split {val,train,test,all}]
+                                             [--splits {train,validation,val,test} [{train,validation,val,test} ...]]
+                                             [--split_dir SPLIT_DIR]
+                                             [--batch_size BATCH_SIZE]
+                                             [--max_batches MAX_BATCHES]
+                                             [--horizons HORIZONS [HORIZONS ...]]
+                                             [--plot_trajectories PLOT_TRAJECTORIES]
+                                             [--trajectory_selection {first,diverse,combustion}]
+                                             [--combustion_min_temperature COMBUSTION_MIN_TEMPERATURE]
+                                             [--combustion_max_temperature COMBUSTION_MAX_TEMPERATURE]
+                                             [--steady_rate_threshold STEADY_RATE_THRESHOLD]
+                                             [--no_plots] [--rebuild_scalers]
+                                             [--state_update_mode {legacy,task8_conservative_state,qssa,qssa_asymptotic}]
+                                             [--plan {v3,v34,v35,v68,v68_qssa,v69_qssa,v69_no_noise,v69_no_stability,v69_no_microweight,v71_qssa,all}]
+                                             [--version TARGET_VERSION]
+                                             [--choice CHOICE] [--no_pause]
+                                             [--all_checkpoints]
+                                             [--checkpoint_types {best_total,best_oracle_h128,best_oracle_avg,best_pure_ar,best_composite,best_robust_raw,latest} [{best_total,best_oracle_h128,best_oracle_avg,best_pure_ar,best_composite,best_robust_raw,latest} ...]]
+      validate_all_best_models_v68.py: error: argument --plan: invalid choice: 'v72_dual_branch' (choose from v3, v34, v35, v68, v68_qssa, v69_qssa, v69_no_noise, v69_no_stability, v69_no_microweight, v71_qssa, all)
+      
+    assert 2 == 0
+     +  where 2 = CompletedProcess(args=['C:\\Users\\123\\.conda\\envs\\cantera\\python.exe', 'C:\\Users\\123\\Desktop\\2STest\\second c...oose from v3, v34, v35, v68, v68_qssa, v69_qssa, v69_no_noise, v69_no_stability, v69_no_microweight, v71_qssa, all)\n").returncode
+C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\tests\test_numerical_repairs.py:98: AssertionError: usage: validate_all_best_models_v68.py [-h] [--base_dir BASE_DIR]
+E   AssertionError: assert 'v72_dual_branch' in ['v1_ablation', 'v2_ablation', 'v3_full', 'v3_4', 'v3_5', 'v68', ...]
+     +  where ['v1_ablation', 'v2_ablation', 'v3_full', 'v3_4', 'v3_5', 'v68', ...] = <module 'validate_all_best_models_v68' from 'C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc17\\validate_all_best_models_v68.py'>.MODEL_VERSIONS
+C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\tests\test_numerical_repairs.py:102: AssertionError: assert 'v72_dual_branch' in ['v1_ablation', 'v2_ablation', 'v3_full', 'v3_4', 'v3_5', 'v68', ...]
+=========================== short test summary info ===========================
+FAILED tests/test_numerical_repairs.py::test_true_labels_reconstruct_macro_endpoint
+FAILED tests/test_numerical_repairs.py::test_real_inputs_do_not_fail_on_quantization
+FAILED tests/test_numerical_repairs.py::test_bad_finite_state_keeps_restoring_gradients
+FAILED tests/test_numerical_repairs.py::test_raw_micro_above_one_has_nonzero_gradient
+FAILED tests/test_numerical_repairs.py::test_difficult_feasible_projection - ...
+FAILED tests/test_numerical_repairs.py::test_pd_extreme_finite_predictions_have_finite_gradients[40.0-40.0]
+FAILED tests/test_numerical_repairs.py::test_pd_extreme_finite_predictions_have_finite_gradients[40.0--10.0]
+FAILED tests/test_numerical_repairs.py::test_pd_extreme_finite_predictions_have_finite_gradients[-20.0-40.0]
+FAILED tests/test_numerical_repairs.py::test_temperature_real_ignition_is_not_artificially_capped
+FAILED tests/test_numerical_repairs.py::test_autonomous_preset_disables_unphysical_noise
+FAILED tests/test_numerical_repairs.py::test_entrypoint_help[data_pipeline/build_training_dataset_v72.py-args0]
+FAILED tests/test_numerical_repairs.py::test_entrypoint_help[validate_all_best_models_v68.py-args1]
+FAILED tests/test_numerical_repairs.py::test_v72_validation_plan_is_selectable
+13 failed, 1 passed in 1.15s

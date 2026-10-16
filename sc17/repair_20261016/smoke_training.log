@@ -1,0 +1,133 @@
+Using device: cuda
+
+
+##########################################################################################
+V68 Long-Horizon Species-Autoregressive Operator Training
+##########################################################################################
+Version: v68
+Transform: dual_branch_asinh_macro_qssa_micro_v1
+Rollout: external_recorded_t_p_dt_species_ar_experiments_v3
+Max horizon: 128
+Curriculum horizons: [1]
+Curriculum start epochs: [0]
+Eval horizons: [1, 8, 32, 128]
+Tail fraction: 0.80 → 0.95 (ramp=8 epochs)
+Backward chunk steps: 16
+Parts per epoch: 1
+Validation parts per epoch: 1
+Batch size: 8; validation batch size: 3
+Transition weighting: alpha=2.0, clip=8.0
+Feedback state noise std: 0.0
+Feedback blend: 1.00 -> 1.00 over 0 epochs
+Trust-region fraction: 0.000
+Rate decode: dual_branch (z_limit=10.000)
+Temperature mode: autonomous
+Stability loss weight: 0.01
+Experiment mode: qssa
+State update mode: dual_branch
+Resume: none
+Trajectory split dir: C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\repair_20261016\mini_splits
+Lambda weights: rate=1.0, state=1.0, element=0.1, mass=0.05, positive=0.01, rollout=0.5, stability=0.01
+
+[Metadata]
+  mechanism = nuig_2024
+  rows      = 4800
+  success   = 30
+  failed    = 0
+  parts     = 1
+[THERMO] ThermoNASA7Layer initialized (39 species).
+[THERMO] Autonomous temperature enabled (internal_energy/cv, reactor=IdealGasReactor, 39 species incl inert)
+
+Species summary:
+  inert = 2
+  macro = 6
+  micro = 31
+
+[Split] Trajectory manifest: C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\repair_20261016\mini_splits
+  train sample_ids = 24
+  validation sample_ids = 3
+
+Dataset split:
+  total parts = 1
+  train parts = 1
+  val parts   = 1
+
+[Scaler] Selected parts:
+  - part-000001.parquet
+[Scaler] Macro P90 rate scales:
+  H2: 2.997036e-01
+  H2O: 2.982373e+00
+  N2: 2.139118e+00
+  NH3: 3.879713e-01
+  NO: 1.060570e+00
+  O2: 3.857677e+00
+[Scaler] Enabled MaskedOnlineMoments to prevent frozen sentinels from inflating variance!
+[Scaler] processed=3,840
+
+[Scaler Summary]
+X mean range: -2.455e+01 to 1.714e+03
+X std range: 6.029e-03 to 1.018e+03
+Y mean range: -1.793e+01 to 1.154e+01
+Y std range: 6.881e-01 to 9.352e+00
+Instantiated DualBranchKineticsNet (dim=42->512x4->slow=6+fast=62=68) on cuda
+Species loss weights: macro=1.0, micro=2.0, key=2.0; present=['NH2', 'HO2', 'OH', 'H2O2']
+Epoch 1/1 H=1 tail=0.80: 0it [00:00, ?it/s]
+Epoch 1/1 H=1 tail=0.80: 0it [00:17, ?it/s, loss=8.5526, rate=1.4188, state=0.6236, roll=0.0000, elem=3.65e-07, mass=4.13e-08, w=5.63]
+Epoch 1/1 H=1 tail=0.80: 1it [00:17, 17.16s/it, loss=8.5526, rate=1.4188, state=0.6236, roll=0.0000, elem=3.65e-07, mass=4.13e-08, w=5.63]
+Epoch 1/1 H=1 tail=0.80: 1it [00:17, 17.16s/it, loss=8.2636, rate=0.6797, state=0.3300, roll=0.0000, elem=4.14e-06, mass=3.57e-07, w=14.43]
+Epoch 1/1 H=1 tail=0.80: 1it [00:17, 17.16s/it, loss=6.9614, rate=1.7615, state=0.5031, roll=0.0000, elem=5.42e-07, mass=4.82e-08, w=9.63] 
+Epoch 1/1 H=1 tail=0.80: 3it [00:17,  5.75s/it, loss=6.9614, rate=1.7615, state=0.5031, roll=0.0000, elem=5.42e-07, mass=4.82e-08, w=9.63]
+[THERMO] ThermoNASA7Layer initialized (39 species).
+[THERMO] ThermoNASA7Layer initialized (39 species).
+[THERMO] ThermoNASA7Layer initialized (39 species).
+[THERMO] ThermoNASA7Layer initialized (39 species).
+[COMPLETE] 0/4 completed; eligible=False
+
+------------------------------------------------------------------------------------------
+Epoch   1
+  Horizon        : 1
+  Tail Fraction  : 0.800
+  Learning Rate  : 2.000e-04
+  Train Total    : 7.925872e+00
+  Train Rate     : 1.286684e+00
+  Train State    : 4.855355e-01
+  Train Rollout  : 0.000000e+00
+  Train Stability: 1.115379e+00
+  Train Transition Weight: 9.8925
+  Ignition Audit : high=66.67%, w(mean/p50/p90/max)=9.892/6.005/23.989/48.000
+  Ignition MSE   : rate high/normal=14.589582443237305/172.59238052368164, state high/normal=0.38794606012413985/2.570245157534959
+  Train Element  : 1.682383e-06
+  Train Mass     : 1.489276e-07
+  Val Total      : 6.329153e+00
+  Val Rate       : 1.302082e+00
+  Val State      : 1.202737e+00
+  Val Element    : 2.022682e-07
+  Val Mass       : 4.455997e-09
+  Val Positive   : 0.000000e+00
+
+  Oracle per-horizon RMSE:
+    H=  1: 1.051696e+00 (n=3)
+
+  Pure-AR per-horizon RMSE:
+    H=  1: 1.051709e+00 (n=3)
+    H=  8: 1.047440e+00 (n=3)
+    H= 32: 9.772780e-01 (n=3)
+    H=128: 9.380636e-01 (n=3)
+------------------------------------------------------------------------------------------
+[SENTINEL] New best valid H=1 model -> best_v68_net_nuig_2024_H1.pth (score=3.983199e+00)
+[SENTINEL] New best valid H=8 model -> best_v68_net_nuig_2024_H8.pth (score=2.207426e+00)
+[SENTINEL] New best valid H=32 model -> best_v68_net_nuig_2024_H32.pth (score=2.360378e+00)
+[SAVE] Best Oracle Average model -> best_oracle_avg_epoch1.pth (Avg RMSE=1.051696e+00)
+[SAVE] Best Pure-AR H=128 model -> best_pure_ar_h128_epoch1.pth (RMSE=9.380636e-01)
+[SAVE] Best Composite model -> best_composite_epoch1.pth (Composite=1.051706e+00)
+[SAVE] checkpoint -> C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\repair_20261016\smoke_training\checkpoints_v68\checkpoint_v68_nuig_2024_epoch1.pth
+
+==========================================================================================
+V68 training finished.
+Best fixed-horizon sentinel score = inf
+
+Best metrics achieved:
+  Oracle Average RMSE    : 1.051696e+00
+  Pure-AR H=128 RMSE     : 9.380636e-01
+  Composite (0.2O+0.8P)  : 1.051706e+00
+==========================================================================================

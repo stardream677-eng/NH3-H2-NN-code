@@ -1,0 +1,123 @@
+{
+  "version": "sc15",
+  "root": "C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc15",
+  "rows": 4800,
+  "environment": {
+    "python": "C:\\Users\\123\\.conda\\envs\\cantera\\python.exe",
+    "cantera": "3.0.1",
+    "torch": "2.11.0.dev20260120+cu130",
+    "device": "cuda"
+  },
+  "source_hashes": {
+    "compute_physical_metrics.py": "d58e8b68100d2a2eb63d768333b98a3ca77d7089c214ba53d50e31ca6dea6bdd",
+    "dual_branch_network.py": "7f7324e200340cd782c58898ab9b5fa7c55dc554e233e2c663da02955f66c17a",
+    "enhanced_loss_and_weights.py": "deaa1ffe8ed2324bb8b0cde7e527f4c020f38f4efd8924dfa20d14025808581f",
+    "thermo_nasa7_layer.py": "b127ff7642f7199af61306241e19c98dfc798386e7c6c63fd87f2bc7789e415b",
+    "train_all_v68.py": "c046c29cd78909d64a15b0a1f93d77545f5fc7011ebffbe8964350c293e395a1",
+    "train_sc_v68.py": "65ed633f31b2bde5a4642d726ed895114f83d082b515fe4caaf9c853f234fed8",
+    "validate_all_best_models_v68.py": "6306d8ad2a0c0a0e48f0152b1d30b035fb5a3b69da8bc2c73c01bb11eb20ebd2",
+    "validate_sc_v68.py": "7921668bcae8cf9a3abedc518ebba624a1708b06525d0edd92cdcce452471154",
+    "data_pipeline\\audit_generated_database.py": "d43da8f1f1aa90697ac590be893d3b2fbfdd08d4520a0e2c757100172ae9619f",
+    "data_pipeline\\audit_initial_conditions_v67.py": "e2f2d0c206d6e9829160e3b8b28fd17c1674ec0e0f7ee7086a4c34469254cf1e",
+    "data_pipeline\\build_training_dataset_v72.py": "385be2fb75eab4c6534ffc91d793c3e5aa19dc66343c615d15fa77d6beeca2fa",
+    "data_pipeline\\generate_augmented_trajectories.py": "8ada06c3029ff7d17a918a0c65b2805a9d94ac4040a536aa541b832d8b5ca17a",
+    "data_pipeline\\lhs_sampler_sc_v11.py": "e6c5a73268ccbce035a68105ef8914d53d69c822e5da402ead93b0026bc83260",
+    "data_pipeline\\runner_sc_v21_qssa.py": "4c520242f54083d6ee9884ac767acf51612a9ea9d8c98ffce0df7dc4c5c69970",
+    "data_pipeline\\split_trajectories_v21.py": "d890d13ddca64ed1c4acc1c26fedbce1ce1d406f9c3e604ba2f8d3b0e25f6461",
+    "data_pipeline\\trajectory_conditions_v67.py": "24eed3ec3a1df7cba5e598223829315091edd4be2f8a8ea431a71f2c1d482880",
+    "data_pipeline\\__init__.py": "dfcd5b4d75934f8bd75ebfe36d9934399ad15f39ac02405909c7149bd8ab27be",
+    "diagnosis_20261016\\audit_model.py": "914ebe11e77b954d158f74d6652ec922da486ef7f023d6b580f8ee05cb49453d",
+    "diagnosis_20261016\\controlled_probes.py": "378bee1150cdb01ddf66bbd54d502fe6378447fe03cf804073f6ad2c08854593"
+  },
+  "mini_sha256": "3300190749eae46981f02170fd6b6cd918b89c8a5c875764a781be34cc19d186",
+  "inert_input": {
+    "original_minimum": -6.616802074464553e-26,
+    "original_negative_rows": 948,
+    "reconstructed_negative_rows": 789,
+    "reconstructed_minimum": -6.616801954134563e-26
+  },
+  "default_input_decode": "returned",
+  "perfect_targets": {
+    "NH3_raw": {
+      "rmse": 0.0012302354057732363,
+      "max_abs": 0.04799047050763682
+    },
+    "NH3_projected": {
+      "rmse": 0.0009571471951759581,
+      "max_abs": 0.03793677625943736
+    },
+    "macro_clipped_counts": {
+      "H2": 0,
+      "H2O": 1,
+      "N2": 1,
+      "NH3": 14,
+      "NO": 2,
+      "O2": 0
+    },
+    "control": "explicit_nonnegative_inert_sum_same_for_all_versions"
+  },
+  "exact_endpoint_projection": {
+    "micro_log_error": {
+      "rmse": 3.866975821262314,
+      "max_abs": 10.000003814697266
+    },
+    "lifted_above1e32": 27406
+  },
+  "projection_stress_32": {
+    "returned": 32,
+    "rejected": 0,
+    "fallback_used": 0,
+    "invalid_returned": 32,
+    "max_mass_error": 1.2054684306317398e-07,
+    "max_element_error": 0.5868324583347959,
+    "trace_values_zeroed": 0,
+    "errors": []
+  },
+  "saturated_conservation_loss": {
+    "element": 100.0,
+    "mass": 100.0,
+    "max_abs_gradient": 0.0
+  },
+  "thermal": {
+    "uncapped": {
+      "rmse": 1.810057607028422e-08,
+      "max_abs": 1.0589046723907813e-06
+    },
+    "real_steps_over500": 13,
+    "500": {
+      "returned": true,
+      "error": {
+        "rmse": 33.39485979856568,
+        "max_abs": 1427.9017130997654
+      }
+    },
+    "3000": {
+      "returned": true,
+      "error": {
+        "rmse": 1.810057607028422e-08,
+        "max_abs": 1.0589046723907813e-06
+      }
+    }
+  },
+  "input_roundoff": {
+    "negative_macro_rows": 305,
+    "negative_macro_values": 305,
+    "minimum_macro": -3.725290298461914e-09,
+    "near_identity_feedback": "returned"
+  },
+  "preset": {
+    "output_parameterization": "dual_branch",
+    "rate_decode_mode": "dual_branch",
+    "state_update_mode": "dual_branch",
+    "temperature_mode": "autonomous",
+    "feedback_noise_std": 0.005,
+    "feedback_state_source": "constrained",
+    "max_delta_temperature": 500.0
+  },
+  "scaled_noise": {
+    "rows": 128,
+    "off_mass_tolerance_rows": 127,
+    "max_mass_error": 0.0021251440048217773,
+    "decoder": "returned"
+  }
+}

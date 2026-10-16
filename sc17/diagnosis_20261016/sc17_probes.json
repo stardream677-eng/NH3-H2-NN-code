@@ -1,0 +1,178 @@
+{
+  "version": "sc17",
+  "root": "C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc17",
+  "rows": 4800,
+  "environment": {
+    "python": "C:\\Users\\123\\.conda\\envs\\cantera\\python.exe",
+    "cantera": "3.0.1",
+    "torch": "2.11.0.dev20260120+cu130",
+    "device": "cuda"
+  },
+  "source_hashes": {
+    "autonomous_benchmark_protocol.py": "ddf781407481934cc7166532d6bd625f0aa1b3a1eaf0fb7da46c9c7d33ef78d6",
+    "autonomous_pressure.py": "6414c8cb07a7dc1738241c0a3951f4c19ccee86e971cdca3f6ca72dd2a11476a",
+    "chemistry_contract.py": "2dbc0f8044a2cf787c67eab663456067186ab8660357b999056dae870265388c",
+    "compute_physical_metrics.py": "d58e8b68100d2a2eb63d768333b98a3ca77d7089c214ba53d50e31ca6dea6bdd",
+    "dual_branch_network.py": "7f7324e200340cd782c58898ab9b5fa7c55dc554e233e2c663da02955f66c17a",
+    "enhanced_loss_and_weights.py": "2cf8fd3729ce27c1669b2e454b210957e1fbab87f1961eace622fcfd3e849e9f",
+    "experiment_manifest.py": "411f42497acd1a09089bf076904ae762217905f8c9c9bcc8e1c1101ee04a857a",
+    "kinetics_parameterization.py": "e20542c46a88fb07389cfe8618077dfb600237daa286307d611a4d971ec4e572",
+    "physical_projection_contract.py": "348a0c9c39e9f3608ed36d56ed8db02b93d44aa1d44c844da5d14e0ccce7c8cd",
+    "species_validation_protocol.py": "8f3622b8adb30c4a3ce5c20ca8b0cb39117e917beda98f41ecb50144d8fe9fcf",
+    "thermo_nasa7_layer.py": "4d17db223c22cc1e03f70b203f3c739c918a0e88f940ee16737dbe573a90966b",
+    "training_diagnostics.py": "70f404995a3d7c36437029b901554924fabd10ffaacf98c2b54d36de35742000",
+    "train_all_v68.py": "89578eb55adfd0a9f0dd6442895def62dac6b8721cb688bb8201143c96ed35ad",
+    "train_sc_v68.py": "c4ac0353668e970a33c6e3c6fb805c3d582aba24c147fd2fc43928f2af543316",
+    "validate_all_best_models_v68.py": "f507cf0b23d2d0d9175bd72a6c1355b244163b9dd22f68e52f57eb42e800260e",
+    "validate_sc_v68.py": "7e8d08cc1c9962b58bc5b0f0e47d67422be2127ee32348bea5d7795499141c4c",
+    "data_pipeline\\audit_generated_database.py": "d43da8f1f1aa90697ac590be893d3b2fbfdd08d4520a0e2c757100172ae9619f",
+    "data_pipeline\\audit_initial_conditions_v67.py": "e2f2d0c206d6e9829160e3b8b28fd17c1674ec0e0f7ee7086a4c34469254cf1e",
+    "data_pipeline\\build_training_dataset_v72.py": "f80871f41662e29b4fa71f9f6cc706a1ebe3b5e305b2e6e61df22375370fd675",
+    "data_pipeline\\generate_augmented_trajectories.py": "a4d9441db7f4b121fd612f2b6f3593bb73bc60917290d067908307f533c48110",
+    "data_pipeline\\lhs_sampler_sc_v11.py": "e6c5a73268ccbce035a68105ef8914d53d69c822e5da402ead93b0026bc83260",
+    "data_pipeline\\runner_sc_v21_qssa.py": "4c520242f54083d6ee9884ac767acf51612a9ea9d8c98ffce0df7dc4c5c69970",
+    "data_pipeline\\split_trajectories_v21.py": "8c4e17ff2b1739fce18645db776fd3859a9b6f90f0c345a081b1ab81b78124c2",
+    "data_pipeline\\trajectory_conditions_v67.py": "24eed3ec3a1df7cba5e598223829315091edd4be2f8a8ea431a71f2c1d482880",
+    "data_pipeline\\__init__.py": "dfcd5b4d75934f8bd75ebfe36d9934399ad15f39ac02405909c7149bd8ab27be"
+  },
+  "mini_sha256": "3300190749eae46981f02170fd6b6cd918b89c8a5c875764a781be34cc19d186",
+  "inert_input": {
+    "original_minimum": -6.616802074464553e-26,
+    "original_negative_rows": 948,
+    "reconstructed_negative_rows": 789,
+    "reconstructed_minimum": -6.616801954134563e-26
+  },
+  "default_input_decode": {
+    "type": "ProjectionConstraintError",
+    "message": "Physical projection invalid_inert_mass for batch rows [161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176]...: inert species cannot be negative or non-finite; do not hide them by clamping before projection",
+    "reason": "invalid_inert_mass"
+  },
+  "perfect_targets": {
+    "NH3_raw": {
+      "rmse": 0.0012302354057732363,
+      "max_abs": 0.04799047050763682
+    },
+    "NH3_projected": {
+      "rmse": 0.0009571159835175366,
+      "max_abs": 0.037935789057508267
+    },
+    "macro_clipped_counts": {
+      "H2": 0,
+      "H2O": 1,
+      "N2": 1,
+      "NH3": 14,
+      "NO": 2,
+      "O2": 0
+    },
+    "control": "explicit_nonnegative_inert_sum_same_for_all_versions"
+  },
+  "exact_endpoint_projection": {
+    "micro_log_error": {
+      "rmse": 6.199228152504932e-08,
+      "max_abs": 3.814697265625e-06
+    },
+    "lifted_above1e32": 0
+  },
+  "projection_stress_32": {
+    "returned": 7,
+    "rejected": 25,
+    "fallback_used": 7,
+    "invalid_returned": 0,
+    "max_mass_error": 1.0970979928970337e-06,
+    "max_element_error": 7.615958637074982e-07,
+    "trace_values_zeroed": 136,
+    "errors": [
+      {
+        "type": "ProjectionConstraintError",
+        "message": "Physical projection not_converged for batch rows [0]: mass_error=3.625e-04 (allowed 5.0e-06), element_error=2.857e-04 (allowed 1.0e-06), negative_mass=0.000e+00. Reduce dt, inspect the raw predicted Y, or re-evaluate kinetics; a smaller physical integration step requires new rate evaluations",
+        "reason": "not_converged"
+      },
+      {
+        "type": "ProjectionConstraintError",
+        "message": "Physical projection not_converged for batch rows [0]: mass_error=3.701e-06 (allowed 5.0e-06), element_error=2.781e-06 (allowed 1.0e-06), negative_mass=0.000e+00. Reduce dt, inspect the raw predicted Y, or re-evaluate kinetics; a smaller physical integration step requires new rate evaluations",
+        "reason": "not_converged"
+      }
+    ]
+  },
+  "saturated_conservation_loss": {
+    "element": 100.0,
+    "mass": 100.0,
+    "max_abs_gradient": 0.0
+  },
+  "thermal": {
+    "uncapped": {
+      "rmse": 1.810057607028422e-08,
+      "max_abs": 1.0589046723907813e-06
+    },
+    "real_steps_over500": 13,
+    "500": {
+      "returned": false,
+      "type": "RuntimeError",
+      "message": "Autonomous energy-closed temperature exceeds the configured max_delta_temperature; reduce dt or use smaller integration substeps",
+      "reason": null
+    },
+    "3000": {
+      "returned": true,
+      "error": {
+        "rmse": 1.810057607028422e-08,
+        "max_abs": 1.0589046723907813e-06
+      }
+    }
+  },
+  "input_roundoff": {
+    "negative_macro_rows": 305,
+    "negative_macro_values": 305,
+    "minimum_macro": -3.725290298461914e-09,
+    "near_identity_feedback": {
+      "type": "ValueError",
+      "message": "EOS cannot use negative mass fractions",
+      "reason": null
+    }
+  },
+  "preset": {
+    "output_parameterization": "dual_branch",
+    "rate_decode_mode": "dual_branch",
+    "state_update_mode": "dual_branch",
+    "temperature_mode": "autonomous",
+    "feedback_noise_std": 0.005,
+    "feedback_state_source": "constrained",
+    "max_delta_temperature": 500.0
+  },
+  "preset_start_guard": {
+    "type": "ValueError",
+    "message": "Autonomous T/P feedback_noise_std must be zero until noisy species are reprojected onto the element/mass manifold",
+    "reason": null
+  },
+  "scaled_noise": {
+    "rows": 128,
+    "off_mass_tolerance_rows": 127,
+    "max_mass_error": 0.0021251440048217773,
+    "decoder": {
+      "type": "ProjectionConstraintError",
+      "message": "Physical projection infeasible_target for batch rows [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16]...: sum(target_elements) disagrees with 1 - inert_sum",
+      "reason": "infeasible_target"
+    }
+  },
+  "eos_vs_cantera": {
+    "rmse": 3.0786153249199884e-14,
+    "max_abs": 2.8421709430404007e-13
+  },
+  "future_reference_pressure_invariance": {
+    "max_scaled_difference": 0.0
+  },
+  "unstratified_group_split": {
+    "group_overlap": false,
+    "sizes": {
+      "train": 12,
+      "validation": 4,
+      "test": 4
+    }
+  },
+  "benchmark_missing_ignition": {
+    "ref_ignited": true,
+    "nn_ignited": false,
+    "idt_nn_s": null,
+    "idt_abs_error_s": null,
+    "ignition_agreement": false
+  }
+}

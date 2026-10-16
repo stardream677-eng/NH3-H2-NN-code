@@ -1,0 +1,2489 @@
+{
+  "update_constraint": "constrained",
+  "feedback_constraint": "constrained",
+  "overall": {
+    "oracle": {
+      "total_predictions": 12,
+      "update": {
+        "intervened_values": 65,
+        "intervened_value_ratio": 0.9027777777777778,
+        "intervened_rows": 12,
+        "total_correction": 0.004027611019473021,
+        "mean_correction": 6.196324645343108e-05,
+        "max_correction": 0.0016434267163276672,
+        "correction_rmse": 0.0002578244963125933,
+        "per_species": {
+          "H2": {
+            "intervened_values": 12,
+            "intervened_ratio": 1.0,
+            "total_correction": 5.596191840595566e-06,
+            "mean_correction": 4.663493200496305e-07,
+            "max_correction": 3.093155100941658e-06
+          },
+          "H2O": {
+            "intervened_values": 12,
+            "intervened_ratio": 1.0,
+            "total_correction": 0.0017459187656641006,
+            "mean_correction": 0.00014549323047200838,
+            "max_correction": 0.0013388991355895996
+          },
+          "N2": {
+            "intervened_values": 11,
+            "intervened_ratio": 0.9166666666666666,
+            "total_correction": 7.224082946777344e-05,
+            "mean_correction": 6.567348133433949e-06,
+            "max_correction": 4.482269287109375e-05
+          },
+          "NH3": {
+            "intervened_values": 12,
+            "intervened_ratio": 1.0,
+            "total_correction": 8.679206985107157e-06,
+            "mean_correction": 7.232672487589298e-07,
+            "max_correction": 3.2208026823354885e-06
+          },
+          "NO": {
+            "intervened_values": 6,
+            "intervened_ratio": 0.5,
+            "total_correction": 8.377089131439419e-05,
+            "mean_correction": 1.3961815219065699e-05,
+            "max_correction": 6.77201896905899e-05
+          },
+          "O2": {
+            "intervened_values": 12,
+            "intervened_ratio": 1.0,
+            "total_correction": 0.00211140513420105,
+            "mean_correction": 0.0001759504278500875,
+            "max_correction": 0.0016434267163276672
+          }
+        },
+        "intervened_row_ratio": 1.0
+      },
+      "feedback": {
+        "intervened_values": 65,
+        "intervened_value_ratio": 0.9027777777777778,
+        "intervened_rows": 12,
+        "total_correction": 0.004027611019473021,
+        "mean_correction": 6.196324645343108e-05,
+        "max_correction": 0.0016434267163276672,
+        "correction_rmse": 0.0002578244963125933,
+        "per_species": {
+          "H2": {
+            "intervened_values": 12,
+            "intervened_ratio": 1.0,
+            "total_correction": 5.596191840595566e-06,
+            "mean_correction": 4.663493200496305e-07,
+            "max_correction": 3.093155100941658e-06
+          },
+          "H2O": {
+            "intervened_values": 12,
+            "intervened_ratio": 1.0,
+            "total_correction": 0.0017459187656641006,
+            "mean_correction": 0.00014549323047200838,
+            "max_correction": 0.0013388991355895996
+          },
+          "N2": {
+            "intervened_values": 11,
+            "intervened_ratio": 0.9166666666666666,
+            "total_correction": 7.224082946777344e-05,
+            "mean_correction": 6.567348133433949e-06,
+            "max_correction": 4.482269287109375e-05
+          },
+          "NH3": {
+            "intervened_values": 12,
+            "intervened_ratio": 1.0,
+            "total_correction": 8.679206985107157e-06,
+            "mean_correction": 7.232672487589298e-07,
+            "max_correction": 3.2208026823354885e-06
+          },
+          "NO": {
+            "intervened_values": 6,
+            "intervened_ratio": 0.5,
+            "total_correction": 8.377089131439419e-05,
+            "mean_correction": 1.3961815219065699e-05,
+            "max_correction": 6.77201896905899e-05
+          },
+          "O2": {
+            "intervened_values": 12,
+            "intervened_ratio": 1.0,
+            "total_correction": 0.00211140513420105,
+            "mean_correction": 0.0001759504278500875,
+            "max_correction": 0.0016434267163276672
+          }
+        },
+        "intervened_row_ratio": 1.0
+      },
+      "projection": {
+        "intervened_values": 65,
+        "intervened_value_ratio": 0.9027777777777778,
+        "intervened_rows": 12,
+        "total_correction": 0.004027611019473021,
+        "mean_correction": 6.196324645343108e-05,
+        "max_correction": 0.0016434267163276672,
+        "correction_rmse": 0.0002578244963125933,
+        "per_species": {
+          "H2": {
+            "intervened_values": 12,
+            "intervened_ratio": 1.0,
+            "total_correction": 5.596191840595566e-06,
+            "mean_correction": 4.663493200496305e-07,
+            "max_correction": 3.093155100941658e-06
+          },
+          "H2O": {
+            "intervened_values": 12,
+            "intervened_ratio": 1.0,
+            "total_correction": 0.0017459187656641006,
+            "mean_correction": 0.00014549323047200838,
+            "max_correction": 0.0013388991355895996
+          },
+          "N2": {
+            "intervened_values": 11,
+            "intervened_ratio": 0.9166666666666666,
+            "total_correction": 7.224082946777344e-05,
+            "mean_correction": 6.567348133433949e-06,
+            "max_correction": 4.482269287109375e-05
+          },
+          "NH3": {
+            "intervened_values": 12,
+            "intervened_ratio": 1.0,
+            "total_correction": 8.679206985107157e-06,
+            "mean_correction": 7.232672487589298e-07,
+            "max_correction": 3.2208026823354885e-06
+          },
+          "NO": {
+            "intervened_values": 6,
+            "intervened_ratio": 0.5,
+            "total_correction": 8.377089131439419e-05,
+            "mean_correction": 1.3961815219065699e-05,
+            "max_correction": 6.77201896905899e-05
+          },
+          "O2": {
+            "intervened_values": 12,
+            "intervened_ratio": 1.0,
+            "total_correction": 0.00211140513420105,
+            "mean_correction": 0.0001759504278500875,
+            "max_correction": 0.0016434267163276672
+          }
+        },
+        "intervened_row_ratio": 1.0
+      }
+    },
+    "pure_ar": {
+      "total_predictions": 12,
+      "update": {
+        "intervened_values": 65,
+        "intervened_value_ratio": 0.9027777777777778,
+        "intervened_rows": 12,
+        "total_correction": 0.00017917248186449797,
+        "mean_correction": 2.7564997209922763e-06,
+        "max_correction": 7.617473602294922e-05,
+        "correction_rmse": 9.811022711863274e-06,
+        "per_species": {
+          "H2": {
+            "intervened_values": 12,
+            "intervened_ratio": 1.0,
+            "total_correction": 4.334375262260437e-06,
+            "mean_correction": 3.6119793852170307e-07,
+            "max_correction": 2.768007107079029e-06
+          },
+          "H2O": {
+            "intervened_values": 11,
+            "intervened_ratio": 0.9166666666666666,
+            "total_correction": 1.9066035747528076e-05,
+            "mean_correction": 1.7332759770480068e-06,
+            "max_correction": 8.597970008850098e-06
+          },
+          "N2": {
+            "intervened_values": 10,
+            "intervened_ratio": 0.8333333333333334,
+            "total_correction": 0.00011181831359863281,
+            "mean_correction": 1.1181831359863281e-05,
+            "max_correction": 7.617473602294922e-05
+          },
+          "NH3": {
+            "intervened_values": 12,
+            "intervened_ratio": 1.0,
+            "total_correction": 4.533212631940842e-06,
+            "mean_correction": 3.7776771932840347e-07,
+            "max_correction": 3.129243850708008e-06
+          },
+          "NO": {
+            "intervened_values": 9,
+            "intervened_ratio": 0.75,
+            "total_correction": 5.881185529688082e-07,
+            "mean_correction": 6.534650588542314e-08,
+            "max_correction": 4.6572924361498735e-07
+          },
+          "O2": {
+            "intervened_values": 11,
+            "intervened_ratio": 0.9166666666666666,
+            "total_correction": 3.883242607116699e-05,
+            "mean_correction": 3.530220551924272e-06,
+            "max_correction": 1.0982155799865723e-05
+          }
+        },
+        "intervened_row_ratio": 1.0
+      },
+      "feedback": {
+        "intervened_values": 65,
+        "intervened_value_ratio": 0.9027777777777778,
+        "intervened_rows": 12,
+        "total_correction": 0.00017917248186449797,
+        "mean_correction": 2.7564997209922763e-06,
+        "max_correction": 7.617473602294922e-05,
+        "correction_rmse": 9.811022711863274e-06,
+        "per_species": {
+          "H2": {
+            "intervened_values": 12,
+            "intervened_ratio": 1.0,
+            "total_correction": 4.334375262260437e-06,
+            "mean_correction": 3.6119793852170307e-07,
+            "max_correction": 2.768007107079029e-06
+          },
+          "H2O": {
+            "intervened_values": 11,
+            "intervened_ratio": 0.9166666666666666,
+            "total_correction": 1.9066035747528076e-05,
+            "mean_correction": 1.7332759770480068e-06,
+            "max_correction": 8.597970008850098e-06
+          },
+          "N2": {
+            "intervened_values": 10,
+            "intervened_ratio": 0.8333333333333334,
+            "total_correction": 0.00011181831359863281,
+            "mean_correction": 1.1181831359863281e-05,
+            "max_correction": 7.617473602294922e-05
+          },
+          "NH3": {
+            "intervened_values": 12,
+            "intervened_ratio": 1.0,
+            "total_correction": 4.533212631940842e-06,
+            "mean_correction": 3.7776771932840347e-07,
+            "max_correction": 3.129243850708008e-06
+          },
+          "NO": {
+            "intervened_values": 9,
+            "intervened_ratio": 0.75,
+            "total_correction": 5.881185529688082e-07,
+            "mean_correction": 6.534650588542314e-08,
+            "max_correction": 4.6572924361498735e-07
+          },
+          "O2": {
+            "intervened_values": 11,
+            "intervened_ratio": 0.9166666666666666,
+            "total_correction": 3.883242607116699e-05,
+            "mean_correction": 3.530220551924272e-06,
+            "max_correction": 1.0982155799865723e-05
+          }
+        },
+        "intervened_row_ratio": 1.0
+      },
+      "projection": {
+        "intervened_values": 65,
+        "intervened_value_ratio": 0.9027777777777778,
+        "intervened_rows": 12,
+        "total_correction": 0.00017917248186449797,
+        "mean_correction": 2.7564997209922763e-06,
+        "max_correction": 7.617473602294922e-05,
+        "correction_rmse": 9.811022711863274e-06,
+        "per_species": {
+          "H2": {
+            "intervened_values": 12,
+            "intervened_ratio": 1.0,
+            "total_correction": 4.334375262260437e-06,
+            "mean_correction": 3.6119793852170307e-07,
+            "max_correction": 2.768007107079029e-06
+          },
+          "H2O": {
+            "intervened_values": 11,
+            "intervened_ratio": 0.9166666666666666,
+            "total_correction": 1.9066035747528076e-05,
+            "mean_correction": 1.7332759770480068e-06,
+            "max_correction": 8.597970008850098e-06
+          },
+          "N2": {
+            "intervened_values": 10,
+            "intervened_ratio": 0.8333333333333334,
+            "total_correction": 0.00011181831359863281,
+            "mean_correction": 1.1181831359863281e-05,
+            "max_correction": 7.617473602294922e-05
+          },
+          "NH3": {
+            "intervened_values": 12,
+            "intervened_ratio": 1.0,
+            "total_correction": 4.533212631940842e-06,
+            "mean_correction": 3.7776771932840347e-07,
+            "max_correction": 3.129243850708008e-06
+          },
+          "NO": {
+            "intervened_values": 9,
+            "intervened_ratio": 0.75,
+            "total_correction": 5.881185529688082e-07,
+            "mean_correction": 6.534650588542314e-08,
+            "max_correction": 4.6572924361498735e-07
+          },
+          "O2": {
+            "intervened_values": 11,
+            "intervened_ratio": 0.9166666666666666,
+            "total_correction": 3.883242607116699e-05,
+            "mean_correction": 3.530220551924272e-06,
+            "max_correction": 1.0982155799865723e-05
+          }
+        },
+        "intervened_row_ratio": 1.0
+      }
+    },
+    "pure_ar_raw": {
+      "total_predictions": 3,
+      "update": {
+        "intervened_values": 0,
+        "intervened_value_ratio": 0.0,
+        "intervened_rows": 0,
+        "total_correction": 0.0,
+        "mean_correction": 0.0,
+        "max_correction": 0.0,
+        "correction_rmse": 0.0,
+        "per_species": {
+          "H2": {
+            "intervened_values": 0,
+            "intervened_ratio": 0.0,
+            "total_correction": 0.0,
+            "mean_correction": 0.0,
+            "max_correction": 0.0
+          },
+          "H2O": {
+            "intervened_values": 0,
+            "intervened_ratio": 0.0,
+            "total_correction": 0.0,
+            "mean_correction": 0.0,
+            "max_correction": 0.0
+          },
+          "N2": {
+            "intervened_values": 0,
+            "intervened_ratio": 0.0,
+            "total_correction": 0.0,
+            "mean_correction": 0.0,
+            "max_correction": 0.0
+          },
+          "NH3": {
+            "intervened_values": 0,
+            "intervened_ratio": 0.0,
+            "total_correction": 0.0,
+            "mean_correction": 0.0,
+            "max_correction": 0.0
+          },
+          "NO": {
+            "intervened_values": 0,
+            "intervened_ratio": 0.0,
+            "total_correction": 0.0,
+            "mean_correction": 0.0,
+            "max_correction": 0.0
+          },
+          "O2": {
+            "intervened_values": 0,
+            "intervened_ratio": 0.0,
+            "total_correction": 0.0,
+            "mean_correction": 0.0,
+            "max_correction": 0.0
+          }
+        },
+        "intervened_row_ratio": 0.0
+      },
+      "feedback": {
+        "intervened_values": 0,
+        "intervened_value_ratio": 0.0,
+        "intervened_rows": 0,
+        "total_correction": 0.0,
+        "mean_correction": 0.0,
+        "max_correction": 0.0,
+        "correction_rmse": 0.0,
+        "per_species": {
+          "H2": {
+            "intervened_values": 0,
+            "intervened_ratio": 0.0,
+            "total_correction": 0.0,
+            "mean_correction": 0.0,
+            "max_correction": 0.0
+          },
+          "H2O": {
+            "intervened_values": 0,
+            "intervened_ratio": 0.0,
+            "total_correction": 0.0,
+            "mean_correction": 0.0,
+            "max_correction": 0.0
+          },
+          "N2": {
+            "intervened_values": 0,
+            "intervened_ratio": 0.0,
+            "total_correction": 0.0,
+            "mean_correction": 0.0,
+            "max_correction": 0.0
+          },
+          "NH3": {
+            "intervened_values": 0,
+            "intervened_ratio": 0.0,
+            "total_correction": 0.0,
+            "mean_correction": 0.0,
+            "max_correction": 0.0
+          },
+          "NO": {
+            "intervened_values": 0,
+            "intervened_ratio": 0.0,
+            "total_correction": 0.0,
+            "mean_correction": 0.0,
+            "max_correction": 0.0
+          },
+          "O2": {
+            "intervened_values": 0,
+            "intervened_ratio": 0.0,
+            "total_correction": 0.0,
+            "mean_correction": 0.0,
+            "max_correction": 0.0
+          }
+        },
+        "intervened_row_ratio": 0.0
+      },
+      "projection": {
+        "intervened_values": 16,
+        "intervened_value_ratio": 0.8888888888888888,
+        "intervened_rows": 3,
+        "total_correction": 3.219316022384788e-05,
+        "mean_correction": 2.0120725139904927e-06,
+        "max_correction": 1.0967254638671875e-05,
+        "correction_rmse": 3.8036844926565752e-06,
+        "per_species": {
+          "H2": {
+            "intervened_values": 3,
+            "intervened_ratio": 1.0,
+            "total_correction": 3.0477531254291534e-07,
+            "mean_correction": 1.0159177084763844e-07,
+            "max_correction": 2.7474015951156616e-07
+          },
+          "H2O": {
+            "intervened_values": 3,
+            "intervened_ratio": 1.0,
+            "total_correction": 6.964430212974548e-06,
+            "mean_correction": 2.3214767376581826e-06,
+            "max_correction": 5.260109901428223e-06
+          },
+          "N2": {
+            "intervened_values": 2,
+            "intervened_ratio": 0.6666666666666666,
+            "total_correction": 3.516674041748047e-06,
+            "mean_correction": 1.7583370208740234e-06,
+            "max_correction": 1.7881393432617188e-06
+          },
+          "NH3": {
+            "intervened_values": 3,
+            "intervened_ratio": 1.0,
+            "total_correction": 2.621673047542572e-07,
+            "mean_correction": 8.73891015847524e-08,
+            "max_correction": 2.1792948246002197e-07
+          },
+          "NO": {
+            "intervened_values": 2,
+            "intervened_ratio": 0.6666666666666666,
+            "total_correction": 3.6561775829113685e-10,
+            "mean_correction": 1.8280887914556843e-10,
+            "max_correction": 1.90084392670542e-10
+          },
+          "O2": {
+            "intervened_values": 3,
+            "intervened_ratio": 1.0,
+            "total_correction": 2.1144747734069824e-05,
+            "mean_correction": 7.048249244689941e-06,
+            "max_correction": 1.0967254638671875e-05
+          }
+        },
+        "intervened_row_ratio": 1.0
+      }
+    }
+  },
+  "by_horizon": {
+    "oracle": {
+      "1": {
+        "total_predictions": 3,
+        "update": {
+          "intervened_values": 16,
+          "intervened_value_ratio": 0.8888888888888888,
+          "intervened_rows": 3,
+          "total_correction": 3.222529085267212e-05,
+          "mean_correction": 2.0140806782920073e-06,
+          "max_correction": 1.0982155799865723e-05,
+          "correction_rmse": 3.806123398072091e-06,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.052409738302231e-07,
+              "mean_correction": 1.0174699127674103e-07,
+              "max_correction": 2.7474015951156616e-07
+            },
+            "H2O": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 6.966292858123779e-06,
+              "mean_correction": 2.3220976193745932e-06,
+              "max_correction": 5.260109901428223e-06
+            },
+            "N2": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 3.516674041748047e-06,
+              "mean_correction": 1.7583370208740234e-06,
+              "max_correction": 1.7881393432617188e-06
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.621673047542572e-07,
+              "mean_correction": 8.73891015847524e-08,
+              "max_correction": 2.1792948246002197e-07
+            },
+            "NO": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 3.6561775829113685e-10,
+              "mean_correction": 1.8280887914556843e-10,
+              "max_correction": 1.90084392670542e-10
+            },
+            "O2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.117455005645752e-05,
+              "mean_correction": 7.058183352152507e-06,
+              "max_correction": 1.0982155799865723e-05
+            }
+          },
+          "intervened_row_ratio": 1.0
+        },
+        "feedback": {
+          "intervened_values": 16,
+          "intervened_value_ratio": 0.8888888888888888,
+          "intervened_rows": 3,
+          "total_correction": 3.222529085267212e-05,
+          "mean_correction": 2.0140806782920073e-06,
+          "max_correction": 1.0982155799865723e-05,
+          "correction_rmse": 3.806123398072091e-06,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.052409738302231e-07,
+              "mean_correction": 1.0174699127674103e-07,
+              "max_correction": 2.7474015951156616e-07
+            },
+            "H2O": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 6.966292858123779e-06,
+              "mean_correction": 2.3220976193745932e-06,
+              "max_correction": 5.260109901428223e-06
+            },
+            "N2": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 3.516674041748047e-06,
+              "mean_correction": 1.7583370208740234e-06,
+              "max_correction": 1.7881393432617188e-06
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.621673047542572e-07,
+              "mean_correction": 8.73891015847524e-08,
+              "max_correction": 2.1792948246002197e-07
+            },
+            "NO": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 3.6561775829113685e-10,
+              "mean_correction": 1.8280887914556843e-10,
+              "max_correction": 1.90084392670542e-10
+            },
+            "O2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.117455005645752e-05,
+              "mean_correction": 7.058183352152507e-06,
+              "max_correction": 1.0982155799865723e-05
+            }
+          },
+          "intervened_row_ratio": 1.0
+        },
+        "projection": {
+          "intervened_values": 16,
+          "intervened_value_ratio": 0.8888888888888888,
+          "intervened_rows": 3,
+          "total_correction": 3.222529085267212e-05,
+          "mean_correction": 2.0140806782920073e-06,
+          "max_correction": 1.0982155799865723e-05,
+          "correction_rmse": 3.806123398072091e-06,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.052409738302231e-07,
+              "mean_correction": 1.0174699127674103e-07,
+              "max_correction": 2.7474015951156616e-07
+            },
+            "H2O": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 6.966292858123779e-06,
+              "mean_correction": 2.3220976193745932e-06,
+              "max_correction": 5.260109901428223e-06
+            },
+            "N2": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 3.516674041748047e-06,
+              "mean_correction": 1.7583370208740234e-06,
+              "max_correction": 1.7881393432617188e-06
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.621673047542572e-07,
+              "mean_correction": 8.73891015847524e-08,
+              "max_correction": 2.1792948246002197e-07
+            },
+            "NO": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 3.6561775829113685e-10,
+              "mean_correction": 1.8280887914556843e-10,
+              "max_correction": 1.90084392670542e-10
+            },
+            "O2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.117455005645752e-05,
+              "mean_correction": 7.058183352152507e-06,
+              "max_correction": 1.0982155799865723e-05
+            }
+          },
+          "intervened_row_ratio": 1.0
+        }
+      },
+      "8": {
+        "total_predictions": 3,
+        "update": {
+          "intervened_values": 16,
+          "intervened_value_ratio": 0.8888888888888888,
+          "intervened_rows": 3,
+          "total_correction": 9.377075221550513e-05,
+          "mean_correction": 5.86067201346907e-06,
+          "max_correction": 4.4539570808410645e-05,
+          "correction_rmse": 1.419101143981471e-05,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.1918752938508987e-06,
+              "mean_correction": 1.063958431283633e-06,
+              "max_correction": 3.093155100941658e-06
+            },
+            "H2O": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 4.041753709316254e-05,
+              "mean_correction": 1.3472512364387512e-05,
+              "max_correction": 4.026293754577637e-05
+            },
+            "N2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.1457672119140625e-06,
+              "mean_correction": 7.152557373046875e-07,
+              "max_correction": 1.6689300537109375e-06
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.7888454496860504e-06,
+              "mean_correction": 9.296151498953501e-07,
+              "max_correction": 2.7068890631198883e-06
+            },
+            "NO": {
+              "intervened_values": 1,
+              "intervened_ratio": 0.3333333333333333,
+              "total_correction": 1.702943563941517e-09,
+              "mean_correction": 1.702943563941517e-09,
+              "max_correction": 1.7025740817189217e-09
+            },
+            "O2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 4.522502422332764e-05,
+              "mean_correction": 1.5075008074442545e-05,
+              "max_correction": 4.4539570808410645e-05
+            }
+          },
+          "intervened_row_ratio": 1.0
+        },
+        "feedback": {
+          "intervened_values": 16,
+          "intervened_value_ratio": 0.8888888888888888,
+          "intervened_rows": 3,
+          "total_correction": 9.377075221550513e-05,
+          "mean_correction": 5.86067201346907e-06,
+          "max_correction": 4.4539570808410645e-05,
+          "correction_rmse": 1.419101143981471e-05,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.1918752938508987e-06,
+              "mean_correction": 1.063958431283633e-06,
+              "max_correction": 3.093155100941658e-06
+            },
+            "H2O": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 4.041753709316254e-05,
+              "mean_correction": 1.3472512364387512e-05,
+              "max_correction": 4.026293754577637e-05
+            },
+            "N2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.1457672119140625e-06,
+              "mean_correction": 7.152557373046875e-07,
+              "max_correction": 1.6689300537109375e-06
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.7888454496860504e-06,
+              "mean_correction": 9.296151498953501e-07,
+              "max_correction": 2.7068890631198883e-06
+            },
+            "NO": {
+              "intervened_values": 1,
+              "intervened_ratio": 0.3333333333333333,
+              "total_correction": 1.702943563941517e-09,
+              "mean_correction": 1.702943563941517e-09,
+              "max_correction": 1.7025740817189217e-09
+            },
+            "O2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 4.522502422332764e-05,
+              "mean_correction": 1.5075008074442545e-05,
+              "max_correction": 4.4539570808410645e-05
+            }
+          },
+          "intervened_row_ratio": 1.0
+        },
+        "projection": {
+          "intervened_values": 16,
+          "intervened_value_ratio": 0.8888888888888888,
+          "intervened_rows": 3,
+          "total_correction": 9.377075221550513e-05,
+          "mean_correction": 5.86067201346907e-06,
+          "max_correction": 4.4539570808410645e-05,
+          "correction_rmse": 1.419101143981471e-05,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.1918752938508987e-06,
+              "mean_correction": 1.063958431283633e-06,
+              "max_correction": 3.093155100941658e-06
+            },
+            "H2O": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 4.041753709316254e-05,
+              "mean_correction": 1.3472512364387512e-05,
+              "max_correction": 4.026293754577637e-05
+            },
+            "N2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.1457672119140625e-06,
+              "mean_correction": 7.152557373046875e-07,
+              "max_correction": 1.6689300537109375e-06
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.7888454496860504e-06,
+              "mean_correction": 9.296151498953501e-07,
+              "max_correction": 2.7068890631198883e-06
+            },
+            "NO": {
+              "intervened_values": 1,
+              "intervened_ratio": 0.3333333333333333,
+              "total_correction": 1.702943563941517e-09,
+              "mean_correction": 1.702943563941517e-09,
+              "max_correction": 1.7025740817189217e-09
+            },
+            "O2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 4.522502422332764e-05,
+              "mean_correction": 1.5075008074442545e-05,
+              "max_correction": 4.4539570808410645e-05
+            }
+          },
+          "intervened_row_ratio": 1.0
+        }
+      },
+      "32": {
+        "total_predictions": 3,
+        "update": {
+          "intervened_values": 17,
+          "intervened_value_ratio": 0.9444444444444444,
+          "intervened_rows": 3,
+          "total_correction": 0.0031189275109770875,
+          "mean_correction": 0.0001834663241751228,
+          "max_correction": 0.0016434267163276672,
+          "correction_rmse": 0.0005000136489854798,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.0195875549688935e-06,
+              "mean_correction": 6.731958516562978e-07,
+              "max_correction": 1.0752264643087983e-06
+            },
+            "H2O": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 0.0013407394289970398,
+              "mean_correction": 0.00044691314299901325,
+              "max_correction": 0.0013388991355895996
+            },
+            "N2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 5.1856040954589844e-05,
+              "mean_correction": 1.728534698486328e-05,
+              "max_correction": 4.482269287109375e-05
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.9565475162817165e-06,
+              "mean_correction": 1.3188491720939055e-06,
+              "max_correction": 3.2208026823354885e-06
+            },
+            "NO": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 6.77202720087422e-05,
+              "mean_correction": 3.38601360043711e-05,
+              "max_correction": 6.77201896905899e-05
+            },
+            "O2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 0.001652635633945465,
+              "mean_correction": 0.0005508785446484884,
+              "max_correction": 0.0016434267163276672
+            }
+          },
+          "intervened_row_ratio": 1.0
+        },
+        "feedback": {
+          "intervened_values": 17,
+          "intervened_value_ratio": 0.9444444444444444,
+          "intervened_rows": 3,
+          "total_correction": 0.0031189275109770875,
+          "mean_correction": 0.0001834663241751228,
+          "max_correction": 0.0016434267163276672,
+          "correction_rmse": 0.0005000136489854798,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.0195875549688935e-06,
+              "mean_correction": 6.731958516562978e-07,
+              "max_correction": 1.0752264643087983e-06
+            },
+            "H2O": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 0.0013407394289970398,
+              "mean_correction": 0.00044691314299901325,
+              "max_correction": 0.0013388991355895996
+            },
+            "N2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 5.1856040954589844e-05,
+              "mean_correction": 1.728534698486328e-05,
+              "max_correction": 4.482269287109375e-05
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.9565475162817165e-06,
+              "mean_correction": 1.3188491720939055e-06,
+              "max_correction": 3.2208026823354885e-06
+            },
+            "NO": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 6.77202720087422e-05,
+              "mean_correction": 3.38601360043711e-05,
+              "max_correction": 6.77201896905899e-05
+            },
+            "O2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 0.001652635633945465,
+              "mean_correction": 0.0005508785446484884,
+              "max_correction": 0.0016434267163276672
+            }
+          },
+          "intervened_row_ratio": 1.0
+        },
+        "projection": {
+          "intervened_values": 17,
+          "intervened_value_ratio": 0.9444444444444444,
+          "intervened_rows": 3,
+          "total_correction": 0.0031189275109770875,
+          "mean_correction": 0.0001834663241751228,
+          "max_correction": 0.0016434267163276672,
+          "correction_rmse": 0.0005000136489854798,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.0195875549688935e-06,
+              "mean_correction": 6.731958516562978e-07,
+              "max_correction": 1.0752264643087983e-06
+            },
+            "H2O": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 0.0013407394289970398,
+              "mean_correction": 0.00044691314299901325,
+              "max_correction": 0.0013388991355895996
+            },
+            "N2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 5.1856040954589844e-05,
+              "mean_correction": 1.728534698486328e-05,
+              "max_correction": 4.482269287109375e-05
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.9565475162817165e-06,
+              "mean_correction": 1.3188491720939055e-06,
+              "max_correction": 3.2208026823354885e-06
+            },
+            "NO": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 6.77202720087422e-05,
+              "mean_correction": 3.38601360043711e-05,
+              "max_correction": 6.77201896905899e-05
+            },
+            "O2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 0.001652635633945465,
+              "mean_correction": 0.0005508785446484884,
+              "max_correction": 0.0016434267163276672
+            }
+          },
+          "intervened_row_ratio": 1.0
+        }
+      },
+      "128": {
+        "total_predictions": 3,
+        "update": {
+          "intervened_values": 16,
+          "intervened_value_ratio": 0.8888888888888888,
+          "intervened_rows": 3,
+          "total_correction": 0.000782687465427756,
+          "mean_correction": 4.891796658923475e-05,
+          "max_correction": 0.00039186328649520874,
+          "correction_rmse": 0.00012515735313032496,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 7.948801794555038e-08,
+              "mean_correction": 2.649600598185013e-08,
+              "max_correction": 4.7497451305389404e-08
+            },
+            "H2O": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 0.00035779550671577454,
+              "mean_correction": 0.00011926516890525818,
+              "max_correction": 0.0003576800227165222
+            },
+            "N2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 1.4722347259521484e-05,
+              "mean_correction": 4.907449086507161e-06,
+              "max_correction": 1.436471939086914e-05
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 1.6716467143851332e-06,
+              "mean_correction": 5.572155714617111e-07,
+              "max_correction": 1.6064541341620497e-06
+            },
+            "NO": {
+              "intervened_values": 1,
+              "intervened_ratio": 0.3333333333333333,
+              "total_correction": 1.604855074432976e-05,
+              "mean_correction": 1.604855074432976e-05,
+              "max_correction": 1.6048550605773926e-05
+            },
+            "O2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 0.00039236992597579956,
+              "mean_correction": 0.0001307899753252665,
+              "max_correction": 0.00039186328649520874
+            }
+          },
+          "intervened_row_ratio": 1.0
+        },
+        "feedback": {
+          "intervened_values": 16,
+          "intervened_value_ratio": 0.8888888888888888,
+          "intervened_rows": 3,
+          "total_correction": 0.000782687465427756,
+          "mean_correction": 4.891796658923475e-05,
+          "max_correction": 0.00039186328649520874,
+          "correction_rmse": 0.00012515735313032496,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 7.948801794555038e-08,
+              "mean_correction": 2.649600598185013e-08,
+              "max_correction": 4.7497451305389404e-08
+            },
+            "H2O": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 0.00035779550671577454,
+              "mean_correction": 0.00011926516890525818,
+              "max_correction": 0.0003576800227165222
+            },
+            "N2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 1.4722347259521484e-05,
+              "mean_correction": 4.907449086507161e-06,
+              "max_correction": 1.436471939086914e-05
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 1.6716467143851332e-06,
+              "mean_correction": 5.572155714617111e-07,
+              "max_correction": 1.6064541341620497e-06
+            },
+            "NO": {
+              "intervened_values": 1,
+              "intervened_ratio": 0.3333333333333333,
+              "total_correction": 1.604855074432976e-05,
+              "mean_correction": 1.604855074432976e-05,
+              "max_correction": 1.6048550605773926e-05
+            },
+            "O2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 0.00039236992597579956,
+              "mean_correction": 0.0001307899753252665,
+              "max_correction": 0.00039186328649520874
+            }
+          },
+          "intervened_row_ratio": 1.0
+        },
+        "projection": {
+          "intervened_values": 16,
+          "intervened_value_ratio": 0.8888888888888888,
+          "intervened_rows": 3,
+          "total_correction": 0.000782687465427756,
+          "mean_correction": 4.891796658923475e-05,
+          "max_correction": 0.00039186328649520874,
+          "correction_rmse": 0.00012515735313032496,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 7.948801794555038e-08,
+              "mean_correction": 2.649600598185013e-08,
+              "max_correction": 4.7497451305389404e-08
+            },
+            "H2O": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 0.00035779550671577454,
+              "mean_correction": 0.00011926516890525818,
+              "max_correction": 0.0003576800227165222
+            },
+            "N2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 1.4722347259521484e-05,
+              "mean_correction": 4.907449086507161e-06,
+              "max_correction": 1.436471939086914e-05
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 1.6716467143851332e-06,
+              "mean_correction": 5.572155714617111e-07,
+              "max_correction": 1.6064541341620497e-06
+            },
+            "NO": {
+              "intervened_values": 1,
+              "intervened_ratio": 0.3333333333333333,
+              "total_correction": 1.604855074432976e-05,
+              "mean_correction": 1.604855074432976e-05,
+              "max_correction": 1.6048550605773926e-05
+            },
+            "O2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 0.00039236992597579956,
+              "mean_correction": 0.0001307899753252665,
+              "max_correction": 0.00039186328649520874
+            }
+          },
+          "intervened_row_ratio": 1.0
+        }
+      }
+    },
+    "pure_ar": {
+      "1": {
+        "total_predictions": 3,
+        "update": {
+          "intervened_values": 16,
+          "intervened_value_ratio": 0.8888888888888888,
+          "intervened_rows": 3,
+          "total_correction": 3.222529085267212e-05,
+          "mean_correction": 2.0140806782920073e-06,
+          "max_correction": 1.0982155799865723e-05,
+          "correction_rmse": 3.806123398072091e-06,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.052409738302231e-07,
+              "mean_correction": 1.0174699127674103e-07,
+              "max_correction": 2.7474015951156616e-07
+            },
+            "H2O": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 6.966292858123779e-06,
+              "mean_correction": 2.3220976193745932e-06,
+              "max_correction": 5.260109901428223e-06
+            },
+            "N2": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 3.516674041748047e-06,
+              "mean_correction": 1.7583370208740234e-06,
+              "max_correction": 1.7881393432617188e-06
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.621673047542572e-07,
+              "mean_correction": 8.73891015847524e-08,
+              "max_correction": 2.1792948246002197e-07
+            },
+            "NO": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 3.6561775829113685e-10,
+              "mean_correction": 1.8280887914556843e-10,
+              "max_correction": 1.90084392670542e-10
+            },
+            "O2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.117455005645752e-05,
+              "mean_correction": 7.058183352152507e-06,
+              "max_correction": 1.0982155799865723e-05
+            }
+          },
+          "intervened_row_ratio": 1.0
+        },
+        "feedback": {
+          "intervened_values": 16,
+          "intervened_value_ratio": 0.8888888888888888,
+          "intervened_rows": 3,
+          "total_correction": 3.222529085267212e-05,
+          "mean_correction": 2.0140806782920073e-06,
+          "max_correction": 1.0982155799865723e-05,
+          "correction_rmse": 3.806123398072091e-06,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.052409738302231e-07,
+              "mean_correction": 1.0174699127674103e-07,
+              "max_correction": 2.7474015951156616e-07
+            },
+            "H2O": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 6.966292858123779e-06,
+              "mean_correction": 2.3220976193745932e-06,
+              "max_correction": 5.260109901428223e-06
+            },
+            "N2": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 3.516674041748047e-06,
+              "mean_correction": 1.7583370208740234e-06,
+              "max_correction": 1.7881393432617188e-06
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.621673047542572e-07,
+              "mean_correction": 8.73891015847524e-08,
+              "max_correction": 2.1792948246002197e-07
+            },
+            "NO": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 3.6561775829113685e-10,
+              "mean_correction": 1.8280887914556843e-10,
+              "max_correction": 1.90084392670542e-10
+            },
+            "O2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.117455005645752e-05,
+              "mean_correction": 7.058183352152507e-06,
+              "max_correction": 1.0982155799865723e-05
+            }
+          },
+          "intervened_row_ratio": 1.0
+        },
+        "projection": {
+          "intervened_values": 16,
+          "intervened_value_ratio": 0.8888888888888888,
+          "intervened_rows": 3,
+          "total_correction": 3.222529085267212e-05,
+          "mean_correction": 2.0140806782920073e-06,
+          "max_correction": 1.0982155799865723e-05,
+          "correction_rmse": 3.806123398072091e-06,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.052409738302231e-07,
+              "mean_correction": 1.0174699127674103e-07,
+              "max_correction": 2.7474015951156616e-07
+            },
+            "H2O": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 6.966292858123779e-06,
+              "mean_correction": 2.3220976193745932e-06,
+              "max_correction": 5.260109901428223e-06
+            },
+            "N2": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 3.516674041748047e-06,
+              "mean_correction": 1.7583370208740234e-06,
+              "max_correction": 1.7881393432617188e-06
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.621673047542572e-07,
+              "mean_correction": 8.73891015847524e-08,
+              "max_correction": 2.1792948246002197e-07
+            },
+            "NO": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 3.6561775829113685e-10,
+              "mean_correction": 1.8280887914556843e-10,
+              "max_correction": 1.90084392670542e-10
+            },
+            "O2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.117455005645752e-05,
+              "mean_correction": 7.058183352152507e-06,
+              "max_correction": 1.0982155799865723e-05
+            }
+          },
+          "intervened_row_ratio": 1.0
+        }
+      },
+      "8": {
+        "total_predictions": 3,
+        "update": {
+          "intervened_values": 13,
+          "intervened_value_ratio": 0.7222222222222222,
+          "intervened_rows": 3,
+          "total_correction": 1.2297155436158391e-06,
+          "mean_correction": 9.459350335506454e-08,
+          "max_correction": 3.8743019104003906e-07,
+          "correction_rmse": 1.3285155557318934e-07,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.294553607702255e-08,
+              "mean_correction": 1.0981845359007517e-08,
+              "max_correction": 2.0489096641540527e-08
+            },
+            "H2O": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 9.12696123123169e-08,
+              "mean_correction": 4.563480615615845e-08,
+              "max_correction": 6.705522537231445e-08
+            },
+            "N2": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 5.364418029785156e-07,
+              "mean_correction": 2.682209014892578e-07,
+              "max_correction": 2.980232238769531e-07
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 1.909211277961731e-08,
+              "mean_correction": 6.3640375932057696e-09,
+              "max_correction": 1.30385160446167e-08
+            },
+            "NO": {
+              "intervened_values": 1,
+              "intervened_ratio": 0.3333333333333333,
+              "total_correction": 4.332699887754643e-08,
+              "mean_correction": 4.332699887754643e-08,
+              "max_correction": 4.3326657817033265e-08
+            },
+            "O2": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 5.066394805908203e-07,
+              "mean_correction": 2.5331974029541016e-07,
+              "max_correction": 3.8743019104003906e-07
+            }
+          },
+          "intervened_row_ratio": 1.0
+        },
+        "feedback": {
+          "intervened_values": 13,
+          "intervened_value_ratio": 0.7222222222222222,
+          "intervened_rows": 3,
+          "total_correction": 1.2297155436158391e-06,
+          "mean_correction": 9.459350335506454e-08,
+          "max_correction": 3.8743019104003906e-07,
+          "correction_rmse": 1.3285155557318934e-07,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.294553607702255e-08,
+              "mean_correction": 1.0981845359007517e-08,
+              "max_correction": 2.0489096641540527e-08
+            },
+            "H2O": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 9.12696123123169e-08,
+              "mean_correction": 4.563480615615845e-08,
+              "max_correction": 6.705522537231445e-08
+            },
+            "N2": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 5.364418029785156e-07,
+              "mean_correction": 2.682209014892578e-07,
+              "max_correction": 2.980232238769531e-07
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 1.909211277961731e-08,
+              "mean_correction": 6.3640375932057696e-09,
+              "max_correction": 1.30385160446167e-08
+            },
+            "NO": {
+              "intervened_values": 1,
+              "intervened_ratio": 0.3333333333333333,
+              "total_correction": 4.332699887754643e-08,
+              "mean_correction": 4.332699887754643e-08,
+              "max_correction": 4.3326657817033265e-08
+            },
+            "O2": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 5.066394805908203e-07,
+              "mean_correction": 2.5331974029541016e-07,
+              "max_correction": 3.8743019104003906e-07
+            }
+          },
+          "intervened_row_ratio": 1.0
+        },
+        "projection": {
+          "intervened_values": 13,
+          "intervened_value_ratio": 0.7222222222222222,
+          "intervened_rows": 3,
+          "total_correction": 1.2297155436158391e-06,
+          "mean_correction": 9.459350335506454e-08,
+          "max_correction": 3.8743019104003906e-07,
+          "correction_rmse": 1.3285155557318934e-07,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.294553607702255e-08,
+              "mean_correction": 1.0981845359007517e-08,
+              "max_correction": 2.0489096641540527e-08
+            },
+            "H2O": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 9.12696123123169e-08,
+              "mean_correction": 4.563480615615845e-08,
+              "max_correction": 6.705522537231445e-08
+            },
+            "N2": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 5.364418029785156e-07,
+              "mean_correction": 2.682209014892578e-07,
+              "max_correction": 2.980232238769531e-07
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 1.909211277961731e-08,
+              "mean_correction": 6.3640375932057696e-09,
+              "max_correction": 1.30385160446167e-08
+            },
+            "NO": {
+              "intervened_values": 1,
+              "intervened_ratio": 0.3333333333333333,
+              "total_correction": 4.332699887754643e-08,
+              "mean_correction": 4.332699887754643e-08,
+              "max_correction": 4.3326657817033265e-08
+            },
+            "O2": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 5.066394805908203e-07,
+              "mean_correction": 2.5331974029541016e-07,
+              "max_correction": 3.8743019104003906e-07
+            }
+          },
+          "intervened_row_ratio": 1.0
+        }
+      },
+      "32": {
+        "total_predictions": 3,
+        "update": {
+          "intervened_values": 18,
+          "intervened_value_ratio": 1.0,
+          "intervened_rows": 3,
+          "total_correction": 0.00011273520467458553,
+          "mean_correction": 6.263066926365863e-06,
+          "max_correction": 7.617473602294922e-05,
+          "correction_rmse": 1.8363522208997046e-05,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.0725495889782906e-06,
+              "mean_correction": 1.0241831963260968e-06,
+              "max_correction": 2.768007107079029e-06
+            },
+            "H2O": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 9.143725037574768e-06,
+              "mean_correction": 3.047908345858256e-06,
+              "max_correction": 8.597970008850098e-06
+            },
+            "N2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 8.32676887512207e-05,
+              "mean_correction": 2.7755896250406902e-05,
+              "max_correction": 7.617473602294922e-05
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.25031578540802e-06,
+              "mean_correction": 1.0834385951360066e-06,
+              "max_correction": 3.129243850708008e-06
+            },
+            "NO": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 4.78121727987002e-07,
+              "mean_correction": 1.5937390932900067e-07,
+              "max_correction": 4.6572924361498735e-07
+            },
+            "O2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 1.3522803783416748e-05,
+              "mean_correction": 4.507601261138916e-06,
+              "max_correction": 1.0930001735687256e-05
+            }
+          },
+          "intervened_row_ratio": 1.0
+        },
+        "feedback": {
+          "intervened_values": 18,
+          "intervened_value_ratio": 1.0,
+          "intervened_rows": 3,
+          "total_correction": 0.00011273520467458553,
+          "mean_correction": 6.263066926365863e-06,
+          "max_correction": 7.617473602294922e-05,
+          "correction_rmse": 1.8363522208997046e-05,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.0725495889782906e-06,
+              "mean_correction": 1.0241831963260968e-06,
+              "max_correction": 2.768007107079029e-06
+            },
+            "H2O": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 9.143725037574768e-06,
+              "mean_correction": 3.047908345858256e-06,
+              "max_correction": 8.597970008850098e-06
+            },
+            "N2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 8.32676887512207e-05,
+              "mean_correction": 2.7755896250406902e-05,
+              "max_correction": 7.617473602294922e-05
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.25031578540802e-06,
+              "mean_correction": 1.0834385951360066e-06,
+              "max_correction": 3.129243850708008e-06
+            },
+            "NO": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 4.78121727987002e-07,
+              "mean_correction": 1.5937390932900067e-07,
+              "max_correction": 4.6572924361498735e-07
+            },
+            "O2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 1.3522803783416748e-05,
+              "mean_correction": 4.507601261138916e-06,
+              "max_correction": 1.0930001735687256e-05
+            }
+          },
+          "intervened_row_ratio": 1.0
+        },
+        "projection": {
+          "intervened_values": 18,
+          "intervened_value_ratio": 1.0,
+          "intervened_rows": 3,
+          "total_correction": 0.00011273520467458553,
+          "mean_correction": 6.263066926365863e-06,
+          "max_correction": 7.617473602294922e-05,
+          "correction_rmse": 1.8363522208997046e-05,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.0725495889782906e-06,
+              "mean_correction": 1.0241831963260968e-06,
+              "max_correction": 2.768007107079029e-06
+            },
+            "H2O": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 9.143725037574768e-06,
+              "mean_correction": 3.047908345858256e-06,
+              "max_correction": 8.597970008850098e-06
+            },
+            "N2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 8.32676887512207e-05,
+              "mean_correction": 2.7755896250406902e-05,
+              "max_correction": 7.617473602294922e-05
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.25031578540802e-06,
+              "mean_correction": 1.0834385951360066e-06,
+              "max_correction": 3.129243850708008e-06
+            },
+            "NO": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 4.78121727987002e-07,
+              "mean_correction": 1.5937390932900067e-07,
+              "max_correction": 4.6572924361498735e-07
+            },
+            "O2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 1.3522803783416748e-05,
+              "mean_correction": 4.507601261138916e-06,
+              "max_correction": 1.0930001735687256e-05
+            }
+          },
+          "intervened_row_ratio": 1.0
+        }
+      },
+      "128": {
+        "total_predictions": 3,
+        "update": {
+          "intervened_values": 18,
+          "intervened_value_ratio": 1.0,
+          "intervened_rows": 3,
+          "total_correction": 3.298227079362448e-05,
+          "mean_correction": 1.8323483774235822e-06,
+          "max_correction": 2.4020671844482422e-05,
+          "correction_rmse": 5.770744651541095e-06,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 9.236391633749008e-07,
+              "mean_correction": 3.078797211249669e-07,
+              "max_correction": 8.9290551841259e-07
+            },
+            "H2O": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.864748239517212e-06,
+              "mean_correction": 9.549160798390706e-07,
+              "max_correction": 2.8312206268310547e-06
+            },
+            "N2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.4497509002685547e-05,
+              "mean_correction": 8.165836334228516e-06,
+              "max_correction": 2.4020671844482422e-05
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 1.0016374289989471e-06,
+              "mean_correction": 3.3387914299964905e-07,
+              "max_correction": 9.830109775066376e-07
+            },
+            "NO": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 6.630420834596862e-08,
+              "mean_correction": 2.2101402781989538e-08,
+              "max_correction": 3.9377113125738106e-08
+            },
+            "O2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.6284327507019043e-06,
+              "mean_correction": 1.2094775835673015e-06,
+              "max_correction": 3.5390257835388184e-06
+            }
+          },
+          "intervened_row_ratio": 1.0
+        },
+        "feedback": {
+          "intervened_values": 18,
+          "intervened_value_ratio": 1.0,
+          "intervened_rows": 3,
+          "total_correction": 3.298227079362448e-05,
+          "mean_correction": 1.8323483774235822e-06,
+          "max_correction": 2.4020671844482422e-05,
+          "correction_rmse": 5.770744651541095e-06,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 9.236391633749008e-07,
+              "mean_correction": 3.078797211249669e-07,
+              "max_correction": 8.9290551841259e-07
+            },
+            "H2O": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.864748239517212e-06,
+              "mean_correction": 9.549160798390706e-07,
+              "max_correction": 2.8312206268310547e-06
+            },
+            "N2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.4497509002685547e-05,
+              "mean_correction": 8.165836334228516e-06,
+              "max_correction": 2.4020671844482422e-05
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 1.0016374289989471e-06,
+              "mean_correction": 3.3387914299964905e-07,
+              "max_correction": 9.830109775066376e-07
+            },
+            "NO": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 6.630420834596862e-08,
+              "mean_correction": 2.2101402781989538e-08,
+              "max_correction": 3.9377113125738106e-08
+            },
+            "O2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.6284327507019043e-06,
+              "mean_correction": 1.2094775835673015e-06,
+              "max_correction": 3.5390257835388184e-06
+            }
+          },
+          "intervened_row_ratio": 1.0
+        },
+        "projection": {
+          "intervened_values": 18,
+          "intervened_value_ratio": 1.0,
+          "intervened_rows": 3,
+          "total_correction": 3.298227079362448e-05,
+          "mean_correction": 1.8323483774235822e-06,
+          "max_correction": 2.4020671844482422e-05,
+          "correction_rmse": 5.770744651541095e-06,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 9.236391633749008e-07,
+              "mean_correction": 3.078797211249669e-07,
+              "max_correction": 8.9290551841259e-07
+            },
+            "H2O": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.864748239517212e-06,
+              "mean_correction": 9.549160798390706e-07,
+              "max_correction": 2.8312206268310547e-06
+            },
+            "N2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.4497509002685547e-05,
+              "mean_correction": 8.165836334228516e-06,
+              "max_correction": 2.4020671844482422e-05
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 1.0016374289989471e-06,
+              "mean_correction": 3.3387914299964905e-07,
+              "max_correction": 9.830109775066376e-07
+            },
+            "NO": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 6.630420834596862e-08,
+              "mean_correction": 2.2101402781989538e-08,
+              "max_correction": 3.9377113125738106e-08
+            },
+            "O2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.6284327507019043e-06,
+              "mean_correction": 1.2094775835673015e-06,
+              "max_correction": 3.5390257835388184e-06
+            }
+          },
+          "intervened_row_ratio": 1.0
+        }
+      }
+    },
+    "pure_ar_raw": {
+      "1": {
+        "total_predictions": 3,
+        "update": {
+          "intervened_values": 0,
+          "intervened_value_ratio": 0.0,
+          "intervened_rows": 0,
+          "total_correction": 0.0,
+          "mean_correction": 0.0,
+          "max_correction": 0.0,
+          "correction_rmse": 0.0,
+          "per_species": {
+            "H2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "H2O": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "N2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "NH3": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "NO": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "O2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            }
+          },
+          "intervened_row_ratio": 0.0
+        },
+        "feedback": {
+          "intervened_values": 0,
+          "intervened_value_ratio": 0.0,
+          "intervened_rows": 0,
+          "total_correction": 0.0,
+          "mean_correction": 0.0,
+          "max_correction": 0.0,
+          "correction_rmse": 0.0,
+          "per_species": {
+            "H2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "H2O": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "N2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "NH3": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "NO": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "O2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            }
+          },
+          "intervened_row_ratio": 0.0
+        },
+        "projection": {
+          "intervened_values": 16,
+          "intervened_value_ratio": 0.8888888888888888,
+          "intervened_rows": 3,
+          "total_correction": 3.219316022384788e-05,
+          "mean_correction": 2.0120725139904927e-06,
+          "max_correction": 1.0967254638671875e-05,
+          "correction_rmse": 3.8036844926565752e-06,
+          "per_species": {
+            "H2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 3.0477531254291534e-07,
+              "mean_correction": 1.0159177084763844e-07,
+              "max_correction": 2.7474015951156616e-07
+            },
+            "H2O": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 6.964430212974548e-06,
+              "mean_correction": 2.3214767376581826e-06,
+              "max_correction": 5.260109901428223e-06
+            },
+            "N2": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 3.516674041748047e-06,
+              "mean_correction": 1.7583370208740234e-06,
+              "max_correction": 1.7881393432617188e-06
+            },
+            "NH3": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.621673047542572e-07,
+              "mean_correction": 8.73891015847524e-08,
+              "max_correction": 2.1792948246002197e-07
+            },
+            "NO": {
+              "intervened_values": 2,
+              "intervened_ratio": 0.6666666666666666,
+              "total_correction": 3.6561775829113685e-10,
+              "mean_correction": 1.8280887914556843e-10,
+              "max_correction": 1.90084392670542e-10
+            },
+            "O2": {
+              "intervened_values": 3,
+              "intervened_ratio": 1.0,
+              "total_correction": 2.1144747734069824e-05,
+              "mean_correction": 7.048249244689941e-06,
+              "max_correction": 1.0967254638671875e-05
+            }
+          },
+          "intervened_row_ratio": 1.0
+        }
+      },
+      "8": {
+        "total_predictions": 0,
+        "update": {
+          "intervened_values": 0,
+          "intervened_value_ratio": 0.0,
+          "intervened_rows": 0,
+          "total_correction": 0.0,
+          "mean_correction": 0.0,
+          "max_correction": 0.0,
+          "correction_rmse": 0.0,
+          "per_species": {
+            "H2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "H2O": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "N2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "NH3": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "NO": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "O2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            }
+          },
+          "intervened_row_ratio": 0.0
+        },
+        "feedback": {
+          "intervened_values": 0,
+          "intervened_value_ratio": 0.0,
+          "intervened_rows": 0,
+          "total_correction": 0.0,
+          "mean_correction": 0.0,
+          "max_correction": 0.0,
+          "correction_rmse": 0.0,
+          "per_species": {
+            "H2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "H2O": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "N2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "NH3": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "NO": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "O2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            }
+          },
+          "intervened_row_ratio": 0.0
+        },
+        "projection": {
+          "intervened_values": 0,
+          "intervened_value_ratio": 0.0,
+          "intervened_rows": 0,
+          "total_correction": 0.0,
+          "mean_correction": 0.0,
+          "max_correction": 0.0,
+          "correction_rmse": 0.0,
+          "per_species": {
+            "H2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "H2O": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "N2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "NH3": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "NO": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "O2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            }
+          },
+          "intervened_row_ratio": 0.0
+        }
+      },
+      "32": {
+        "total_predictions": 0,
+        "update": {
+          "intervened_values": 0,
+          "intervened_value_ratio": 0.0,
+          "intervened_rows": 0,
+          "total_correction": 0.0,
+          "mean_correction": 0.0,
+          "max_correction": 0.0,
+          "correction_rmse": 0.0,
+          "per_species": {
+            "H2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "H2O": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "N2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "NH3": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "NO": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "O2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            }
+          },
+          "intervened_row_ratio": 0.0
+        },
+        "feedback": {
+          "intervened_values": 0,
+          "intervened_value_ratio": 0.0,
+          "intervened_rows": 0,
+          "total_correction": 0.0,
+          "mean_correction": 0.0,
+          "max_correction": 0.0,
+          "correction_rmse": 0.0,
+          "per_species": {
+            "H2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "H2O": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "N2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "NH3": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "NO": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "O2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            }
+          },
+          "intervened_row_ratio": 0.0
+        },
+        "projection": {
+          "intervened_values": 0,
+          "intervened_value_ratio": 0.0,
+          "intervened_rows": 0,
+          "total_correction": 0.0,
+          "mean_correction": 0.0,
+          "max_correction": 0.0,
+          "correction_rmse": 0.0,
+          "per_species": {
+            "H2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "H2O": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "N2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "NH3": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "NO": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "O2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            }
+          },
+          "intervened_row_ratio": 0.0
+        }
+      },
+      "128": {
+        "total_predictions": 0,
+        "update": {
+          "intervened_values": 0,
+          "intervened_value_ratio": 0.0,
+          "intervened_rows": 0,
+          "total_correction": 0.0,
+          "mean_correction": 0.0,
+          "max_correction": 0.0,
+          "correction_rmse": 0.0,
+          "per_species": {
+            "H2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "H2O": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "N2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "NH3": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "NO": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "O2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            }
+          },
+          "intervened_row_ratio": 0.0
+        },
+        "feedback": {
+          "intervened_values": 0,
+          "intervened_value_ratio": 0.0,
+          "intervened_rows": 0,
+          "total_correction": 0.0,
+          "mean_correction": 0.0,
+          "max_correction": 0.0,
+          "correction_rmse": 0.0,
+          "per_species": {
+            "H2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "H2O": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "N2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "NH3": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "NO": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "O2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            }
+          },
+          "intervened_row_ratio": 0.0
+        },
+        "projection": {
+          "intervened_values": 0,
+          "intervened_value_ratio": 0.0,
+          "intervened_rows": 0,
+          "total_correction": 0.0,
+          "mean_correction": 0.0,
+          "max_correction": 0.0,
+          "correction_rmse": 0.0,
+          "per_species": {
+            "H2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "H2O": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "N2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "NH3": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "NO": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            },
+            "O2": {
+              "intervened_values": 0,
+              "intervened_ratio": 0.0,
+              "total_correction": 0.0,
+              "mean_correction": 0.0,
+              "max_correction": 0.0
+            }
+          },
+          "intervened_row_ratio": 0.0
+        }
+      }
+    }
+  }
+}

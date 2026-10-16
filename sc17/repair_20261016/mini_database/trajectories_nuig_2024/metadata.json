@@ -1,0 +1,10 @@
+{
+  "mechanism_name": "nuig_2024",
+  "mechanism_path": "C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc17\\NUIG2024.yaml",
+  "reactor_type": "IdealGasReactor",
+  "training_rows": 4800,
+  "success": 30,
+  "failed": 0,
+  "parquet_parts": 1,
+  "source": "mini trajectories and/or exploratory benchmark augmentation; not held-out evaluation"
+}

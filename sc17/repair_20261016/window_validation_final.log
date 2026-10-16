@@ -1,0 +1,45 @@
+Using device: cuda
+[validate] checkpoints: 1
+[validate] loading checkpoint: C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\repair_20261016\smoke_training_final\weights_v68\latest_v68_nuig_2024.pth
+[validate] loading scalers and feature metadata...
+[validate] scanning parquet schema in: C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\repair_20261016\mini_database
+[validate] checking trajectory isolation across 1 parquet parts (this may take a while)...
+[validate] trajectory isolation check complete
+[validate] checkpoint=C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\repair_20261016\smoke_training_final\weights_v68\latest_v68_nuig_2024.pth
+[validate] split=val, source_parts=1 (filtered by mini_splits), device=cuda
+[validate] starting model evaluation...
+
+[Metadata]
+  mechanism = nuig_2024
+  rows      = 4800
+  success   = 30
+  failed    = 0
+  parts     = 1
+[THERMO] ThermoNASA7Layer initialized (39 species).
+[validate] autonomous temperature enabled; thermo_closure=internal_energy/cv; trust_region=0.000
+[validate] active split manifest: nuig_2024_validation_sample_ids.csv (filtered to 3 trajectories)
+
+[Metadata]
+  mechanism = nuig_2024
+  rows      = 4800
+  success   = 30
+  failed    = 0
+  parts     = 1
+
+[validate]:   0%|          | 0/1 [00:00<?, ?it/s]
+[validate]:   0%|          | 0/1 [00:03<?, ?it/s]
+Traceback (most recent call last):
+  File "C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\validate_sc_v68.py", line 2575, in <module>
+    main()
+  File "C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\validate_sc_v68.py", line 2516, in main
+    result, samples, trajectory_samples, names = evaluate(
+                                                 ^^^^^^^^^
+  File "C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\validate_sc_v68.py", line 1819, in evaluate
+    current[mode] = tools.state_to_input_scaled(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\train_sc_v68.py", line 3859, in state_to_input_scaled
+    next_pressure = ap.autonomous_pressure_next(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\autonomous_pressure.py", line 84, in autonomous_pressure_next
+    raise ValueError("EOS cannot use negative mass fractions")
+ValueError: EOS cannot use negative mass fractions

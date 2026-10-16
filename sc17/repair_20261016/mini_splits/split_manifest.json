@@ -1,0 +1,53 @@
+{
+  "database": "C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc17\\repair_20261016\\mini_database",
+  "seed": 20260912,
+  "ratios": {
+    "train": 0.8,
+    "validation": 0.1,
+    "test": 0.09999999999999995
+  },
+  "stratify": false,
+  "strata_bins": 4,
+  "extrapolation_fraction": 0.0,
+  "extrapolation_axes": [
+    "T",
+    "P",
+    "phi",
+    "H2"
+  ],
+  "summary": [
+    {
+      "mechanism_name": "nuig_2024",
+      "split": "train",
+      "trajectories": 24,
+      "rows": 3840,
+      "path": "C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc17\\repair_20261016\\mini_splits\\nuig_2024_train_sample_ids.csv"
+    },
+    {
+      "mechanism_name": "nuig_2024",
+      "split": "validation",
+      "trajectories": 3,
+      "rows": 480,
+      "path": "C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc17\\repair_20261016\\mini_splits\\nuig_2024_validation_sample_ids.csv"
+    },
+    {
+      "mechanism_name": "nuig_2024",
+      "split": "test",
+      "trajectories": 3,
+      "rows": 480,
+      "path": "C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc17\\repair_20261016\\mini_splits\\nuig_2024_test_sample_ids.csv"
+    }
+  ],
+  "condition_diagnostics": {
+    "nuig_2024": {
+      "mechanism_error": null,
+      "finite_conditions": {
+        "T": 30,
+        "P": 30,
+        "phi": 30,
+        "H2": 30
+      },
+      "phi_actual_failure_reasons": {}
+    }
+  }
+}

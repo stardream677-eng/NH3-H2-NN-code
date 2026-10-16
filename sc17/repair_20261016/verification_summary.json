@@ -1,0 +1,105 @@
+{
+  "regression_tests": 26,
+  "backup_files_verified": 25,
+  "modified_original_files": 10,
+  "runtime_source_hashes_match": true,
+  "mini_data_rows": 4800,
+  "train_validation_test_trajectories": [
+    24,
+    3,
+    3
+  ],
+  "smoke_epochs": 1,
+  "smoke_active_training_horizon": 1,
+  "smoke_evaluation_horizons": [
+    1,
+    8,
+    32,
+    128
+  ],
+  "smoke_training_loss": 7.925871934844994,
+  "best_files_generated": 0,
+  "selection_complete_summary": {
+    "cases": 2,
+    "completed": 2,
+    "failed": 0,
+    "completion_rate": 1.0,
+    "failure_names": [],
+    "reference_ignition_cases": 2,
+    "neural_ignition_cases": 0,
+    "matched_ignition_status_cases": 0,
+    "ignition_agreement_rate_completed": 0.0,
+    "cases_with_both_idt": 0,
+    "mean_abs_idt_error_s_both_ignited": null,
+    "max_mass_residual": 6.253785511667331e-08,
+    "max_element_residual": 8.355059408771126e-07,
+    "max_energy_residual_J_per_kg": 0.9002856739098206,
+    "max_eos_relative_residual": 8.146649914228259e-06
+  },
+  "standalone_window_status": {
+    "oracle": {
+      "completed_all_windows": true,
+      "failed_batches": 0
+    },
+    "pure_ar": {
+      "completed_all_windows": true,
+      "failed_batches": 0
+    },
+    "pure_ar_raw": {
+      "completed_all_windows": false,
+      "failed_batches": 1
+    }
+  },
+  "standalone_raw_failures": [
+    {
+      "mode": "pure_ar_raw",
+      "batch_index": 0,
+      "failure_step": 2,
+      "failed_windows": 3,
+      "phase": "feedback",
+      "message": "ValueError: EOS cannot use negative mass fractions"
+    }
+  ],
+  "standalone_complete_summary": {
+    "cases": 4,
+    "completed": 4,
+    "failed": 0,
+    "completion_rate": 1.0,
+    "failure_names": [],
+    "reference_ignition_cases": 4,
+    "neural_ignition_cases": 0,
+    "matched_ignition_status_cases": 0,
+    "ignition_agreement_rate_completed": 0.0,
+    "cases_with_both_idt": 0,
+    "mean_abs_idt_error_s_both_ignited": null,
+    "max_mass_residual": 5.4812399064019246e-08,
+    "max_element_residual": 7.825893609814116e-07,
+    "max_energy_residual_J_per_kg": 4.918493491830304,
+    "max_eos_relative_residual": 6.370908356367958e-06
+  },
+  "standalone_complete_expected_exit": 2,
+  "accuracy_qualified": false,
+  "multistep_smoke": {
+    "active_training_horizon": 8,
+    "epochs": 1,
+    "train_total": 6.796460468589248,
+    "train_rollout": 1.1564323631389568,
+    "complete_summary": {
+      "cases": 2,
+      "completed": 2,
+      "failed": 0,
+      "completion_rate": 1.0,
+      "failure_names": [],
+      "reference_ignition_cases": 2,
+      "neural_ignition_cases": 0,
+      "matched_ignition_status_cases": 0,
+      "ignition_agreement_rate_completed": 0.0,
+      "cases_with_both_idt": 0,
+      "mean_abs_idt_error_s_both_ignited": null,
+      "max_mass_residual": 5.4193719956074915e-08,
+      "max_element_residual": 6.479321751629019e-07,
+      "max_energy_residual_J_per_kg": 0.5217416583327577,
+      "max_eos_relative_residual": 1.7568992418729828e-06
+    }
+  }
+}

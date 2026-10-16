@@ -1,0 +1,1850 @@
+--- a/autonomous_benchmark_protocol.py
++++ b/autonomous_benchmark_protocol.py
+@@ -173,3 +173,27 @@
+         "max_energy_residual_J_per_kg": max((c["physics"]["max_energy_residual_J_per_kg"] for c in done), default=None),
+         "max_eos_relative_residual": max((c["physics"]["max_eos_relative_residual"] for c in done), default=None),
+     }
++
++
++def selection_score(cases: list[dict[str, Any]]) -> float:
++    """Complete-trajectory selection: failure or wrong ignition disqualifies."""
++    if not cases or any(c.get('status')!='completed' or not c.get('metrics',{}).get('ignition_agreement',False) for c in cases):
++        return float('inf')
++    scores=[]
++    for case in cases:
++        m=case['metrics']; duration=max(float(case['t_end_s']),1e-30)
++        temp=m['temperature_K'];press=m['pressure_atm']
++        species=[]
++        for metric in m['species'].values():
++            scale=max(abs(metric['peak_ref']),1e-6)
++            value=(metric['mae']+metric['endpoint_abs_error']+metric['peak_amplitude_abs_error'])/scale
++            value+=metric['peak_time_abs_error_s']/duration
++            if metric.get('active_log10_rmse') is not None:value+=metric['active_log10_rmse']
++            species.append(value)
++        score=(temp['mae']+temp['endpoint_abs_error'])/1000.
++        score+=press['mae']/max(abs(press['peak_ref']),1.)
++        score+=float(np.mean(species)) if species else 0.
++        score+=(m['idt_abs_error_s'] or 0.)/duration
++        scores.append(score)
++    value=float(np.mean(scores))
++    return value if np.isfinite(value) else float('inf')
+--- a/experiment_manifest.py
++++ b/experiment_manifest.py
+@@ -25,6 +25,13 @@
+     "thermo_nasa7_layer.py",
+     "autonomous_pressure.py",
+     "physical_projection_contract.py",
++    "numerical_contract.py",
++    "autonomous_benchmark_protocol.py",
++    "benchmark_cases.py",
++    "test/benchmark_autonomous_h128.py",
++    "complete_validation.py",
++    "autonomous_integrator.py",
++    "test/benchmark_autonomous_cases.example.json",
+     "chemistry_contract.py",
+     "validate_sc_v68.py",
+     "kinetics_parameterization.py",
+@@ -169,6 +176,12 @@
+             errors.append(f"Output parameterization mismatch: checkpoint '{ckpt_param}' vs expected '{exp_param}'")
+         return (len(errors) == 0, errors)
+ 
++    expected_sources = expected_manifest.get("source_hashes")
++    if expected_sources is not None and ckpt_manifest.get("source_hashes") != expected_sources:
++        changed = sorted(k for k in set(expected_sources) | set(ckpt_manifest.get("source_hashes", {}))
++                         if expected_sources.get(k) != ckpt_manifest.get("source_hashes", {}).get(k))
++        errors.append(f"Runtime source content changed: {changed}; use the original code or start a new run")
++
+     # 1. Mechanism check
+     if ckpt_manifest.get("mechanism_sha256") != expected_manifest.get("mechanism_sha256"):
+         errors.append(
+@@ -243,7 +256,8 @@
+     contract = cc.get_mechanism_contract(path, feature_info["all_species"], device="cpu")
+     expected = {k: contract[k] for k in ("mechanism_sha256", "element_names", "species_order")}
+     expected.update(output_parameterization=feature_info.get("output_parameterization", "direct_rate"),
+-                    transform_signature=feature_info["transform_signature"])
++                    transform_signature=feature_info["transform_signature"],
++                    source_hashes=compute_source_hashes())
+     if scaler_x is not None and scaler_y is not None:
+         expected["scaler_hashes"] = hash_scalers(scaler_x, scaler_y)
+     require_compatible(checkpoint, expected)
+--- a/kinetics_parameterization.py
++++ b/kinetics_parameterization.py
+@@ -17,6 +17,7 @@
+ import numpy as np
+ import torch
+ import torch.nn as nn
++from numerical_contract import mass_from_log10
+ 
+ # Mode signatures
+ DUAL_BRANCH_PD_V1_SIGNATURE = "dual_branch_pd_v1"
+@@ -83,10 +84,16 @@
+ ) -> Tuple[Any, Any]:
+     """Decode continuous log10 outputs back to nonnegative physical (P, D)."""
+     if isinstance(z_P, torch.Tensor):
+-        P = torch.clamp_min(torch.pow(10.0, z_P) - eps_P, 0.0)
+-        D = torch.clamp_min(torch.pow(10.0, z_D) - eps_D, 0.0)
++        # Diagnostics may exceed float32 even when the integrated P/D ratio is
++        # perfectly physical. Integration below never forms these huge rates.
++        if not all(torch.isfinite(z).all() and (z<300).all() for z in (z_P,z_D)):
++            raise FloatingPointError('P/D log rates exceed the finite diagnostic domain')
++        P = torch.clamp_min(torch.pow(10.0, z_P.double()) - eps_P, 0.0)
++        D = torch.clamp_min(torch.pow(10.0, z_D.double()) - eps_D, 0.0)
+         return P, D
+     else:
++        if not all(np.isfinite(z).all() and (np.asarray(z)<300).all() for z in (z_P,z_D)):
++            raise FloatingPointError('P/D log rates exceed the finite diagnostic domain')
+         P = np.maximum(np.power(10.0, np.asarray(z_P, dtype=np.float64)) - eps_P, 0.0)
+         D = np.maximum(np.power(10.0, np.asarray(z_D, dtype=np.float64)) - eps_D, 0.0)
+         return P, D
+@@ -166,15 +173,29 @@
+     logY_next : torch.Tensor
+         Candidate state in log10 space with strictly finite gradients in float32.
+     """
+-    P, D = decode_pd_outputs(z_P, z_D, eps_P, eps_D)
+-    phi1 = phi1_decay(D * dt)
+-    Y_next_linear = integrate_qssa_continuous(torch.pow(10.0, logY_old), P, D, dt)
+-
+-    log_decay = logY_old - (D * dt) * INV_LN10
+-    P_safe = torch.clamp_min(P, 1e-35)
+-    log_prod = torch.log10(P_safe) + torch.log10(dt) + torch.log10(torch.clamp_min(phi1, 1e-35))
+-    log_prod = torch.where(P <= 0.0, torch.full_like(log_prod, -100.0), log_prod)
+-
+-    logY_next = log10_add_exp(log_decay, log_prod)
+-    return Y_next_linear, logY_next
+-
++    if not all(torch.isfinite(v).all() for v in (logY_old,z_P,z_D,dt)) or (dt<=0).any():
++        raise ValueError('P/D update requires finite states, log rates and positive dt')
++    dtype=logY_old.dtype
++    def effective_log(z,eps):
++        z=z.double(); floor=math.log10(eps); active=z>floor
++        distance=torch.where(active,z-floor,torch.ones_like(z))
++        correction=torch.log10(-torch.expm1(-distance*LN10))
++        return torch.where(active,z+correction,torch.full_like(z,-1e4)),active
++    lp,has_p=effective_log(z_P,eps_P)
++    ld,has_d=effective_log(z_D,eps_D)
++    ldt=torch.log10(dt.double())
++    lx=ld+ldt
++    stiff=has_d & (lx>math.log10(80.))
++    # Bound only the phi evaluation. Pure decay retains its exact log state,
++    # including across D*dt=80; no fictitious concentration floor is introduced.
++    x=torch.where(has_d,torch.pow(10.,lx.clamp(max=math.log10(80.))),torch.zeros_like(lx))
++    if (lx>300.).any():raise FloatingPointError('D*dt exceeds the finite integration domain')
++    exact_x=torch.where(has_d,torch.pow(10.,lx.clamp(max=300.)),torch.zeros_like(lx))
++    decay=logY_old.double()-exact_x*INV_LN10
++    log_phi=torch.log10(phi1_decay(x))
++    production=torch.where(stiff,lp-ld,lp+ldt+log_phi)
++    production=torch.where(has_p,production,torch.full_like(production,-torch.inf))
++    log_next=log10_add_exp(decay,production).to(dtype)
++    if not torch.isfinite(log_next).all():raise FloatingPointError('P/D log state exceeds the feedback dtype domain')
++    return mass_from_log10(log_next),log_next
++
+--- a/physical_projection_contract.py
++++ b/physical_projection_contract.py
+@@ -12,7 +12,7 @@
+ import torch
+ 
+ 
+-PROJECTION_VALIDATION_CONTRACT = "kl_dykstra_fail_closed_v1"
++PROJECTION_VALIDATION_CONTRACT = "kl_dykstra_sqp_fail_closed_v2"
+ MASS_ATOL = 5e-6
+ ELEMENT_ATOL = 1e-6
+ NEGATIVE_ATOL = 0.0
+@@ -70,7 +70,7 @@
+         return None, None, target_sum
+ 
+     A = torch.as_tensor(element_matrix, device=candidate.device, dtype=candidate.dtype)
+-    target = torch.as_tensor(target_elements, device=candidate.device, dtype=candidate.dtype)
++    target = torch.as_tensor(target_elements, device=candidate.device, dtype=torch.float64)
+     if A.ndim != 2 or A.shape[1] != count or A.shape[0] == 0:
+         raise ValueError("Element matrix must be (n_elements, n_reactive_species)")
+     if target.ndim == 1:
+@@ -184,10 +184,39 @@
+                 nonnegative_candidate, torch.ones_like(target_sum) - target_sum,
+                 A, target_elements.double(),
+             )
+-            if bool(result["valid"].all()):
++            if bool((result["valid"] & (result["element"] <= 1e-9) & (result["mass"] <= 1e-9)).all()):
+                 return nonnegative_candidate.to(candidate.dtype), index + 1
+ 
+-    return x.clamp_min(0.0).to(candidate.dtype), iterations
++    recovered=x.clamp_min(0.0).to(candidate.dtype)
++    audit=projection_residuals(recovered,1-target_sum,element_matrix,target_elements)
++    bad=~audit['valid'] | (audit['element']>1e-7)
++    if bool(bad.any()):
++        # A feasible boundary target may converge arbitrarily slowly under
++        # alternating projections. Solve the small convex quadratic problem
++        # directly, using independent equality rows to avoid redundant mass.
++        import numpy as np
++        from scipy.linalg import qr
++        from scipy.optimize import minimize, nnls
++        matrix=effective_A.detach().cpu().numpy()
++        _,r,piv=qr(matrix.T,mode='economic',pivoting=True)
++        rank=int(np.linalg.matrix_rank(r,tol=1e-7))
++        independent=np.asarray(piv[:rank])
++        B=matrix[independent]
++        for row in bad.nonzero(as_tuple=False).reshape(-1).tolist():
++            b=effective_target[row].cpu().numpy()[independent]
++            c=candidate[row].double().cpu().numpy()
++            start,_=nnls(B,b,maxiter=10000)
++            solution=minimize(lambda q:.5*np.sum((q-c)**2),start,
++                jac=lambda q:q-c,method='SLSQP',bounds=[(0.,None)]*len(c),
++                constraints={'type':'eq','fun':lambda q:B@q-b,'jac':lambda q:B},
++                options={'maxiter':1000,'ftol':1e-12})
++            proposed=np.maximum(solution.x,0.)
++            trial=torch.as_tensor(proposed,device=candidate.device,dtype=candidate.dtype).unsqueeze(0)
++            checked=projection_residuals(trial,1-target_sum[row:row+1],element_matrix,target_elements[row:row+1])
++            if not bool(checked['valid'].all()):
++                raise ProjectionConstraintError('optimizer_failed',[row],str(solution.message))
++            recovered[row]=trial[0]
++    return recovered, iterations
+ 
+ 
+ def require_projection_valid(
+--- a/species_validation_protocol.py
++++ b/species_validation_protocol.py
+@@ -24,7 +24,7 @@
+ import numpy as np
+ import torch
+ 
+-PROTOCOL_ID = "v68_species_sentinel_protocol_v2"
++PROTOCOL_ID = "sc17_species_sentinel_protocol_v3"
+ STANDARD_HORIZONS = (1, 8, 32, 128)
+ 
+ MAJOR_SPECIES = ("NH3", "H2", "O2", "N2", "H2O")
+@@ -49,7 +49,7 @@
+ 
+     def __init__(self, species_names: Sequence[str]):
+         self.species_names = list(species_names)
+-        self.sums = np.zeros((len(self.species_names), 4), dtype=np.float64)
++        self.sums = np.zeros((len(self.species_names), 7), dtype=np.float64)
+         self.counts = np.zeros(len(self.species_names), dtype=np.int64)
+         self.invalid = np.zeros(len(self.species_names), dtype=np.int64)
+ 
+@@ -70,16 +70,25 @@
+                 continue
+             rows = np.arange(n)
+             endpoint_error = np.abs(yp[:, -1] - yt[:, -1])
++            peak_error = np.abs(yp.max(axis=1) - yt.max(axis=1))
++            peak_time_error = np.abs(t[rows, yp.argmax(axis=1)] - t[rows, yt.argmax(axis=1)])
++            peak_scale = np.maximum(yt.max(axis=1), 1e-6)
++            duration = np.maximum(t[:, -1] - t[:, 0], 1e-30)
++            varying = np.ptp(yt, axis=1) > 1e-12
+             self.sums[i] += np.array([
+-                np.abs(yp.max(axis=1) - yt.max(axis=1)).sum(),
+-                np.abs(t[rows, yp.argmax(axis=1)] - t[rows, yt.argmax(axis=1)]).sum(),
++                peak_error.sum(),
++                peak_time_error.sum(),
+                 endpoint_error.sum(),
+                 (endpoint_error / np.maximum(np.abs(yt[:, -1]), 1e-12)).sum(),
++                (peak_error / peak_scale).sum(),
++                (endpoint_error / peak_scale).sum(),
++                (np.where(varying, peak_time_error / duration, 0.0)).sum(),
+             ])
+             self.counts[i] += n
+ 
+     def finalize(self) -> Dict[str, Any]:
+-        keys = ('peak_amplitude_mae', 'peak_time_mae_s', 'endpoint_mae', 'endpoint_relative_error')
++        keys = ('peak_amplitude_mae', 'peak_time_mae_s', 'endpoint_mae', 'endpoint_relative_error',
++                'peak_amplitude_nmae', 'endpoint_peak_nmae', 'peak_time_fraction_mae')
+         return {
+             sp: dict(n_windows=int(self.counts[i]), invalid_windows=int(self.invalid[i]),
+                      **{key: float(self.sums[i, j] / self.counts[i]) if self.counts[i] else None
+@@ -298,6 +307,22 @@
+     }
+ 
+ 
++def apply_trajectory_selection(metrics, diagnostics):
++    """Add a fixed, dimensionless peak/timing/endpoint penalty to window selection."""
++    result = dict(metrics)
++    result['trajectory_diagnostics'] = diagnostics
++    terms = [record[key] for record in diagnostics.values()
++             for key in ('peak_amplitude_nmae', 'endpoint_peak_nmae', 'peak_time_fraction_mae')
++             if record[key] is not None]
++    valid = bool(terms) and all(np.isfinite(terms)) and all(
++        record['invalid_windows'] == 0 and record['n_windows'] > 0 for record in diagnostics.values())
++    penalty = 0.20 * float(np.mean(terms)) if valid else 1e6
++    result['trajectory_selection_penalty'] = penalty
++    result['composite_score'] += penalty
++    result['is_valid_candidate'] = bool(result['is_valid_candidate'] and valid)
++    return result
++
++
+ class HorizonSentinelTracker:
+     """Tracks best model checkpoints independently per horizon (H=1, 8, 32, 128)."""
+ 
+--- a/train_all_v68.py
++++ b/train_all_v68.py
+@@ -540,6 +540,13 @@
+     },
+ }
+ 
++# Off-manifold scaled-space noise is not a valid autonomous perturbation.
++# User overrides are still checked explicitly by the training entry point.
++for _preset in PLAN_PRESETS.values():
++    if _preset.get("temperature_mode") == "autonomous":
++        _preset["feedback_noise_std"] = 0.0
++        _preset["feedback_state_source"] = "constrained"
++
+ ACTIVE_COMPARISON_PLANS = [
+     "v71_qssa",
+     "v71_raw_feedback",
+@@ -825,6 +832,7 @@
+     projection_mode: str = "multiplicative_kl",
+     desentinelize_scaler: bool = False,
+     network_arch: str = "mlp",
++    autonomous_benchmark_cases: str | None = None,
+ ) -> list[str]:
+     """Build the exact command used for one V68 mechanism."""
+     curriculum_horizons = curriculum_horizons or [1, 8, 32, 128]
+@@ -896,6 +904,8 @@
+         cmd.append("--desentinelize_scaler")
+     if network_arch != "mlp":
+         cmd.extend(["--network_arch", str(network_arch)])
++    if autonomous_benchmark_cases is not None:
++        cmd.extend(["--autonomous_benchmark_cases", str(autonomous_benchmark_cases)])
+ 
+     if micro_rate_z_limit is not None:
+         cmd.extend(["--micro-rate-z-limit", str(micro_rate_z_limit)])
+@@ -1350,6 +1360,8 @@
+         default="recorded",
+     )
+     parser.add_argument("--max_delta_temperature", type=float, default=1000.0)
++    parser.add_argument("--autonomous_benchmark_cases", type=str, default=None,
++                        help="Fixed 128-step model-selection cases JSON.")
+     parser.add_argument("--experiment_mode", type=str, default="baseline",
+                         choices=["baseline", "diagnostic", "constrained_delta", "conserve_project", "qssa"],
+                         help="Experiment mode for state update strategy")  # 新增
+@@ -1572,6 +1584,7 @@
+                 projection_mode=getattr(plan_args, "projection_mode", "multiplicative_kl"),
+                 desentinelize_scaler=getattr(plan_args, "desentinelize_scaler", False),
+                 network_arch=getattr(plan_args, "network_arch", "mlp"),
++                autonomous_benchmark_cases=plan_args.autonomous_benchmark_cases,
+                 warm_start=plan_args.warm_start,
+                 resume=plan_args.resume,
+                 checkpoint_every=plan_args.checkpoint_every,
+@@ -1683,6 +1696,7 @@
+         projection_mode=getattr(args, "projection_mode", "multiplicative_kl"),
+         desentinelize_scaler=getattr(args, "desentinelize_scaler", False),
+         network_arch=getattr(args, "network_arch", "mlp"),
++        autonomous_benchmark_cases=args.autonomous_benchmark_cases,
+         warm_start=args.warm_start,  # 新增
+         resume=args.resume,
+         checkpoint_every=args.checkpoint_every,
+--- a/train_sc_v68.py
++++ b/train_sc_v68.py
+@@ -47,6 +47,7 @@
+ import experiment_manifest as em
+ import autonomous_pressure as ap
+ import physical_projection_contract as ppc
++import numerical_contract as nc
+ import hashlib
+ 
+ 
+@@ -267,7 +268,7 @@
+     )
+ 
+     log_y_next = torch.where(is_prod_only, production_only_update, ordinary_update)
+-    return torch.clamp(log_y_next, min=MICRO_LOG_MIN, max=1.0)
++    return log_y_next
+ 
+ 
+ def select_training_state(
+@@ -466,8 +467,8 @@
+     elem_res_max = torch.zeros(b_size, dtype=scaled_dyn.dtype, device=scaled_dyn.device)
+     if element_matrix is not None and target_elements is not None:
+         try:
+-            A = element_matrix.to(dtype=scaled_dyn.dtype, device=scaled_dyn.device)
+-            target_elem = target_elements.to(dtype=scaled_dyn.dtype, device=scaled_dyn.device)
++            A = element_matrix.to(dtype=torch.float64, device=scaled_dyn.device)
++            target_elem = target_elements.to(dtype=torch.float64, device=scaled_dyn.device)
+             if target_elem.ndim == 1:
+                 target_elem = target_elem.unsqueeze(0).expand(b_size, -1)
+ 
+@@ -491,7 +492,7 @@
+                 # J = A_eff @ diag(Y) @ A_eff^T
+                 # d_lambda = (J + reg)^-1 @ res
+                 # Strictly guarantees Y_i > 0 for all species; NEVER wipes out trace radicals!
+-                p0 = scaled_dyn.clamp_min(1e-40)
++                p0 = scaled_dyn.double().clamp_min(1e-40)
+                 K = A_eff.shape[0]
+                 lam = torch.zeros(b_size, K, dtype=p0.dtype, device=p0.device)
+                 p = p0.clone()
+@@ -499,10 +500,7 @@
+                 # Eight damped Newton steps are the default budget; callers can
+                 # request more for unusually difficult projections.
+                 max_proj_iters = max(int(iterations), 8) if iterations > 0 else 8
+-                projection_tolerance = max(
+-                    1e-10,
+-                    8.0 * torch.finfo(p.dtype).eps,
+-                )
++                projection_tolerance = 1e-10
+                 for _ in range(max_proj_iters):
+                     r = torch.matmul(p, A_eff.T) - target_eff
+                     if (r.abs().max(dim=-1).values < projection_tolerance).all():
+@@ -523,10 +521,10 @@
+                 elem_res_max = (torch.matmul(p, A.T) - target_elem).abs().max(dim=-1).values
+                 if (elem_res_max > 1e-6).any():
+                     proj_failed = True
+-                projected_dyn = p
++                projected_dyn = p.to(scaled_dyn.dtype)
+             else:
+                 # Legacy concentration-weighted closed-form linear projection
+-                p = scaled_dyn.clone()
++                p = scaled_dyn.double().clone()
+                 K = A_eff.shape[0]
+                 reg = 1e-12 * torch.eye(K, dtype=p.dtype, device=p.device).unsqueeze(0)
+                 n_proj_iters = min(max(iterations, 1), 3) if iterations > 0 else 2
+@@ -545,7 +543,7 @@
+                     p = p * (target_sum / p_sum)
+ 
+                 elem_res_max = (torch.matmul(p, A.T) - target_elem).abs().max(dim=-1).values
+-                projected_dyn = p
++                projected_dyn = p.to(scaled_dyn.dtype)
+         except Exception as exc:
+             # Do not swallow the failed numerical solve as a valid projection:
+             # the conservative fallback and final audit below are mandatory.
+@@ -559,7 +557,8 @@
+     primary_audit = ppc.projection_residuals(
+         projected_dyn, i_sum, element_matrix, target_elements
+     )
+-    bad_rows = ~primary_audit["valid"]
++    # Leave headroom under the public rejection bound for long rollouts.
++    bad_rows = ~primary_audit["valid"] | (primary_audit["element"] > 1e-7)
+     if bool(bad_rows.any()) and element_matrix is not None:
+         projection_fallback_rows = bad_rows
+         try:
+@@ -571,7 +570,7 @@
+             # Jacobian. Return its exact forward state with an explicit STE
+             # rather than retaining hundreds of recovery iterations in BPTT.
+             failed_candidate = scaled_dyn[bad_rows]
+-            repaired_ste = failed_candidate + (repaired - failed_candidate).detach()
++            repaired_ste = repaired.detach() + (failed_candidate - failed_candidate.detach())
+             projected_dyn = projected_dyn.index_copy(
+                 0, bad_rows.nonzero(as_tuple=False).reshape(-1), repaired_ste
+             )
+@@ -3288,13 +3287,11 @@
+             macro_z = self.rate_z_limit * torch.tanh(
+                 macro_z / self.rate_z_limit
+             )
+-        else:
+-            macro_z = torch.clamp(macro_z, -20.0, 20.0)
+         # A fully initialized operator follows the asinh target contract.  A
+         # small compatibility fallback keeps lightweight test/dummy tools that
+         # only provide tensors usable as direct physical-rate decoders.
+         if hasattr(self, "feature_info"):
+-            rate_macro = self.macro_rate_scale * torch.sinh(macro_z)
++            rate_macro = nc.asinh_rate_inverse(macro_z, self.macro_rate_scale)
+         else:
+             rate_macro = macro_z
+         rate_micro_log = target_denorm[..., self.n_macro:]
+@@ -3314,10 +3311,10 @@
+         self,
+         state_scaled,
+     ):
+-        return (
+-            state_scaled
+-            * self.scale_X
+-            + self.mean_X
++        physical = state_scaled * self.scale_X + self.mean_X
++        indices = torch.cat([self.inert_idx, self.macro_idx])
++        return nc.clean_input_mass_roundoff(
++            state_scaled, physical, self.mean_X, self.scale_X, indices
+         )
+ 
+     def get_current_state(
+@@ -3456,8 +3453,7 @@
+                 # 1. Macro species (first n_macro channels): direct asinh rate
+                 macro_pred_scaled = rate_pred_scaled[..., :self.n_macro]
+                 macro_denorm = macro_pred_scaled * self.scale_Y[:self.n_macro] + self.mean_Y[:self.n_macro]
+-                macro_z = torch.clamp(macro_denorm, -20.0, 20.0)
+-                rate_macro_cand = self.macro_rate_scale * torch.sinh(macro_z)
++                rate_macro_cand = nc.asinh_rate_inverse(macro_denorm, self.macro_rate_scale)
+                 # Genuine unconstrained candidate: do not clamp at 0.0 to preserve non-zero gradients for backpropagation
+                 Y_macro_next = Y_macro_old + rate_macro_cand * dt
+ 
+@@ -3479,8 +3475,7 @@
+                 # 1. Macro species (first n_macro channels): direct asinh rate
+                 macro_pred_scaled = rate_pred_scaled[..., :self.n_macro]
+                 macro_denorm = macro_pred_scaled * self.scale_Y[:self.n_macro] + self.mean_Y[:self.n_macro]
+-                macro_z = torch.clamp(macro_denorm, -20.0, 20.0)
+-                rate_macro_cand = self.macro_rate_scale * torch.sinh(macro_z)
++                rate_macro_cand = nc.asinh_rate_inverse(macro_denorm, self.macro_rate_scale)
+                 # Genuine unconstrained candidate: do not clamp at 0.0 to preserve non-zero gradients for backpropagation
+                 Y_macro_next = Y_macro_old + rate_macro_cand * dt
+ 
+@@ -3503,7 +3498,7 @@
+                     z2=z2,
+                     dt=dt,
+                 )
+-                Y_micro_next = torch.pow(10.0, logY_micro_next_candidate)
++                Y_micro_next = nc.mass_from_log10(logY_micro_next_candidate)
+ 
+                 Y_next_reactive = torch.cat([Y_macro_next, Y_micro_next], dim=-1)
+                 rate_macro = rate_macro_cand
+@@ -3547,25 +3542,20 @@
+                 )
+                 Y_next_reactive = Y_old * exp_neg_Ddt + P_pred * safe_factor
+ 
+-            # Defensively guard against astronomical unconstrained exploration spikes
+-            # in raw intermediate states (e.g. > 10.0 kg/kg mass fraction)
+-            Y_macro_next = torch.clamp(Y_next_reactive[:, :self.n_macro], min=-1.0, max=10.0)
++            # Keep invalid finite candidates visible to restoring losses. Only
++            # constrained, independently audited states may enter deployment.
++            Y_macro_next = Y_next_reactive[:, :self.n_macro]
+             if logY_micro_next_candidate is None:
+                 Y_micro_next = torch.clamp(
+                     Y_next_reactive[:, self.n_macro:],
+                     min=LOG_EPS,
+-                    max=10.0,
+                 )
+                 logY_micro_next_raw = torch.log10(
+                     torch.clamp(Y_micro_next, min=LOG_EPS)
+                 )
+             else:
+-                logY_micro_next_raw = torch.clamp(
+-                    logY_micro_next_candidate,
+-                    min=MICRO_LOG_MIN,
+-                    max=1.0,
+-                )
+-                Y_micro_next = torch.pow(10.0, logY_micro_next_raw)
++                logY_micro_next_raw = logY_micro_next_candidate
++                Y_micro_next = nc.mass_from_log10(logY_micro_next_raw)
+             rate_macro = (Y_macro_next - Y_macro_old) / dt.clamp_min(1e-12)
+             rate_micro_log = (
+                 logY_micro_next_raw - logY_micro_old
+@@ -3660,7 +3650,7 @@
+                     normalized_old - dyn_old
+                 ).abs().sum(dim=-1).detach()
+             eff_target_elements = torch.matmul(
+-                old_for_target, eff_element_matrix.to(dyn_old.device).T
++                old_for_target.double(), eff_element_matrix.to(dyn_old.device).double().T
+             )
+         else:
+             eff_target_elements = target_elements
+@@ -3682,12 +3672,20 @@
+ 
+         # Straight-Through Estimator (STE): forward value is exact physical projection,
+         # backward gradient flows cleanly via identity d(Y_proj)/d(Y_raw) = I.
+-        Y_macro_next_constrained = Y_macro_next_raw + (Y_macro_proj - Y_macro_next_raw).detach()
++        Y_macro_next_constrained = Y_macro_proj.detach() + (Y_macro_next_raw - Y_macro_next_raw.detach())
+         logY_micro_next_constrained, Y_micro_next_constrained = (
+             constrained_micro_feedback(
+                 raw_log_micro=logY_micro_next_raw,
+                 projected_micro=Y_micro_proj,
+             )
++        )
++        # Audit the actual returned STE tensor, not just its pre-STE projection.
++        audit_inert = torch.as_tensor(inert_sum_eff,device=current_X.device,dtype=current_X.dtype)
++        if audit_inert.ndim==1: audit_inert=audit_inert.unsqueeze(1)
++        audit_inert=audit_inert.expand(current_X.shape[0],1)
++        ppc.require_projection_valid(
++            torch.cat([Y_macro_next_constrained,Y_micro_next_constrained],dim=-1),
++            audit_inert,eff_element_matrix,eff_target_elements,
+         )
+ 
+         # Active state (used for feedback in rollout when safe_for_rollout=True)
+@@ -3894,7 +3892,6 @@
+ 
+         return next_X_scaled
+ 
+-
+ # ============================================================
+ # 12. Physics soft loss
+ # ============================================================
+@@ -3968,10 +3965,7 @@
+         element_delta / scale
+     )
+ 
+-    loss_element = torch.clamp(
+-        torch.mean(normalized_error**2),
+-        max=100.0,
+-    )
++    loss_element = F.smooth_l1_loss(normalized_error, torch.zeros_like(normalized_error), beta=1.0)
+ 
+     # 总质量变化
+     mass_delta = (
+@@ -3981,10 +3975,7 @@
+         )
+     )
+ 
+-    loss_mass = torch.clamp(
+-        torch.mean(mass_delta**2),
+-        max=100.0,
+-    )
++    loss_mass = F.smooth_l1_loss(mass_delta, torch.zeros_like(mass_delta), beta=1.0)
+ 
+     return (
+         loss_element,
+@@ -4910,7 +4901,7 @@
+                     seq_no += loss_no_val.item()
+ 
+                     # Retain only this batch's selected species, not all trajectories.
+-                    val_macro, val_micro_log = select_training_state(pred_state, state_loss_source)
++                    val_macro, val_micro_log = select_feedback_state(pred_state, feedback_state_source)
+                     val_micro = torch.pow(10.0, val_micro_log.clamp(min=-40.0, max=0.0))
+                     trajectory_pred.append(torch.cat([val_macro, val_micro], dim=-1)[:, diagnostic_cols].cpu().numpy())
+                     trajectory_true.append(diagnostic_state(true_next_X))
+@@ -4918,8 +4909,8 @@
+ 
+                     # Per-horizon pure-AR metrics
+                     if (step + 1) in eval_horizons:
+-                        val_macro, val_micro_log = select_training_state(
+-                            pred_state, state_loss_source
++                        val_macro, val_micro_log = select_feedback_state(
++                            pred_state, feedback_state_source
+                         )
+                         pred_macro_scaled = (
+                             (val_macro - tools.mean_X[tools.macro_idx])
+@@ -5014,7 +5005,8 @@
+                 inert_mass=np.concatenate(acc["inert_mass"]),
+             )
+             sentinel_metrics[h_str]["metric_scope"] = "window_endpoints"
+-            sentinel_metrics[h_str]["trajectory_diagnostics"] = trajectory_accum[h_str].finalize()
++            sentinel_metrics[h_str] = svp.apply_trajectory_selection(
++                sentinel_metrics[h_str], trajectory_accum[h_str].finalize())
+             sentinel_metrics[h_str]["timing_metrics"] = {
+                 f"{sp}_peak_time_mae_s": record["peak_time_mae_s"]
+                 for sp, record in sentinel_metrics[h_str]["trajectory_diagnostics"].items()
+@@ -5347,8 +5339,8 @@
+     """Update temperature via an energy-conserving NASA7 solve when configured.
+ 
+     A NASA7 solve must converge and its final energy residual must pass. A
+-    temperature jump above max_delta_temperature is a rejected integration
+-    interval, *not* a reason to clip the physical solution. The legacy linear
++    temperature jump may exceed the legacy max_delta_temperature parameter
++    when the supported NASA7 solve passes its energy audit. The legacy linear
+     approximation remains available only when no thermo_closure is requested.
+     """
+     if not math.isfinite(float(max_delta_temperature)) or max_delta_temperature <= 0.0:
+@@ -5379,12 +5371,13 @@
+ 
+         # Never hide a failed energy solve by returning a clipped temperature
+         # or silently changing the experiment to constant-heat-capacity mode.
+-        dT = (T_solved - current_T).abs()
+-        if not torch.isfinite(T_solved).all() or bool((dT > float(max_delta_temperature)).any()):
++        if not torch.isfinite(T_solved).all():
+             raise RuntimeError(
+-                "Autonomous energy-closed temperature exceeds the configured "
+-                "max_delta_temperature; reduce dt or use smaller integration substeps"
+-            )
++                "Autonomous energy-closed temperature is non-finite"
++            )
++        # max_delta_temperature is retained for legacy linear closure only.
++        # A converged NASA7 solution within its supported temperature bounds is
++        # not invalid merely because real ignition crosses 500 K in one sample.
+         returned_T = T_solved.to(dtype=temperature.dtype)
+         # Check the actual feedback dtype as well as the Newton work dtype.
+         end_properties = layer.compute_mixture_properties(returned_T.to(work_dtype), next_Y)
+@@ -5647,6 +5640,7 @@
+         "induction_boost": float(induction_boost),
+         "projection_mode": str(projection_mode),
+         "projection_validation_contract": ppc.PROJECTION_VALIDATION_CONTRACT,
++        "runtime_numerical_contract": nc.RUNTIME_CONTRACT,
+         "desentinelize_scaler": bool(desentinelize_scaler),
+         "network_arch": str(network_arch),
+     }
+@@ -5789,6 +5783,7 @@
+     network_arch: str = "mlp",
+     weight_decay: float = 1e-5,
+     curriculum_warmup_epochs: int | None = None,
++    autonomous_benchmark_cases: str | None = None,
+ ):
+     """
+     V68 训练入口：长 horizon 物种自回归；
+@@ -6048,7 +6043,7 @@
+     inert_species, macro_species, micro_species = (
+         classify_species(
+             species,
+-            include_no_in_macro=(output_parameterization == "dual_branch"),
++            include_no_in_macro=(output_parameterization in ("dual_branch", "dual_branch_pd_v1")),
+         )
+     )
+ 
+@@ -6085,6 +6080,15 @@
+             f"{len(thermo_closure['species_order'])} species incl inert)"
+         )
+     training_config["effective_temperature_mode"] = effective_temperature_mode
++    if effective_temperature_mode == "autonomous":
++        import complete_validation as cv
++        cases_path = Path(autonomous_benchmark_cases or cv.DEFAULT_CASES).resolve()
++        cv.runner_module().load_cases(cases_path)  # Validate before allocating/training.
++        autonomous_benchmark_cases = str(cases_path)
++        training_config["complete_validation_cases_sha256"] = em.compute_file_sha256(cases_path)
++        training_config["complete_validation_cases_path"] = str(cases_path)
++        training_config["complete_validation_reactor_type"] = (
++            thermo_closure["reactor_type"] if autonomous_benchmark_cases == str(cv.DEFAULT_CASES.resolve()) else None)
+     training_config["pressure_feedback_contract"] = (
+         ap.PRESSURE_FEEDBACK_CONTRACT if effective_temperature_mode == "autonomous"
+         else "recorded_p_v1"
+@@ -6452,6 +6456,8 @@
+         "batch_size": val_batch_size, "max_batches": max_val_batches, "num_workers": num_workers,
+         "state_loss_source": state_loss_source, "feedback_state_source": feedback_state_source,
+         "temperature_mode": effective_temperature_mode,
++        "complete_validation_cases_sha256": training_config.get("complete_validation_cases_sha256"),
++        "complete_validation_reactor_type": training_config.get("complete_validation_reactor_type"),
+     }
+     training_config["sentinel_spec"] = sentinel_spec
+     training_config["selection_horizon"] = max(eval_horizons)
+@@ -6575,6 +6581,7 @@
+                     "temperature_mode",
+                     "projection_mode",
+                     "projection_validation_contract",
++                    "runtime_numerical_contract",
+                 )
+             }
+             if effective_temperature_mode == "autonomous":
+@@ -7321,6 +7328,7 @@
+                             # must enter the next feedback state together with Y.
+                             feedback_idx = torch.cat(
+                                 [
++                                    tools.inert_idx,
+                                     species_idx,
+                                     torch.tensor(
+                                         [tools.temperature_idx, tools.pressure_idx],
+@@ -7650,11 +7658,23 @@
+         # objective; it excludes train-only transition/induction weights,
+         # stability, and rollout losses.
+         val_stats = val_stats_oracle
++        if val_stats_pure_ar is not None and effective_temperature_mode == "autonomous":
++            import complete_validation as cv
++            complete=cv.evaluate(model,tools,chemical_mechanism_path,
++                                 training_config,autonomous_benchmark_cases)
++            complete_path=Path(output_root)/f"complete_validation_epoch{epoch+1}.json"
++            complete_path.write_text(json.dumps(complete,indent=2,ensure_ascii=False,allow_nan=False),encoding="utf-8")
++            key=str(max(eval_horizons))
++            val_stats_pure_ar["sentinel_metrics"][key]=cv.gate_primary(
++                val_stats_pure_ar["sentinel_metrics"][key],complete)
++            print(f"[COMPLETE] {complete['summary']['completed']}/{complete['summary']['cases']} completed; eligible={complete['is_valid_candidate']}")
+         primary_metrics = None
+         if val_stats_pure_ar is not None:
+             primary_metrics = val_stats_pure_ar["sentinel_metrics"][str(max(eval_horizons))]
+             selection_score = primary_metrics["composite_score"] if primary_metrics["is_valid_candidate"] else float("inf")
+             scheduler.step(selection_score)
++        eligible_best = (effective_temperature_mode != "autonomous" or
++                         (primary_metrics is not None and primary_metrics["is_valid_candidate"]))
+ 
+         # --------------------------------------------------------
+         # report
+@@ -7832,7 +7852,7 @@
+         # save best - Fixed Horizon Sentinel Tracking & Model Selection
+         # --------------------------------------------------------
+         primary_improved = False
+-        if val_stats_pure_ar is not None and "sentinel_metrics" in val_stats_pure_ar:
++        if eligible_best and val_stats_pure_ar is not None and "sentinel_metrics" in val_stats_pure_ar:
+             for h_int in eval_horizons:
+                 h_str = str(h_int)
+                 if h_str in val_stats_pure_ar["sentinel_metrics"]:
+@@ -7883,7 +7903,7 @@
+         # 1. Best Oracle H=128
+         if "128" in val_stats["per_horizon"] and val_stats["per_horizon"]["128"]["count"] > 0:
+             oracle_h128_rmse = val_stats["per_horizon"]["128"]["rmse"]
+-            if oracle_h128_rmse < best_oracle_h128:
++            if eligible_best and oracle_h128_rmse < best_oracle_h128:
+                 best_oracle_h128 = oracle_h128_rmse
+                 best_oracle_h128_path = weights_dir / f"best_oracle_h128_epoch{epoch+1}.pth"
+                 torch.save(
+@@ -7914,7 +7934,7 @@
+                 oracle_rmse_list.append(h_data["rmse"])
+         if oracle_rmse_list:
+             oracle_avg_rmse = sum(oracle_rmse_list) / len(oracle_rmse_list)
+-            if oracle_avg_rmse < best_oracle_avg:
++            if eligible_best and oracle_avg_rmse < best_oracle_avg:
+                 best_oracle_avg = oracle_avg_rmse
+                 best_oracle_avg_path = weights_dir / f"best_oracle_avg_epoch{epoch+1}.pth"
+                 torch.save(
+@@ -7942,7 +7962,7 @@
+         if val_stats_pure_ar is not None:
+             if "128" in val_stats_pure_ar["per_horizon"] and val_stats_pure_ar["per_horizon"]["128"]["count"] > 0:
+                 pure_ar_h128_rmse = val_stats_pure_ar["per_horizon"]["128"]["rmse"]
+-                if pure_ar_h128_rmse < best_pure_ar_h128:
++                if eligible_best and pure_ar_h128_rmse < best_pure_ar_h128:
+                     best_pure_ar_h128 = pure_ar_h128_rmse
+                     best_pure_ar_h128_path = weights_dir / f"best_pure_ar_h128_epoch{epoch+1}.pth"
+                     torch.save(
+@@ -7983,7 +8003,7 @@
+                 pure_ar_h_for_composite = val_stats_pure_ar["per_horizon"][target_h_key]["rmse"]
+                 composite_metric = 0.2 * oracle_h_for_composite + 0.8 * pure_ar_h_for_composite
+ 
+-                if composite_metric < best_composite:
++                if eligible_best and composite_metric < best_composite:
+                     best_composite = composite_metric
+                     best_composite_path = weights_dir / f"best_composite_epoch{epoch+1}.pth"
+                     torch.save(
+@@ -8027,7 +8047,7 @@
+                     pure_ar_h_metric, pure_ar_mass, pure_ar_element, pure_ar_rate
+                 )
+ 
+-                if is_accepted and robust_raw_score is not None:
++                if eligible_best and is_accepted and robust_raw_score is not None:
+ 
+                     if robust_raw_score < best_robust_raw:
+                         best_robust_raw = robust_raw_score
+@@ -8284,6 +8304,8 @@
+     )
+     parser.add_argument("--weight_decay", type=float, default=1e-5,
+                         help="AdamW weight decay (recorded in the experiment contract).")
++    parser.add_argument("--autonomous_benchmark_cases", type=str, default=None,
++                        help="Frozen 128-step cases JSON used for autonomous model selection.")
+     parser.add_argument("--curriculum_warmup_epochs", type=int, default=None,
+                         help="First curriculum stage length; later stages start every 3 epochs. Mutually exclusive with curriculum_start_epochs.")
+ 
+@@ -8781,6 +8803,7 @@
+         desentinelize_scaler=args.desentinelize_scaler,
+         network_arch=args.network_arch,
+         weight_decay=args.weight_decay,
++        autonomous_benchmark_cases=args.autonomous_benchmark_cases,
+         curriculum_warmup_epochs=args.curriculum_warmup_epochs,
+         num_workers=args.num_workers,
+     )
+--- a/validate_all_best_models_v68.py
++++ b/validate_all_best_models_v68.py
+@@ -57,7 +57,7 @@
+ # V3 is the only trained model; V1/V2/V4 are validation-only ablations.
+ MODEL_VERSIONS = [
+     "v1_ablation", "v2_ablation", "v3_full", "v3_4", "v3_5", "v68", "v68_qssa",
+-    "v69_qssa", "v69_no_noise", "v69_no_stability", "v69_no_microweight", "v71_qssa", "v4_ablation",
++    "v69_qssa", "v69_no_noise", "v69_no_stability", "v69_no_microweight", "v71_qssa", "v4_ablation", "v72_dual_branch", "v72_cfd_optimized",
+ ]
+ ABLATION_CONFIGS = {
+     "v1_ablation": {"update_constraint": "constrained", "feedback_constraint": "raw"},
+@@ -196,7 +196,7 @@
+     )
+     parser.add_argument(
+         "--state_update_mode",
+-        choices=("legacy", "task8_conservative_state", "qssa", "qssa_asymptotic"),
++        choices=("legacy", "task8_conservative_state", "qssa", "qssa_asymptotic", "dual_branch", "dual_branch_pd_v1"),
+         default=None,
+         help="Task8/QSSA state update strategy for validation (passed to validate_sc_v68.py).",
+     )
+@@ -204,7 +204,7 @@
+         "--plan",
+         choices=(
+             "v3", "v34", "v35", "v68", "v68_qssa", "v69_qssa",
+-            "v69_no_noise", "v69_no_stability", "v69_no_microweight", "v71_qssa", "all",
++            "v69_no_noise", "v69_no_stability", "v69_no_microweight", "v71_qssa", "v72_dual_branch", "v72_cfd_optimized", "all",
+         ),
+         default=None,
+         help="Preset plan to validate (e.g. v71_qssa, v69_qssa or v69_no_noise), bypassing interactive menu.",
+@@ -676,6 +676,8 @@
+         "v69_no_stability": ("phase68_runs", "v69_qssa_no_stability", False),
+         "v69_no_microweight": ("phase68_runs", "v69_qssa_no_microweight", False),
+         "v71_qssa": ("phase68_runs", "v71_qssa_asymptotic_exact", False),
++        "v72_dual_branch": ("phase68_runs", "v72_dual_branch", False),
++        "v72_cfd_optimized": ("phase68_runs", "v72_cfd_optimized", False),
+     }
+     for version, (phase_dir, dirname, expand_ablation) in version_specs.items():
+         if version.startswith("v69"):
+@@ -754,11 +756,12 @@
+                         "artifact_root": version_dir,
+                         "experiment_mode": "qssa" if version in {
+                             "v68_qssa", "v69_qssa", "v69_no_noise",
+-                            "v69_no_stability", "v69_no_microweight", "v71_qssa",
++                            "v69_no_stability", "v69_no_microweight", "v71_qssa", "v72_dual_branch", "v72_cfd_optimized",
+                         } else None,
+                         "state_update_mode": (
++                            "dual_branch" if version == "v72_dual_branch" else
+                             "qssa_asymptotic"
+-                            if version == "v71_qssa"
++                            if version in ("v71_qssa", "v72_cfd_optimized")
+                             else "qssa"
+                             if version in {
+                                 "v68_qssa", "v69_qssa", "v69_no_noise",
+@@ -983,7 +986,9 @@
+     choice = args.choice
+     if choice is None and (args.plan or args.target_version):
+         target = args.plan or args.target_version
+-        if target in ("v71_qssa", "v71"):
++        if target in ("v72_dual_branch", "v72_cfd_optimized"):
++            choice = "13"
++        elif target in ("v71_qssa", "v71"):
+             choice = "12"
+         elif target in ("v69_qssa", "v69"):
+             choice = "8"
+@@ -1133,6 +1138,11 @@
+         ]
+         title = f"验证 {selected_version} 的所有唯一 epoch 代表 ({len(selected_models)} 个)"
+         quick = False
++    elif choice == "13":
++        selected_models = [model for model in unique_epoch_models
++                           if model.get("version") == (args.plan or args.target_version or "v72_dual_branch")]
++        title = f"验证 V72 ({len(selected_models)} 个)"
++        quick = False
+     elif choice == "12":
+         selected_models = [
+             model for model in unique_epoch_models
+--- a/validate_sc_v68.py
++++ b/validate_sc_v68.py
+@@ -174,6 +174,8 @@
+ def checkpoint_rollout_config(checkpoint: dict) -> dict:
+     """Return rollout settings saved with a V3.x checkpoint."""
+     config = checkpoint.get("training_config") or {}
++    if config.get("runtime_numerical_contract") != tr.nc.RUNTIME_CONTRACT:
++        raise ValueError("Checkpoint predates the repaired numerical contract; use its original code or retrain")
+     requires_projection = (
+         config.get("state_loss_source") == "constrained"
+         or config.get("feedback_state_source") == "constrained"
+@@ -1071,7 +1073,7 @@
+         used_bins = set()
+         for i in pool:
+             temp_bin = int(np.floor(temperatures[i] / 200.0))
+-            pressure_bin = int(np.floor(pressures[i] / 10000.0))
++            pressure_bin = int(np.floor(pressures[i] / 5.0))  # Input pressure is in atm.
+             key = (temp_bin, pressure_bin)
+             if key not in used_bins or len(chosen) >= len(pool) - count:
+                 chosen.append(int(i))
+@@ -1406,6 +1408,19 @@
+     return model
+ 
+ 
++def validation_feedback(tools, *, mode, failures, batch_index, endpoint, base_next, **kwargs):
++    """An invalid raw ablation must be visible without aborting deployed validation."""
++    try:
++        return tools.state_to_input_scaled(base_next, **kwargs)
++    except (RuntimeError, ValueError, FloatingPointError) as exc:
++        if mode != 'pure_ar_raw':
++            raise
++        failures.append(dict(mode=mode, batch_index=batch_index, failure_step=endpoint,
++                             failed_windows=len(base_next) if base_next is not None else None,
++                             phase='feedback', message=f'{type(exc).__name__}: {exc}'))
++        return None
++
++
+ def evaluate(args, checkpoint, feature_info, scaler_x, scaler_y, parts, output_dir: Path, data_dir: Path):
+     tr.seed_everything(args.seed)
+     model_config = checkpoint.get("training_config") or {}
+@@ -1426,6 +1441,7 @@
+     )
+     model = _build_checkpoint_model(checkpoint, feature_info)
+     model.eval()
++    tools.projection_mode = model_config.get('projection_mode', 'multiplicative_kl')
+ 
+     saved_rollout = checkpoint_rollout_config(checkpoint)
+     selected_experiment_mode = args.experiment_mode
+@@ -1567,6 +1583,7 @@
+     batches = 0
+     windows = 0
+     negative_macro = {mode: {str(h): 0 for h in horizons} for mode in stats}
++    rollout_failures = []
+ 
+     try:
+         loader_length = len(loader)
+@@ -1591,6 +1608,7 @@
+             steps = min(steps, max_horizon)
+             windows += bsz
+             current = {mode: batch_x[:, 0, :] for mode in rollout_modes}
++            failed_modes = set()
+             previous_errors = {mode: None for mode in rollout_modes}
+             previous_rates = {mode: None for mode in rollout_modes}
+             previous_true_rates = {mode: None for mode in rollout_modes}
+@@ -1621,7 +1639,7 @@
+                 meta = candidate_metadata[index]
+                 condition_key = (
+                     int(np.floor(meta["temperature"] / 200.0)),
+-                    int(np.floor(meta["pressure"] / 10000.0)),
++                    int(np.floor(meta["pressure"] / 5.0)),
+                 )
+                 if args.trajectory_selection != "first" and condition_key in selected_condition_keys:
+                     continue
+@@ -1662,6 +1680,9 @@
+                 predicted_species = {}
+                 true_species = torch.cat([true_macro, true_micro], dim=1)
+                 for mode in rollout_modes:
++                    if mode in failed_modes:
++                        predicted_species[mode] = torch.full_like(true_species, float('nan'))
++                        continue
+                     pred_rate_scaled = model(current[mode])
+                     pred_state = tools.predict_next_state(
+                         current[mode], pred_rate_scaled,
+@@ -1672,8 +1693,6 @@
+                         ),
+                         state_update_mode=(
+                             selected_state_update_mode
+-                            if mode != "pure_ar_raw" or selected_state_update_mode in ("qssa", "qssa_asymptotic")
+-                            else "legacy"
+                         ),
+                     )
+                     # Update and feedback are separate ablation axes. The
+@@ -1682,12 +1701,12 @@
+                         pred_state,
+                         "raw" if mode == "pure_ar_raw" else update_constraint,
+                     )
+-                    if mode == "pure_ar_raw":
++                    if mode == "pure_ar_raw" or update_constraint == "raw":
+                         pred_micro = pred_state.get(
+                             "Y_micro_next_unconstrained", pred_state["Y_micro_next"]
+                         )
+                         pred_micro_log = pred_state.get(
+-                            "logY_micro_next_unconstrained", pred_state["logY_micro_next"]
++                            "logY_micro_next_raw", pred_state["logY_micro_next"]
+                         )
+                     else:
+                         pred_micro = pred_state["Y_micro_next"]
+@@ -1701,10 +1720,10 @@
+                     if pred_state.get("Y_next_projected_full") is not None:
+                         projected_macro = pred_state["Y_next_projected_full"][:, :len(macro_names)]
+                     raw_species = torch.cat(
+-                        [raw_macro, pred_micro], dim=1
++                        [raw_macro, pred_state["Y_micro_next_raw"]], dim=1
+                     )
+                     clamped_species = torch.cat(
+-                        [torch.clamp(raw_macro, min=0.0), pred_micro],
++                        [torch.clamp(raw_macro, min=0.0), pred_state["Y_micro_next_raw"].clamp(0.,1.)],
+                         dim=1,
+                     )
+                     if args.diagnostic and mode == "oracle":
+@@ -1816,15 +1835,21 @@
+                             if mode == "pure_ar_raw"
+                             else pred_state["logY_micro_next"]
+                         )
+-                        current[mode] = tools.state_to_input_scaled(
+-                            batch_x[:, endpoint, :],
+-                            macro_for_feedback, feedback_micro_log,
++                        next_feedback = validation_feedback(
++                            tools, mode=mode, failures=rollout_failures,
++                            batch_index=batches, endpoint=endpoint,
++                            base_next=batch_x[:, endpoint, :],
++                            Y_macro_next=macro_for_feedback, logY_micro_next=feedback_micro_log,
+                             temperature_mode=temperature_mode,
+                             thermo_closure=thermo_closure,
+                             current_X_scaled=current[mode],
+                             max_delta_temperature=max_delta_temperature,
+                             feedback_input_limit=feedback_input_limit_for_mode(mode),
+                         )
++                        if next_feedback is None:
++                            failed_modes.add(mode)
++                        else:
++                            current[mode] = next_feedback
+                 if trajectory_records:
+                     true_values = true_species[selected_indices].cpu().numpy()
+                     for sample_index, record in enumerate(trajectory_records):
+@@ -1856,6 +1881,11 @@
+             pbar.set_postfix({"windows": windows})
+ 
+     result = {
++        "rollout_failures": rollout_failures,
++        "rollout_status": {mode: {
++            "completed_all_windows": not any(f['mode'] == mode for f in rollout_failures),
++            "failed_batches": sum(f['mode'] == mode for f in rollout_failures),
++        } for mode in rollout_modes},
+         "checkpoint": str(checkpoint.get("_path", "")),
+         "epoch": checkpoint.get("epoch"),
+         "mechanism": checkpoint.get("mechanism", args.mechanism),
+--- a/data_pipeline\build_training_dataset_v72.py
++++ b/data_pipeline\build_training_dataset_v72.py
+@@ -9,6 +9,7 @@
+ from __future__ import annotations
+ 
+ import argparse
++import json
+ import importlib.util
+ import os
+ from pathlib import Path
+@@ -27,17 +28,27 @@
+ if str(SCRIPT_DIR) not in sys.path:
+     sys.path.insert(0, str(SCRIPT_DIR))
+ 
+-bench_path = PROJECT_ROOT / "test" / "benchmark_cfd_closed_loop.py"
+-if not bench_path.exists():
+-    bench_path = SCRIPT_DIR / "test" / "benchmark_cfd_closed_loop.py"
+-
+-bench_spec = importlib.util.spec_from_file_location("bench", str(bench_path))
+-bench_mod = importlib.util.module_from_spec(bench_spec)
+-bench_spec.loader.exec_module(bench_mod)
+-BENCHMARK_CASES = bench_mod.BENCHMARK_CASES
++from benchmark_cases import BENCHMARK_CASES
+ import runner_sc_v21_qssa as r21
+ 
+ DEFAULT_TARGET_DIR = PROJECT_ROOT / "trajectories_nuig_2024"
++
++
++def write_dataset_metadata(target_dir):
++    """Keep the generated dataset loadable and its recorded row count auditable."""
++    import pyarrow.parquet as pq
++    folder = Path(target_dir)
++    parts = sorted(folder.glob('part-*.parquet'))
++    ids = set()
++    for part in parts:
++        ids.update(pd.read_parquet(part, columns=['sample_id'])['sample_id'].astype(str))
++    record = dict(mechanism_name='nuig_2024', mechanism_path=str(PROJECT_ROOT / 'NUIG2024.yaml'),
++                  reactor_type='IdealGasReactor', training_rows=sum(pq.read_metadata(p).num_rows for p in parts),
++                  success=len(ids), failed=0, parquet_parts=len(parts),
++                  source='mini trajectories and/or exploratory benchmark augmentation; not held-out evaluation')
++    tmp = folder / 'metadata.json.tmp'
++    tmp.write_text(json.dumps(record, indent=2), encoding='utf-8')
++    tmp.replace(folder / 'metadata.json')
+ 
+ 
+ def compute_phi_from_species_dict(sp_dict: dict, gas: ct.Solution | None = None) -> float:
+@@ -87,13 +98,8 @@
+     rows = ds["rows"]
+ 
+     mech_cand = PROJECT_ROOT / "NUIG2024.yaml"
+-    gas = None
+-    if mech_cand.exists():
+-        try:
+-            gas = ct.Solution(str(mech_cand))
+-        except Exception:
+-            gas = None
+-    W_k = [gas.molecular_weights[gas.species_index(s)] if gas else 28.0 for s in names]
++    gas = ct.Solution(str(mech_cand))
++    W_k = [gas.molecular_weights[gas.species_index(s)] for s in names]
+ 
+     records = []
+     initial_phi_per_sid = {}
+@@ -168,6 +174,7 @@
+     df.to_parquet(tmp_path, index=False)
+     tmp_path.replace(out_path)
+     print(f"Saved {len(df)} rows ({len(intervals_per_sid)} trajectories) to {out_path}")
++    write_dataset_metadata(target_dir)
+     return df
+ 
+ 
+@@ -274,6 +281,7 @@
+     df.to_parquet(tmp_path, index=False)
+     tmp_path.replace(out_path)
+     print(f"Saved {len(df)} rows (24 benchmark trajectories) to {out_path}")
++    write_dataset_metadata(target_dir)
+     return df
+ 
+ 
+--- /dev/null
++++ b/numerical_contract.py
+@@ -0,0 +1,30 @@
++"""Numerical semantics shared by training and independent deployment checks."""
++import math
++import torch
++
++RUNTIME_CONTRACT = 'sc17_repaired_kinetics_v2'
++INPUT_ROUNDOFF_ATOL = 1e-12
++
++def asinh_rate_inverse(z, scale):
++    """Exact inverse on the representable domain; never silently clip labels."""
++    value = scale.double() * torch.sinh(z.double())
++    if not torch.isfinite(value).all() or (value.abs()>torch.finfo(z.dtype).max/16).any():
++        raise FloatingPointError('Macro asinh rate exceeds the representable numerical domain')
++    return value.to(z.dtype)
++
++def mass_from_log10(log_y):
++    """Exact for Y<=1, linear continuation for unphysical Y>1, with a restoring gradient.
++
++    The log candidate remains available separately. This continuation is a loss
++    surrogate outside the mass-fraction domain, never a deployed physical state.
++    """
++    nonpositive = log_y.clamp(max=0.)
++    return torch.where(log_y>0., 1.+math.log(10.)*log_y, torch.pow(10., nonpositive))
++
++def clean_input_mass_roundoff(scaled, physical, mean, scale, indices):
++    selected=physical.index_select(-1,indices)
++    # Bound cancellation by the actual feature arithmetic, not a global Y floor.
++    arithmetic=(scaled.index_select(-1,indices)*scale[indices]).abs()+mean[indices].abs()
++    tolerance=(4*torch.finfo(scaled.dtype).eps*arithmetic+INPUT_ROUNDOFF_ATOL).clamp(max=1e-7)
++    corrected=torch.where((selected<0)&(selected>=-tolerance),torch.zeros_like(selected),selected)
++    return physical.index_copy(-1,indices,corrected)
+--- /dev/null
++++ b/benchmark_cases.py
+@@ -0,0 +1,46 @@
++"""Shared exploratory cases restored from sc17-0/test; not held-out test data."""
++
++def make_fuel_air_mix(phi, xh2, egr=0.0):
++    f_nh3, f_h2 = 1.0 - xh2, xh2
++    o2 = (0.75 * f_nh3 + 0.5 * f_h2) / phi
++    X = {"NH3": f_nh3, "H2": f_h2, "O2": o2, "N2": 3.7619 * o2}
++    if egr > 0:
++        tot = sum(X.values())
++        X["N2"] += egr * tot
++    return X
++
++BENCHMARK_CASES = [
++    # Core Engine / High Pressure (Cases 1-6)
++    {"name": "1200K_40atm_phi1.0_H2-20", "T0": 1200, "P": 40, "X": make_fuel_air_mix(1.0, 0.2), "tmax": 4e-3},
++    {"name": "1100K_60atm_phi1.0_H2-40", "T0": 1100, "P": 60, "X": make_fuel_air_mix(1.0, 0.4), "tmax": 4e-3},
++    {"name": "1000K_80atm_phi0.8_H2-30", "T0": 1000, "P": 80, "X": make_fuel_air_mix(0.8, 0.3), "tmax": 8e-3},
++    {"name": "1300K_20atm_phi0.6_H2-10", "T0": 1300, "P": 20, "X": make_fuel_air_mix(0.6, 0.1), "tmax": 4e-3},
++    {"name": "1400K_10atm_phi1.4_H2-20", "T0": 1400, "P": 10, "X": make_fuel_air_mix(1.4, 0.2), "tmax": 3e-3},
++    {"name": "1600K_5atm_phi1.0_NH3-pure", "T0": 1600, "P": 5, "X": make_fuel_air_mix(1.0, 0.0), "tmax": 2e-3},
++
++    # Low-Temperature Compression Limit (Cases 7-10)
++    {"name": "950K_40atm_phi1.0_H2-40", "T0": 950, "P": 40, "X": make_fuel_air_mix(1.0, 0.4), "tmax": 10e-3},
++    {"name": "900K_60atm_phi1.0_H2-50", "T0": 900, "P": 60, "X": make_fuel_air_mix(1.0, 0.5), "tmax": 12e-3},
++    {"name": "1000K_40atm_phi1.0_H2-20", "T0": 1000, "P": 40, "X": make_fuel_air_mix(1.0, 0.2), "tmax": 10e-3},
++    {"name": "1050K_30atm_phi0.8_H2-30", "T0": 1050, "P": 30, "X": make_fuel_air_mix(0.8, 0.3), "tmax": 8e-3},
++
++    # Lean / Rich Boundaries (Cases 11-14)
++    {"name": "1100K_20atm_phi1.2_H2-20", "T0": 1100, "P": 20, "X": make_fuel_air_mix(1.2, 0.2), "tmax": 6e-3},
++    {"name": "1150K_40atm_phi1.0_H2-10", "T0": 1150, "P": 40, "X": make_fuel_air_mix(1.0, 0.1), "tmax": 6e-3},
++    {"name": "1250K_10atm_phi0.5_H2-30", "T0": 1250, "P": 10, "X": make_fuel_air_mix(0.5, 0.3), "tmax": 5e-3},
++    {"name": "1350K_20atm_phi1.5_H2-20", "T0": 1350, "P": 20, "X": make_fuel_air_mix(1.5, 0.2), "tmax": 4e-3},
++
++    # Gas Turbine & Atmospheric Burner (Cases 15-18)
++    {"name": "1200K_1atm_phi1.0_H2-40", "T0": 1200, "P": 1, "X": make_fuel_air_mix(1.0, 0.4), "tmax": 8e-3},
++    {"name": "1300K_5atm_phi1.0_H2-20", "T0": 1300, "P": 5, "X": make_fuel_air_mix(1.0, 0.2), "tmax": 5e-3},
++    {"name": "1400K_30atm_phi1.0_NH3-pure", "T0": 1400, "P": 30, "X": make_fuel_air_mix(1.0, 0.0), "tmax": 4e-3},
++    {"name": "1450K_1atm_phi1.0_NH3-pure", "T0": 1450, "P": 1, "X": make_fuel_air_mix(1.0, 0.0), "tmax": 6e-3},
++
++    # High Temperature / Dilution & Extremes (Cases 19-24)
++    {"name": "1500K_10atm_phi0.8_H2-10", "T0": 1500, "P": 10, "X": make_fuel_air_mix(0.8, 0.1), "tmax": 3e-3},
++    {"name": "1550K_20atm_phi1.0_H2-30", "T0": 1550, "P": 20, "X": make_fuel_air_mix(1.0, 0.3), "tmax": 2e-3},
++    {"name": "1000K_30atm_phi1.0_H2-pure", "T0": 1000, "P": 30, "X": make_fuel_air_mix(1.0, 1.0), "tmax": 3e-3},
++    {"name": "1100K_40atm_phi1.0_H2-20_EGR10", "T0": 1100, "P": 40, "X": make_fuel_air_mix(1.0, 0.2, egr=0.10), "tmax": 8e-3},
++    {"name": "1200K_30atm_phi1.0_H2-20_EGR15", "T0": 1200, "P": 30, "X": make_fuel_air_mix(1.0, 0.2, egr=0.15), "tmax": 6e-3},
++    {"name": "1300K_40atm_phi1.0_H2-20_EGR20", "T0": 1300, "P": 40, "X": make_fuel_air_mix(1.0, 0.2, egr=0.20), "tmax": 5e-3},
++]
+--- /dev/null
++++ b/complete_validation.py
+@@ -0,0 +1,55 @@
++"""Connect independent complete trajectories to training's primary selection."""
++from pathlib import Path
++from functools import lru_cache
++import importlib.util
++import hashlib,math
++import autonomous_benchmark_protocol as protocol
++
++ROOT=Path(__file__).resolve().parent
++DEFAULT_CASES=ROOT/'test/benchmark_autonomous_cases.example.json'
++
++@lru_cache(maxsize=1)
++def runner_module():
++    path=ROOT/'test/benchmark_autonomous_h128.py'
++    spec=importlib.util.spec_from_file_location('sc17_complete_runner',path)
++    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
++    return module
++
++def evaluate(model,tools,mechanism_path,config,cases_path=None):
++    runner=runner_module();path=Path(cases_path or DEFAULT_CASES).resolve()
++    digest=hashlib.sha256(path.read_bytes()).hexdigest()
++    if config.get('complete_validation_cases_sha256',digest)!=digest:
++        raise ValueError('Complete validation cases changed during the experiment')
++    cases=runner.load_cases(path)
++    reactor_type=config.get('complete_validation_reactor_type')
++    if reactor_type is not None:
++        cases=[case for case in cases if case['reactor_type']==reactor_type]
++        if not cases:raise ValueError('No fixed validation cases match the training reactor type')
++    tools._benchmark_state_update_mode=config['state_update_mode']
++    tools._benchmark_trust_region_fraction=config['trust_region_fraction']
++    tools._benchmark_max_delta_temperature=config['max_delta_temperature']
++    was_training=model.training;model.eval()
++    records=[]
++    try:
++        for case in cases:
++            try:
++                record,_=runner.run_case(case,model,tools,Path(mechanism_path))
++            except Exception as exc:
++                record=dict(name=case['name'],status='failed',failure_phase='complete_runner',failure_message=f'{type(exc).__name__}: {exc}')
++            records.append(record)
++    finally:model.train(was_training)
++    score=protocol.selection_score(records)
++    return dict(protocol=protocol.BENCHMARK_PROTOCOL,cases_path=str(path),
++        cases_sha256=digest,reactor_type_filter=reactor_type,
++        role='fixed_model_selection_validation; never an independent test set',
++        selection_score=score if math.isfinite(score) else None,
++        is_valid_candidate=math.isfinite(score),summary=protocol.summarize_cases(records),cases=records)
++
++def gate_primary(window,complete):
++    result=dict(window)
++    result['window_composite_score']=window['composite_score']
++    result['complete_trajectory_validation']=complete
++    result['is_valid_candidate']=bool(window['is_valid_candidate'] and complete['is_valid_candidate'])
++    if result['is_valid_candidate']:
++        result['composite_score']=window['composite_score']+complete['selection_score']
++    return result
+--- /dev/null
++++ b/autonomous_integrator.py
+@@ -0,0 +1,46 @@
++"""Bounded subdivision with fresh model evaluations at each physical substep."""
++import math
++import torch
++from physical_projection_contract import ProjectionConstraintError
++
++MAX_SUBDIVISIONS=4
++
++def recoverable(exc):
++    if isinstance(exc,ProjectionConstraintError):
++        return exc.reason in ('not_converged','optimizer_failed','fallback_failed')
++    message=str(exc).lower()
++    return isinstance(exc,RuntimeError) and any(s in message for s in ('energy','temperature','autonomous pressure'))
++
++def advance_autonomous(model,tools,current,closure,state_update_mode,
++                       trust_region_fraction=0.,max_delta_temperature=1000.,
++                       base_next=None,max_subdivisions=MAX_SUBDIVISIONS):
++    if not isinstance(max_subdivisions,int) or not 0<=max_subdivisions<=8:
++        raise ValueError('max_subdivisions must be an integer in [0,8]')
++    info={'accepted_substeps':0,'model_evaluations':0,'rejected_steps':0}
++    original_dt_column=current[:,tools.dt_idx].clone()
++    def step(state,depth):
++        info['model_evaluations']+=1
++        try:
++            predicted=model(state)
++            pred=tools.predict_next_state(state,predicted,safe_for_rollout=True,
++                state_update_mode=state_update_mode,trust_region_fraction=trust_region_fraction)
++            nxt=tools.state_to_input_scaled(state,pred['Y_macro_next_constrained'],
++                pred['logY_micro_next_constrained'],temperature_mode='autonomous',
++                thermo_closure=closure,current_X_scaled=state,
++                max_delta_temperature=max_delta_temperature)
++            info['accepted_substeps']+=1
++            return nxt
++        except (RuntimeError,FloatingPointError) as exc:
++            if depth>=max_subdivisions or not recoverable(exc):raise
++            info['rejected_steps']+=1
++            half=state.clone()
++            half[:,tools.dt_idx]=state[:,tools.dt_idx]-math.log10(2.)/tools.scale_X[tools.dt_idx]
++            middle=step(half,depth+1)
++            # The second half starts from the first half's actual T/P/Y.
++            end=step(middle,depth+1).clone()
++            end[:,tools.dt_idx]=state[:,tools.dt_idx]
++            return end
++    nxt=step(current,0)
++    result=nxt.clone()
++    result[:,tools.dt_idx]=(base_next[:,tools.dt_idx] if base_next is not None else original_dt_column)
++    return result,info
+--- /dev/null
++++ b/test/benchmark_autonomous_h128.py
+@@ -0,0 +1,500 @@
++"""Strict H=128 autonomous T/P/Y benchmark; Cantera is reference/auditor only.
++
++Unlike the historical benchmark_cfd_closed_loop.py, the neural trajectory is
++advanced *only* by the checkpoint model, production constrained species
++projection, differentiable NASA7 energy solver and EOS pressure feedback.
++Cantera is NEVER called to repair neural T, P or Y during rollout.
++
++Example (run from sc16 after training an autonomous + constrained checkpoint):
++  python test/benchmark_autonomous_h128.py \
++    --checkpoint output/weights_v68/best_v68_net_nuig_2024_H128.pth \
++    --scalers-root output --mechanism nuig_2024 --mechanism-path NUIG2024.yaml \
++    --cases test/benchmark_autonomous_cases.example.json \
++    --output output/benchmark_h128
++
++The supplied cases are not automatically independent of the training data.
++This script explicitly reports them as *independence unverified*: use frozen,
++held-out condition groups for publication-quality test metrics.
++"""
++from __future__ import annotations
++
++import argparse
++from datetime import datetime, timezone
++import hashlib
++import json
++from pathlib import Path
++import re
++import os
++import sys
++import traceback
++
++os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
++
++import cantera as ct
++import numpy as np
++import torch
++
++ROOT = Path(__file__).resolve().parent.parent
++if str(ROOT) not in sys.path:
++    sys.path.insert(0, str(ROOT))
++
++import autonomous_benchmark_protocol as protocol
++import chemistry_contract as cc
++import experiment_manifest as em
++import train_sc_v68 as tr
++import validate_sc_v68 as validator
++from autonomous_integrator import advance_autonomous
++
++
++def sha256(path: Path) -> str:
++    return hashlib.sha256(path.read_bytes()).hexdigest()
++
++
++def fuel_air_mole_fractions(phi: float, hydrogen_mole_fraction: float) -> dict[str, float]:
++    if not (np.isfinite(phi) and 0.1 <= phi <= 5):
++        raise ValueError("phi must be finite and in [0.1, 5]")
++    if not (np.isfinite(hydrogen_mole_fraction) and 0 <= hydrogen_mole_fraction <= 1):
++        raise ValueError("h2_fraction must be in [0, 1]")
++    nh3 = 1.0 - hydrogen_mole_fraction
++    h2 = hydrogen_mole_fraction
++    o2 = (0.75 * nh3 + 0.5 * h2) / phi
++    mixture = {"O2": o2, "N2": 3.7619 * o2}
++    if nh3:
++        mixture["NH3"] = nh3
++    if h2:
++        mixture["H2"] = h2
++    return mixture
++
++
++def load_cases(path: Path) -> list[dict]:
++    data = json.loads(path.read_text(encoding="utf-8"))
++    if not isinstance(data, dict) or data.get("protocol") != protocol.BENCHMARK_PROTOCOL:
++        raise ValueError("Cases JSON must declare protocol=autonomous_h128_trajectories_v1")
++    cases = data.get("cases")
++    if not isinstance(cases, list) or not cases:
++        raise ValueError("Cases JSON must contain a nonempty cases list")
++    names = set()
++    clean = []
++    for case in cases:
++        if not isinstance(case, dict):
++            raise ValueError("Each case must be a dictionary")
++        name = case.get("name")
++        if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,80}", name):
++            raise ValueError("Case name must contain only letters, digits, '_' or '-'")
++        if name in names:
++            raise ValueError(f"Duplicate case name: {name}")
++        names.add(name)
++        if case.get("reactor_type") not in (
++            "IdealGasReactor", "IdealGasConstPressureReactor"
++        ):
++            raise ValueError(f"{name}: unsupported reactor_type")
++        steps = case.get("steps")
++        if not isinstance(steps, int) or isinstance(steps, bool) or steps < 1:
++            raise ValueError(f"{name}: steps must be a positive integer")
++        if steps != 128:
++            raise ValueError(f"{name}: H=128 protocol requires exactly 128 model steps")
++        values = ("T0_K", "P0_atm", "phi", "h2_fraction", "dt_s")
++        for key in values:
++            if key not in case or not isinstance(case[key], (int, float)) or not np.isfinite(case[key]):
++                raise ValueError(f"{name}: finite numeric {key} is required")
++        if not (200 <= case["T0_K"] <= 5000):
++            raise ValueError(f"{name}: initial T outside NASA7 valid range")
++        if not (1e-6 <= case["P0_atm"] <= 1e4):
++            raise ValueError(f"{name}: initial P outside autonomous EOS guard")
++        if not (0 < case["dt_s"] <= 1e-3):
++            raise ValueError(f"{name}: dt_s outside (0, 1e-3] seconds")
++        fuel_air_mole_fractions(float(case["phi"]), float(case["h2_fraction"]))
++        clean.append(dict(case))
++    return clean
++
++
++def load_model_components(
++    checkpoint_path: Path, scalers_root: Path, mechanism_name: str,
++    mechanism_path: Path, device: torch.device, allow_unqualified: bool = False,
++):
++    if not checkpoint_path.is_file() or not mechanism_path.is_file():
++        raise FileNotFoundError("Checkpoint and mechanism YAML must exist")
++    tr.DEVICE = device
++    checkpoint = validator.load_checkpoint(checkpoint_path, mechanism_name)
++    config = validator.checkpoint_rollout_config(checkpoint)
++    if config["temperature_mode"] != "autonomous":
++        raise ValueError("H=128 closed-loop benchmark requires an autonomous checkpoint")
++    recorded = checkpoint.get("training_config") or {}
++    if recorded.get("feedback_state_source") != "constrained":
++        raise ValueError("Autonomous benchmark requires constrained-species checkpoint")
++    if config["pressure_feedback_contract"] != tr.ap.PRESSURE_FEEDBACK_CONTRACT:
++        raise ValueError("Checkpoint lacks the autonomous EOS pressure contract")
++    if config["projection_validation_contract"] != tr.ppc.PROJECTION_VALIDATION_CONTRACT:
++        raise ValueError("Checkpoint lacks the strict elemental projection contract")
++    if config["autonomous_input_contract"] != tr.ap.AUTONOMOUS_INPUT_CONTRACT:
++        raise ValueError("Checkpoint was not trained with leak-free autonomous inert feedback")
++    if int(recorded.get("max_horizon", 0) or 0) < 128:
++        raise ValueError(
++            "This H=128 benchmark requires a checkpoint from a run configured "
++            "for max_horizon >= 128; select an H128-trained candidate"
++        )
++    if not allow_unqualified and checkpoint.get("horizon") != 128:
++        raise ValueError(
++            "Checkpoint is not an explicitly selected H=128 Sentinel checkpoint; "
++            "use best_v68_net_<mechanism>_H128.pth, not latest or a short-H model"
++        )
++    if not allow_unqualified and not bool((checkpoint.get("sentinel_metrics") or {}).get("is_valid_candidate", False)):
++        raise ValueError("H128 checkpoint has no valid frozen Sentinel selection record")
++    fi = checkpoint["feature_info"]
++    actual_hash = sha256(mechanism_path)
++    expected_hash = (checkpoint.get("manifest") or {}).get("mechanism_sha256")
++    if actual_hash != expected_hash:
++        raise ValueError("Mechanism YAML SHA-256 differs from checkpoint manifest")
++
++    sx, sy, _ = validator.load_scalers(
++        output_root=scalers_root, mechanism=mechanism_name,
++        feature_info=fi, data_dir=mechanism_path.parent,
++        rebuild_scalers=False, checkpoint_root=checkpoint_path.parent.parent,
++    )
++    em.verify_runtime_artifacts(checkpoint, fi, sx, sy, (mechanism_path.parent,))
++    model = validator._build_checkpoint_model(checkpoint, fi, device=device)
++    model.eval()
++    tools = tr.CoarseOperatorTools(
++        fi, sx, sy, rate_decode_mode=recorded.get(
++            "rate_decode_mode", fi.get("rate_decode_mode", "direct_rate")
++        ),
++        rate_z_limit=float(recorded.get("rate_z_limit", tr.DEFAULT_RATE_Z_LIMIT)),
++        device=device,
++    )
++    tools.projection_mode = recorded.get("projection_mode", "multiplicative_kl")
++    gas = ct.Solution(str(mechanism_path))
++    names = list(fi["inert_species"]) + list(fi["macro_species"]) + list(fi["micro_species"])
++    if len(names) != len(set(names)) or set(names) != set(gas.species_names):
++        missing = sorted(set(gas.species_names) - set(names))
++        extra = sorted(set(names) - set(gas.species_names))
++        raise ValueError(
++            "Autonomous benchmark requires full mechanism species coverage; "
++            f"missing={missing}, extra={extra}"
++        )
++    if list(fi["all_species"]) != list(gas.species_names):
++        raise ValueError("Checkpoint mechanism species order differs from Cantera")
++    return checkpoint, config, model, tools, gas, names
++
++
++def physical_input(
++    tools, gas: ct.Solution, T: float, P_atm: float, Y: np.ndarray, dt: float,
++) -> torch.Tensor:
++    mapping = {"T": T, "P": P_atm, "log_dt": np.log10(dt)}
++    for name in tools.feature_info["inert_species"] + tools.feature_info["macro_species"]:
++        mapping[f"Y_{name}"] = float(Y[gas.species_index(name)])
++    for name in tools.feature_info["micro_species"]:
++        mapping[f"logY_{name}"] = float(np.log10(max(Y[gas.species_index(name)], tr.LOG_EPS)))
++    row = torch.tensor(
++        [[mapping[name] for name in tools.feature_info["input_cols"]]],
++        device=tools.device, dtype=tools.mean_X.dtype,
++    )
++    return (row - tools.mean_X) / tools.scale_X
++
++
++def decode_feedback_state(tools, scaled, names, gas):
++    state = tools.inverse_state(scaled)[0].detach().cpu().numpy()
++    out = np.zeros(gas.n_species, dtype=np.float64)
++    for sp in tools.feature_info["inert_species"] + tools.feature_info["macro_species"]:
++        out[gas.species_index(sp)] = state[tools.feature_info["input_cols"].index(f"Y_{sp}")]
++    for sp in tools.feature_info["micro_species"]:
++        z = state[tools.feature_info["input_cols"].index(f"logY_{sp}")]
++        out[gas.species_index(sp)] = 10.0 ** np.clip(z, tr.MICRO_LOG_MIN, tr.MICRO_LOG_MAX)
++    return (
++        float(state[tools.temperature_idx]),
++        float(state[tools.pressure_idx]),
++        out,
++    )
++
++
++def generate_cantera_reference(initial_gas: ct.Solution, reactor_type: str,
++                               grid_s: np.ndarray, mechanism_path: Path) -> dict[str, np.ndarray]:
++    """Integrate a *separate* Cantera reactor at the exact NN sample times."""
++    gas = ct.Solution(str(mechanism_path))
++    gas.TPY = initial_gas.T, initial_gas.P, initial_gas.Y
++    if reactor_type == "IdealGasReactor":
++        reactor = ct.IdealGasReactor(gas)
++    else:
++        reactor = ct.IdealGasConstPressureReactor(gas)
++    net = ct.ReactorNet([reactor])
++    T = [float(reactor.thermo.T)]
++    P = [float(reactor.thermo.P / ct.one_atm)]
++    Y = [reactor.thermo.Y.copy()]
++    for instant in grid_s[1:]:
++        net.advance(float(instant))
++        T.append(float(reactor.thermo.T))
++        P.append(float(reactor.thermo.P / ct.one_atm))
++        Y.append(reactor.thermo.Y.copy())
++    return {"T": np.asarray(T), "P": np.asarray(P), "Y": np.asarray(Y)}
++
++
++def audit_neural_state(
++    gas: ct.Solution, T: float, P_atm: float, Y: np.ndarray,
++    reactor_type: str, initial_density: float, initial_pressure_atm: float,
++    initial_energy: float, initial_elements: np.ndarray,
++    A_full: np.ndarray, *, mass_tolerance=5e-6,
++    element_tolerance=1e-6, energy_tolerance_Jkg=10.0,
++    eos_relative_tolerance=1e-5,
++) -> dict[str, float]:
++    """Independent Cantera *audit*, without overwriting neural feedback values."""
++    if not (np.isfinite(T) and np.isfinite(P_atm) and np.isfinite(Y).all()):
++        raise RuntimeError("Non-finite autonomous T/P/Y")
++    mass = float(abs(Y.sum() - 1.0))
++    negative = float(max(0.0, -Y.min()))
++    elements = float(np.abs(A_full @ Y - initial_elements).max())
++    if mass > mass_tolerance or negative > 0 or elements > element_tolerance:
++        raise RuntimeError(
++            f"Physical species drift: mass={mass:.4e}, negative={negative:.4e}, "
++            f"elements={elements:.4e}"
++        )
++    if reactor_type == "IdealGasReactor":
++        gas.TDY = T, initial_density, Y
++        independent_P_atm = gas.P / ct.one_atm
++        energy = gas.int_energy_mass
++    else:
++        gas.TPY = T, initial_pressure_atm * ct.one_atm, Y
++        independent_P_atm = initial_pressure_atm
++        energy = gas.enthalpy_mass
++    energy_residual = float(abs(energy - initial_energy))
++    eos_residual = float(abs(P_atm - independent_P_atm) / independent_P_atm)
++    if energy_residual > energy_tolerance_Jkg or eos_residual > eos_relative_tolerance:
++        raise RuntimeError(
++            f"Thermodynamic drift: energy={energy_residual:.4e} J/kg, "
++            f"EOS relative={eos_residual:.4e}"
++        )
++    return {
++        "mass": mass, "element": elements,
++        "energy_J_per_kg": energy_residual, "eos_relative": eos_residual,
++    }
++
++
++def run_case(
++    case: dict, model, tools, mechanism_path: Path, names: list[str] | None = None,
++    idt_rise_K: float = protocol.DEFAULT_IDT_RISE_K,
++) -> tuple[dict, dict[str, np.ndarray]]:
++    name = case["name"]
++    expected_species = (
++        list(tools.feature_info["inert_species"])
++        + list(tools.feature_info["macro_species"])
++        + list(tools.feature_info["micro_species"])
++    )
++    if names is None or (set(names) == set(expected_species) and list(names) != expected_species):
++        names = expected_species
++    gas_initial = ct.Solution(str(mechanism_path))
++    gas_initial.TPX = (
++        float(case["T0_K"]), float(case["P0_atm"]) * ct.one_atm,
++        fuel_air_mole_fractions(float(case["phi"]), float(case["h2_fraction"])),
++    )
++    Y0 = gas_initial.Y.copy()
++    initial_density = float(gas_initial.density)
++    reactor_type = case["reactor_type"]
++    energy0 = (
++        float(gas_initial.int_energy_mass) if reactor_type == "IdealGasReactor"
++        else float(gas_initial.enthalpy_mass)
++    )
++    elements, A_full = cc.compute_element_mass_matrix(
++        gas_initial, list(gas_initial.species_names), preferred_elements=None
++    )
++    initial_elements = A_full @ Y0
++    dt = float(case["dt_s"])
++    times = np.arange(case["steps"] + 1, dtype=np.float64) * dt
++    result = {
++        "name": name, "status": "failed", "failure_step": None,
++        "reactor_type": reactor_type, "dt_s": dt, "steps": case["steps"],
++        "t_end_s": float(times[-1]), "initial_T_K": float(case["T0_K"]),
++        "initial_P_atm": float(case["P0_atm"]),
++        "phi": float(case["phi"]),
++        "h2_fraction": float(case["h2_fraction"]),
++        "initial_density_kg_per_m3": initial_density,
++        "initial_energy_J_per_kg": energy0,
++        "energy_constraint": "UV" if reactor_type == "IdealGasReactor" else "HP",
++        "failure_phase": None, "failure_message": None,
++    }
++    traces = {"time_s": times}
++
++    try:
++        reference = generate_cantera_reference(gas_initial, reactor_type, times, mechanism_path)
++    except Exception as exc:
++        result.update(failure_step=0, failure_phase="reference_cantera",
++                      failure_message=f"{type(exc).__name__}: {exc}")
++        return result, traces
++
++    traces.update(ref_T_K=reference["T"], ref_P_atm=reference["P"], ref_Y=reference["Y"])
++    auditor = ct.Solution(str(mechanism_path))
++    try:
++        closure = tr.build_temperature_closure(
++            {"mechanism_path": str(mechanism_path), "reactor_type": reactor_type},
++            species_order=names,
++        )
++    except Exception as exc:
++        result.update(
++            failure_step=0, failure_phase="autonomous_thermo_initialization",
++            failure_message=f"{type(exc).__name__}: {exc}",
++        )
++        return result, traces
++    current = physical_input(
++        tools, gas_initial, float(case["T0_K"]), float(case["P0_atm"]), Y0, dt
++    )
++    predicted_T = [float(case["T0_K"])]
++    predicted_P = [float(case["P0_atm"])]
++    predicted_Y = [Y0.copy()]
++    physical_checks = []
++    failure_step = None
++    failure_phase = None
++    failure_message = None
++    with torch.no_grad():
++        for index in range(case["steps"]):
++            try:
++                next_state,step_info = advance_autonomous(
++                    model,tools,current,closure,tools._benchmark_state_update_mode,
++                    trust_region_fraction=tools._benchmark_trust_region_fraction,
++                    max_delta_temperature=tools._benchmark_max_delta_temperature)
++                result['model_evaluations']=result.get('model_evaluations',0)+step_info['model_evaluations']
++                result['accepted_substeps']=result.get('accepted_substeps',0)+step_info['accepted_substeps']
++                new_T, new_P, new_Y = decode_feedback_state(
++                    tools, next_state, names, gas_initial
++                )
++                checks = audit_neural_state(
++                    auditor, new_T, new_P, new_Y, reactor_type,
++                    initial_density, float(case["P0_atm"]), energy0,
++                    initial_elements, A_full,
++                )
++                physical_checks.append(checks)
++                predicted_T.append(new_T)
++                predicted_P.append(new_P)
++                predicted_Y.append(new_Y.copy())
++                current = next_state
++            except Exception as exc:
++                failure_step = index + 1
++                failure_phase = "neural_physical_rollout"
++                failure_message = f"{type(exc).__name__}: {exc}"
++                break
++
++    traces.update(
++        nn_T_K=np.asarray(predicted_T), nn_P_atm=np.asarray(predicted_P),
++        nn_Y=np.asarray(predicted_Y),
++    )
++    if failure_step is not None:
++        result.update(
++            status="failed", failure_step=failure_step,
++            failure_phase=failure_phase, failure_message=failure_message,
++            completed_steps=len(predicted_T) - 1,
++        )
++        return result, traces
++
++    physics = {
++        "max_mass_residual": max(v["mass"] for v in physical_checks),
++        "max_element_residual": max(v["element"] for v in physical_checks),
++        "max_energy_residual_J_per_kg": max(v["energy_J_per_kg"] for v in physical_checks),
++        "max_eos_relative_residual": max(v["eos_relative"] for v in physical_checks),
++    }
++    metrics = protocol.compare_complete_trajectories(
++        times, reference["T"], np.asarray(predicted_T),
++        reference["P"], np.asarray(predicted_P),
++        reference["Y"], np.asarray(predicted_Y),
++        list(gas_initial.species_names),
++        idt_rise_K=idt_rise_K,
++    )
++    result.update(status="completed", completed_steps=case["steps"], physics=physics, metrics=metrics)
++    return result, traces
++
++
++def main(argv=None) -> int:
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("--checkpoint", type=Path, required=True)
++    parser.add_argument("--scalers-root", type=Path, required=True)
++    parser.add_argument("--mechanism", required=True, choices=("nuig_2024", "tsinghua_2024c", "ucf_2024"))
++    parser.add_argument("--mechanism-path", type=Path, required=True)
++    parser.add_argument("--cases", type=Path, required=True,
++                        help="Explicit holdout candidates. Disjointness is not inferred.")
++    parser.add_argument("--output", type=Path, required=True)
++    parser.add_argument("--device", choices=("cpu", "cuda"), default="cpu")
++    parser.add_argument("--diagnostic-checkpoint", action="store_true",
++                        help="Evaluate an unqualified latest checkpoint for diagnosis; never marks it deployment-qualified.")
++    parser.add_argument("--idt-rise-K", type=float, default=protocol.DEFAULT_IDT_RISE_K)
++    args = parser.parse_args(argv)
++    if not np.isfinite(args.idt_rise_K) or args.idt_rise_K <= 0:
++        parser.error("--idt-rise-K must be positive and finite")
++    if args.device == "cuda" and not torch.cuda.is_available():
++        parser.error("CUDA selected but torch.cuda.is_available() is False")
++
++    checkpoint_path = args.checkpoint.expanduser().resolve()
++    mechanism_path = args.mechanism_path.expanduser().resolve()
++    cases_path = args.cases.expanduser().resolve()
++    cases = load_cases(cases_path)
++    checkpoint, cfg, model, tools, _, names = load_model_components(
++        checkpoint_path, args.scalers_root.expanduser().resolve(),
++        args.mechanism, mechanism_path, torch.device(args.device),
++        allow_unqualified=args.diagnostic_checkpoint,
++    )
++    training_cfg = checkpoint["training_config"]
++    tools._benchmark_state_update_mode = cfg["state_update_mode"]
++    tools._benchmark_trust_region_fraction = cfg["trust_region_fraction"]
++    tools._benchmark_max_delta_temperature = cfg["max_delta_temperature"]
++
++    output = args.output.expanduser().resolve()
++    output.mkdir(parents=True, exist_ok=True)
++    records = []
++    for c in cases:
++        print(f"[H128] {c['name']} reactor={c['reactor_type']} dt={c['dt_s']:.3g}s", flush=True)
++        try:
++            record, traces = run_case(c, model, tools, mechanism_path, names, args.idt_rise_K)
++        except Exception as exc:
++            record = {
++                "name": c["name"], "status": "failed",
++                "failure_step": None, "failure_phase": "benchmark_runner",
++                "failure_message": f"{type(exc).__name__}: {exc}",
++                "failure_traceback": traceback.format_exc(limit=8),
++            }
++            traces = {}
++        records.append(record)
++        np.savez_compressed(output / f"{c['name']}.npz", **traces)
++        print(
++            f"[H128] {record['status']}: {record.get('failure_message') or 'full 128 steps'}",
++            flush=True,
++        )
++    report = {
++        "protocol": protocol.BENCHMARK_PROTOCOL,
++        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
++        "checkpoint": str(checkpoint_path),
++        "checkpoint_sha256": sha256(checkpoint_path),
++        "checkpoint_epoch": checkpoint.get("epoch"),
++        "diagnostic_checkpoint": args.diagnostic_checkpoint,
++        "mechanism": args.mechanism,
++        "mechanism_path": str(mechanism_path),
++        "mechanism_sha256": sha256(mechanism_path),
++        "cases_path": str(cases_path), "cases_sha256": sha256(cases_path),
++        "device": str(args.device), "torch_version": str(torch.__version__),
++        "cantera_version": str(ct.__version__),
++        "species_order": list(names),
++        "source_hashes": {
++            file: sha256(ROOT / file) for file in (
++                "train_sc_v68.py", "validate_sc_v68.py",
++                "thermo_nasa7_layer.py", "autonomous_pressure.py",
++                "physical_projection_contract.py", "autonomous_benchmark_protocol.py",
++            )
++        },
++        "benchmark_runner_sha256": sha256(Path(__file__)),
++        "source_training_config": {
++            k: training_cfg.get(k) for k in (
++                "temperature_mode", "feedback_state_source", "state_update_mode",
++                "projection_mode", "projection_validation_contract",
++                "pressure_feedback_contract", "autonomous_input_contract",
++                "max_horizon",
++            )
++        },
++        "independence_from_training": "unverified: explicit holdout condition audit required",
++        "summary": protocol.summarize_cases(records),
++        "selection_score": (lambda s: s if np.isfinite(s) else None)(protocol.selection_score(records)),
++        "cases": records,
++    }
++    (output / "benchmark_report.json").write_text(
++        json.dumps(report, indent=2, ensure_ascii=False, allow_nan=False),
++        encoding="utf-8",
++    )
++    print(json.dumps(report["summary"], indent=2), flush=True)
++    # Explicit non-zero code for *any* failed case, never silent success.
++    return 0 if report["summary"]["failed"] == 0 and report['selection_score'] is not None else 2
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+--- /dev/null
++++ b/test/benchmark_autonomous_cases.example.json
+@@ -0,0 +1,46 @@
++{
++  "protocol": "autonomous_h128_trajectories_v1",
++  "purpose": "Exploratory demonstration only; verify independent condition groups before reporting generalization",
++  "cases": [
++    {
++      "name": "uv_1187K_37atm_phi093_h2_27",
++      "reactor_type": "IdealGasReactor",
++      "T0_K": 1187,
++      "P0_atm": 37,
++      "phi": 0.93,
++      "h2_fraction": 0.27,
++      "dt_s": 0.000012,
++      "steps": 128
++    },
++    {
++      "name": "uv_1473K_14atm_phi111_h2_16",
++      "reactor_type": "IdealGasReactor",
++      "T0_K": 1473,
++      "P0_atm": 14,
++      "phi": 1.11,
++      "h2_fraction": 0.16,
++      "dt_s": 0.000008,
++      "steps": 128
++    },
++    {
++      "name": "hp_1279K_7atm_phi087_h2_33",
++      "reactor_type": "IdealGasConstPressureReactor",
++      "T0_K": 1279,
++      "P0_atm": 7,
++      "phi": 0.87,
++      "h2_fraction": 0.33,
++      "dt_s": 0.00001,
++      "steps": 128
++    },
++    {
++      "name": "hp_1391K_24atm_phi121_h2_21",
++      "reactor_type": "IdealGasConstPressureReactor",
++      "T0_K": 1391,
++      "P0_atm": 24,
++      "phi": 1.21,
++      "h2_fraction": 0.21,
++      "dt_s": 0.000012,
++      "steps": 128
++    }
++  ]
++}

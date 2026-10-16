@@ -1,0 +1,240 @@
+{
+  "source_comparison": [
+    {
+      "file": "NUIG2024.yaml",
+      "sc15": "80e7a8e76a873788a790b2b389882b86583083e93be680b816f754bed5651c4a",
+      "sc16": "80e7a8e76a873788a790b2b389882b86583083e93be680b816f754bed5651c4a",
+      "sc17": "80e7a8e76a873788a790b2b389882b86583083e93be680b816f754bed5651c4a",
+      "sc16_vs_sc17": "identical"
+    },
+    {
+      "file": "TH2024.yaml",
+      "sc15": "49db1445d52e7919ff35b203405901b74bb80faa51ff340765446f350fbf9ca7",
+      "sc16": "49db1445d52e7919ff35b203405901b74bb80faa51ff340765446f350fbf9ca7",
+      "sc17": "49db1445d52e7919ff35b203405901b74bb80faa51ff340765446f350fbf9ca7",
+      "sc16_vs_sc17": "identical"
+    },
+    {
+      "file": "UCF2024.yaml",
+      "sc15": "fedd9a8bf896fa2afafd7716fea9d343e60223a5751758982c25ac42fe1972a1",
+      "sc16": "fedd9a8bf896fa2afafd7716fea9d343e60223a5751758982c25ac42fe1972a1",
+      "sc17": "fedd9a8bf896fa2afafd7716fea9d343e60223a5751758982c25ac42fe1972a1",
+      "sc16_vs_sc17": "identical"
+    },
+    {
+      "file": "autonomous_benchmark_protocol.py",
+      "sc15": null,
+      "sc16": null,
+      "sc17": "ddf781407481934cc7166532d6bd625f0aa1b3a1eaf0fb7da46c9c7d33ef78d6",
+      "sc16_vs_sc17": "new"
+    },
+    {
+      "file": "autonomous_pressure.py",
+      "sc15": null,
+      "sc16": null,
+      "sc17": "6414c8cb07a7dc1738241c0a3951f4c19ccee86e971cdca3f6ca72dd2a11476a",
+      "sc16_vs_sc17": "new"
+    },
+    {
+      "file": "chemistry_contract.py",
+      "sc15": null,
+      "sc16": "2dbc0f8044a2cf787c67eab663456067186ab8660357b999056dae870265388c",
+      "sc17": "2dbc0f8044a2cf787c67eab663456067186ab8660357b999056dae870265388c",
+      "sc16_vs_sc17": "identical"
+    },
+    {
+      "file": "compute_physical_metrics.py",
+      "sc15": "d58e8b68100d2a2eb63d768333b98a3ca77d7089c214ba53d50e31ca6dea6bdd",
+      "sc16": "d58e8b68100d2a2eb63d768333b98a3ca77d7089c214ba53d50e31ca6dea6bdd",
+      "sc17": "d58e8b68100d2a2eb63d768333b98a3ca77d7089c214ba53d50e31ca6dea6bdd",
+      "sc16_vs_sc17": "identical"
+    },
+    {
+      "file": "data_pipeline/__init__.py",
+      "sc15": "dfcd5b4d75934f8bd75ebfe36d9934399ad15f39ac02405909c7149bd8ab27be",
+      "sc16": "dfcd5b4d75934f8bd75ebfe36d9934399ad15f39ac02405909c7149bd8ab27be",
+      "sc17": "dfcd5b4d75934f8bd75ebfe36d9934399ad15f39ac02405909c7149bd8ab27be",
+      "sc16_vs_sc17": "identical"
+    },
+    {
+      "file": "data_pipeline/audit_generated_database.py",
+      "sc15": "d43da8f1f1aa90697ac590be893d3b2fbfdd08d4520a0e2c757100172ae9619f",
+      "sc16": "d43da8f1f1aa90697ac590be893d3b2fbfdd08d4520a0e2c757100172ae9619f",
+      "sc17": "d43da8f1f1aa90697ac590be893d3b2fbfdd08d4520a0e2c757100172ae9619f",
+      "sc16_vs_sc17": "identical"
+    },
+    {
+      "file": "data_pipeline/audit_initial_conditions_v67.py",
+      "sc15": "e2f2d0c206d6e9829160e3b8b28fd17c1674ec0e0f7ee7086a4c34469254cf1e",
+      "sc16": "e2f2d0c206d6e9829160e3b8b28fd17c1674ec0e0f7ee7086a4c34469254cf1e",
+      "sc17": "e2f2d0c206d6e9829160e3b8b28fd17c1674ec0e0f7ee7086a4c34469254cf1e",
+      "sc16_vs_sc17": "identical"
+    },
+    {
+      "file": "data_pipeline/build_training_dataset_v72.py",
+      "sc15": "385be2fb75eab4c6534ffc91d793c3e5aa19dc66343c615d15fa77d6beeca2fa",
+      "sc16": "f80871f41662e29b4fa71f9f6cc706a1ebe3b5e305b2e6e61df22375370fd675",
+      "sc17": "f80871f41662e29b4fa71f9f6cc706a1ebe3b5e305b2e6e61df22375370fd675",
+      "sc16_vs_sc17": "identical"
+    },
+    {
+      "file": "data_pipeline/generate_augmented_trajectories.py",
+      "sc15": "8ada06c3029ff7d17a918a0c65b2805a9d94ac4040a536aa541b832d8b5ca17a",
+      "sc16": "a4d9441db7f4b121fd612f2b6f3593bb73bc60917290d067908307f533c48110",
+      "sc17": "a4d9441db7f4b121fd612f2b6f3593bb73bc60917290d067908307f533c48110",
+      "sc16_vs_sc17": "identical"
+    },
+    {
+      "file": "data_pipeline/lhs_sampler_sc_v11.py",
+      "sc15": "e6c5a73268ccbce035a68105ef8914d53d69c822e5da402ead93b0026bc83260",
+      "sc16": "e6c5a73268ccbce035a68105ef8914d53d69c822e5da402ead93b0026bc83260",
+      "sc17": "e6c5a73268ccbce035a68105ef8914d53d69c822e5da402ead93b0026bc83260",
+      "sc16_vs_sc17": "identical"
+    },
+    {
+      "file": "data_pipeline/mini_ds.pkl",
+      "sc15": "3300190749eae46981f02170fd6b6cd918b89c8a5c875764a781be34cc19d186",
+      "sc16": "3300190749eae46981f02170fd6b6cd918b89c8a5c875764a781be34cc19d186",
+      "sc17": "3300190749eae46981f02170fd6b6cd918b89c8a5c875764a781be34cc19d186",
+      "sc16_vs_sc17": "identical"
+    },
+    {
+      "file": "data_pipeline/runner_sc_v21_qssa.py",
+      "sc15": "4c520242f54083d6ee9884ac767acf51612a9ea9d8c98ffce0df7dc4c5c69970",
+      "sc16": "4c520242f54083d6ee9884ac767acf51612a9ea9d8c98ffce0df7dc4c5c69970",
+      "sc17": "4c520242f54083d6ee9884ac767acf51612a9ea9d8c98ffce0df7dc4c5c69970",
+      "sc16_vs_sc17": "identical"
+    },
+    {
+      "file": "data_pipeline/split_trajectories_v21.py",
+      "sc15": "d890d13ddca64ed1c4acc1c26fedbce1ce1d406f9c3e604ba2f8d3b0e25f6461",
+      "sc16": "0b7a9181dde62ecfc5187e50da29605a24e63e22a72a8b9ef7191cf42cf144d1",
+      "sc17": "8c4e17ff2b1739fce18645db776fd3859a9b6f90f0c345a081b1ab81b78124c2",
+      "sc16_vs_sc17": "changed"
+    },
+    {
+      "file": "data_pipeline/trajectory_conditions_v67.py",
+      "sc15": "24eed3ec3a1df7cba5e598223829315091edd4be2f8a8ea431a71f2c1d482880",
+      "sc16": "24eed3ec3a1df7cba5e598223829315091edd4be2f8a8ea431a71f2c1d482880",
+      "sc17": "24eed3ec3a1df7cba5e598223829315091edd4be2f8a8ea431a71f2c1d482880",
+      "sc16_vs_sc17": "identical"
+    },
+    {
+      "file": "dual_branch_network.py",
+      "sc15": "7f7324e200340cd782c58898ab9b5fa7c55dc554e233e2c663da02955f66c17a",
+      "sc16": "7f7324e200340cd782c58898ab9b5fa7c55dc554e233e2c663da02955f66c17a",
+      "sc17": "7f7324e200340cd782c58898ab9b5fa7c55dc554e233e2c663da02955f66c17a",
+      "sc16_vs_sc17": "identical"
+    },
+    {
+      "file": "enhanced_loss_and_weights.py",
+      "sc15": "deaa1ffe8ed2324bb8b0cde7e527f4c020f38f4efd8924dfa20d14025808581f",
+      "sc16": "2cf8fd3729ce27c1669b2e454b210957e1fbab87f1961eace622fcfd3e849e9f",
+      "sc17": "2cf8fd3729ce27c1669b2e454b210957e1fbab87f1961eace622fcfd3e849e9f",
+      "sc16_vs_sc17": "identical"
+    },
+    {
+      "file": "experiment_manifest.py",
+      "sc15": null,
+      "sc16": "14d3c4eeddd3d8fea7af089a84a32c040566b5c64de2902a70ad202f5dc5bec0",
+      "sc17": "411f42497acd1a09089bf076904ae762217905f8c9c9bcc8e1c1101ee04a857a",
+      "sc16_vs_sc17": "changed"
+    },
+    {
+      "file": "kinetics_parameterization.py",
+      "sc15": null,
+      "sc16": "e20542c46a88fb07389cfe8618077dfb600237daa286307d611a4d971ec4e572",
+      "sc17": "e20542c46a88fb07389cfe8618077dfb600237daa286307d611a4d971ec4e572",
+      "sc16_vs_sc17": "identical"
+    },
+    {
+      "file": "physical_projection_contract.py",
+      "sc15": null,
+      "sc16": null,
+      "sc17": "348a0c9c39e9f3608ed36d56ed8db02b93d44aa1d44c844da5d14e0ccce7c8cd",
+      "sc16_vs_sc17": "new"
+    },
+    {
+      "file": "species_validation_protocol.py",
+      "sc15": null,
+      "sc16": "8f3622b8adb30c4a3ce5c20ca8b0cb39117e917beda98f41ecb50144d8fe9fcf",
+      "sc17": "8f3622b8adb30c4a3ce5c20ca8b0cb39117e917beda98f41ecb50144d8fe9fcf",
+      "sc16_vs_sc17": "identical"
+    },
+    {
+      "file": "thermo_nasa7_layer.py",
+      "sc15": "b127ff7642f7199af61306241e19c98dfc798386e7c6c63fd87f2bc7789e415b",
+      "sc16": "b127ff7642f7199af61306241e19c98dfc798386e7c6c63fd87f2bc7789e415b",
+      "sc17": "4d17db223c22cc1e03f70b203f3c739c918a0e88f940ee16737dbe573a90966b",
+      "sc16_vs_sc17": "changed"
+    },
+    {
+      "file": "train_all_v68.py",
+      "sc15": "c046c29cd78909d64a15b0a1f93d77545f5fc7011ebffbe8964350c293e395a1",
+      "sc16": "89578eb55adfd0a9f0dd6442895def62dac6b8721cb688bb8201143c96ed35ad",
+      "sc17": "89578eb55adfd0a9f0dd6442895def62dac6b8721cb688bb8201143c96ed35ad",
+      "sc16_vs_sc17": "identical"
+    },
+    {
+      "file": "train_sc_v68.py",
+      "sc15": "65ed633f31b2bde5a4642d726ed895114f83d082b515fe4caaf9c853f234fed8",
+      "sc16": "d08a4bfa3480a375303f98f2faed14a3e9625195b8ea5b3a18925327938a7c3a",
+      "sc17": "c4ac0353668e970a33c6e3c6fb805c3d582aba24c147fd2fc43928f2af543316",
+      "sc16_vs_sc17": "changed"
+    },
+    {
+      "file": "training_diagnostics.py",
+      "sc15": null,
+      "sc16": "1478526a84cd2d4b87038b705fee9bb33b49e7f592c2129b71e381bbc18e5c48",
+      "sc17": "70f404995a3d7c36437029b901554924fabd10ffaacf98c2b54d36de35742000",
+      "sc16_vs_sc17": "changed"
+    },
+    {
+      "file": "validate_all_best_models_v68.py",
+      "sc15": "6306d8ad2a0c0a0e48f0152b1d30b035fb5a3b69da8bc2c73c01bb11eb20ebd2",
+      "sc16": "f507cf0b23d2d0d9175bd72a6c1355b244163b9dd22f68e52f57eb42e800260e",
+      "sc17": "f507cf0b23d2d0d9175bd72a6c1355b244163b9dd22f68e52f57eb42e800260e",
+      "sc16_vs_sc17": "identical"
+    },
+    {
+      "file": "validate_sc_v68.py",
+      "sc15": "7921668bcae8cf9a3abedc518ebba624a1708b06525d0edd92cdcce452471154",
+      "sc16": "13bb1e13341c397fe46d6e094be17e2250b885e94fc228137134541ae693d5d0",
+      "sc17": "7e8d08cc1c9962b58bc5b0f0e47d67422be2127ee32348bea5d7795499141c4c",
+      "sc16_vs_sc17": "changed"
+    }
+  ],
+  "entry_probes": [
+    {
+      "script": "data_pipeline/build_training_dataset_v72.py",
+      "args": [
+        "--help"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"C:\\Users\\123\\Desktop\\2STest\\second chapter\\009\\xl1\\sc17\\data_pipeline\\build_training_dataset_v72.py\", line 36, in <module>\n    bench_spec.loader.exec_module(bench_mod)\n  File \"<frozen importlib._bootstrap_external>\", line 995, in exec_module\n  File \"<frozen importlib._bootstrap_external>\", line 1132, in get_code\n  File \"<frozen importlib._bootstrap_external>\", line 1190, in get_data\nFileNotFoundError: [Errno 2] No such file or directory: 'C:\\\\Users\\\\123\\\\Desktop\\\\2STest\\\\second chapter\\\\009\\\\xl1\\\\sc17\\\\data_pipeline\\\\test\\\\benchmark_cfd_closed_loop.py'\n"
+    },
+    {
+      "script": "validate_all_best_models_v68.py",
+      "args": [
+        "--plan",
+        "v72_dual_branch"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: validate_all_best_models_v68.py [-h] [--base_dir BASE_DIR]\n                                       [--data_dir DATA_DIR]\n                                       [--output_root OUTPUT_ROOT]\n                                       [--mechanism MECHANISM]\n                                       [--split {val,train,test,all}]\n                                       [--splits {train,validation,val,test} [{train,validation,val,test} ...]]\n                                       [--split_dir SPLIT_DIR]\n                                       [--batch_size BATCH_SIZE]\n                                       [--max_batches MAX_BATCHES]\n                                       [--horizons HORIZONS [HORIZONS ...]]\n                                       [--plot_trajectories PLOT_TRAJECTORIES]\n                                       [--trajectory_selection {first,diverse,combustion}]\n                                       [--combustion_min_temperature COMBUSTION_MIN_TEMPERATURE]\n                                       [--combustion_max_temperature COMBUSTION_MAX_TEMPERATURE]\n                                       [--steady_rate_threshold STEADY_RATE_THRESHOLD]\n                                       [--no_plots] [--rebuild_scalers]\n                                       [--state_update_mode {legacy,task8_conservative_state,qssa,qssa_asymptotic}]\n                                       [--plan {v3,v34,v35,v68,v68_qssa,v69_qssa,v69_no_noise,v69_no_stability,v69_no_microweight,v71_qssa,all}]\n                                       [--version TARGET_VERSION]\n                                       [--choice CHOICE] [--no_pause]\n                                       [--all_checkpoints]\n                                       [--checkpoint_types {best_total,best_oracle_h128,best_oracle_avg,best_pure_ar,best_composite,best_robust_raw,latest} [{best_total,best_oracle_h128,best_oracle_avg,best_pure_ar,best_composite,best_robust_raw,latest} ...]]\nvalidate_all_best_models_v68.py: error: argument --plan: invalid choice: 'v72_dual_branch' (choose from v3, v34, v35, v68, v68_qssa, v69_qssa, v69_no_noise, v69_no_stability, v69_no_microweight, v71_qssa, all)\n"
+    }
+  ],
+  "integrity": {
+    "sc15": {
+      "original_python_changes_since_probe_start": []
+    },
+    "sc16": {
+      "original_python_changes_since_probe_start": []
+    },
+    "sc17": {
+      "original_python_changes_since_probe_start": []
+    }
+  },
+  "sc17_checkpoint_files": []
+}

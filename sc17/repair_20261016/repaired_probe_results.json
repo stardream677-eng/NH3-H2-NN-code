@@ -1,0 +1,19 @@
+{
+  "rows": 4800,
+  "macro_species": [
+    "H2",
+    "H2O",
+    "N2",
+    "NH3",
+    "NO",
+    "O2"
+  ],
+  "macro_asinh_abs_max": 23.508291244506836,
+  "macro_outputs_exceeding_old_cap": 18,
+  "old_capped_perfect_label_macro_max_error": 0.047990478575229645,
+  "repaired_perfect_label_macro_raw_max_error": 2.5331974029541016e-07,
+  "repaired_perfect_label_macro_projected_max_error": 2.1100822777953e-07,
+  "real_temperature_jumps_over_500K": 13,
+  "repaired_temperature_all_rows_max_error_K": 1.0589051271381322e-06,
+  "repaired_temperature_ignition_max_error_K": 1.0589051271381322e-06
+}

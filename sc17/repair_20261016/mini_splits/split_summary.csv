@@ -1,0 +1,4 @@
+mechanism_name,split,trajectories,rows,path
+nuig_2024,train,24,3840,C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\repair_20261016\mini_splits\nuig_2024_train_sample_ids.csv
+nuig_2024,validation,3,480,C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\repair_20261016\mini_splits\nuig_2024_validation_sample_ids.csv
+nuig_2024,test,3,480,C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\repair_20261016\mini_splits\nuig_2024_test_sample_ids.csv

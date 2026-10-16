@@ -1,0 +1,82 @@
+[
+  {
+    "file": "autonomous_benchmark_protocol.py",
+    "old_sha256": "ddf781407481934cc7166532d6bd625f0aa1b3a1eaf0fb7da46c9c7d33ef78d6",
+    "new_sha256": "c4adae207a6da8d7db643f9c070dadc0c8e5bec2ccc1863ffaa21f3110c4afa5"
+  },
+  {
+    "file": "experiment_manifest.py",
+    "old_sha256": "411f42497acd1a09089bf076904ae762217905f8c9c9bcc8e1c1101ee04a857a",
+    "new_sha256": "b004e260d30e7891343e3bf98e20534d317bb0ac690ffd4f5ebb270829f40bc0"
+  },
+  {
+    "file": "kinetics_parameterization.py",
+    "old_sha256": "e20542c46a88fb07389cfe8618077dfb600237daa286307d611a4d971ec4e572",
+    "new_sha256": "6a4c92a8b7d3a76ef28d6206e8d617ebec6bff07c7eb976d87cfcf25464c1dc0"
+  },
+  {
+    "file": "physical_projection_contract.py",
+    "old_sha256": "348a0c9c39e9f3608ed36d56ed8db02b93d44aa1d44c844da5d14e0ccce7c8cd",
+    "new_sha256": "1b51d8906b53c2f74bed1233e3597bf19e8416541f618dc4205d8ce7f004597d"
+  },
+  {
+    "file": "species_validation_protocol.py",
+    "old_sha256": "8f3622b8adb30c4a3ce5c20ca8b0cb39117e917beda98f41ecb50144d8fe9fcf",
+    "new_sha256": "03e919f47be159579615969e6ba858aa47243556dfb1f79d326f0dfc5cb2e6ff"
+  },
+  {
+    "file": "train_all_v68.py",
+    "old_sha256": "89578eb55adfd0a9f0dd6442895def62dac6b8721cb688bb8201143c96ed35ad",
+    "new_sha256": "073c74ee4b6d5684e5b1ae3a198d52c883beaee2af742aa763368020cb1d7167"
+  },
+  {
+    "file": "train_sc_v68.py",
+    "old_sha256": "c4ac0353668e970a33c6e3c6fb805c3d582aba24c147fd2fc43928f2af543316",
+    "new_sha256": "9698bf7d19a137c40b491f27137d0b970cdf719a5fd68216598bf797accd5e2f"
+  },
+  {
+    "file": "validate_all_best_models_v68.py",
+    "old_sha256": "f507cf0b23d2d0d9175bd72a6c1355b244163b9dd22f68e52f57eb42e800260e",
+    "new_sha256": "e26b5ffffa05ae24b695063b470d229b772979668dc1b7a381f487eb3dce346a"
+  },
+  {
+    "file": "validate_sc_v68.py",
+    "old_sha256": "7e8d08cc1c9962b58bc5b0f0e47d67422be2127ee32348bea5d7795499141c4c",
+    "new_sha256": "225273c4e2a067b36b669fc1cd6c73be1c25449fa8dd49a7ac06cf028aaa8bc9"
+  },
+  {
+    "file": "data_pipeline\\build_training_dataset_v72.py",
+    "old_sha256": "f80871f41662e29b4fa71f9f6cc706a1ebe3b5e305b2e6e61df22375370fd675",
+    "new_sha256": "a2136ca4d29bae4ce9d03abf1e5b278dff90c4bd91380f2997cae0f7329537e0"
+  },
+  {
+    "file": "numerical_contract.py",
+    "new_sha256": "dbce9d7499221a5b7f84bf3ce1a5ece37d6a6ecf4f6cb127f8235261c7c35a2b",
+    "status": "added"
+  },
+  {
+    "file": "benchmark_cases.py",
+    "new_sha256": "0462ca0b812d2982e7409c4824ce4eb88a613661840bd55b55c0106c213746f6",
+    "status": "added"
+  },
+  {
+    "file": "complete_validation.py",
+    "new_sha256": "de40834412756392c41d30ecf39e19add5a178f6a6a449ab0ffd050809c0135a",
+    "status": "added"
+  },
+  {
+    "file": "autonomous_integrator.py",
+    "new_sha256": "ddad57533add7968f12a8f80ce5a2fe3d26b38a3aacd941927105e811be39959",
+    "status": "added"
+  },
+  {
+    "file": "test/benchmark_autonomous_h128.py",
+    "new_sha256": "99e0f734d91067f2e75d3cc51ac0b204fb25565b246d3ca64214fe9c61b85495",
+    "status": "added"
+  },
+  {
+    "file": "test/benchmark_autonomous_cases.example.json",
+    "new_sha256": "0bb68ee067bf04f9b39e214848a39670ac9d9b1f870dac93c301ea7b4be7103c",
+    "status": "added"
+  }
+]

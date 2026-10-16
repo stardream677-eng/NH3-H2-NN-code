@@ -1,0 +1,33 @@
+Using device: cuda
+[validate] checkpoints: 1
+[validate] loading checkpoint: C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\repair_20261016\smoke_training_verified\weights_v68\latest_v68_nuig_2024.pth
+[validate] loading scalers and feature metadata...
+[validate] scanning parquet schema in: C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\repair_20261016\mini_database
+[validate] checking trajectory isolation across 1 parquet parts (this may take a while)...
+[validate] trajectory isolation check complete
+[validate] checkpoint=C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\repair_20261016\smoke_training_verified\weights_v68\latest_v68_nuig_2024.pth
+[validate] split=val, source_parts=1 (filtered by mini_splits), device=cuda
+[validate] starting model evaluation...
+
+[Metadata]
+  mechanism = nuig_2024
+  rows      = 4800
+  success   = 30
+  failed    = 0
+  parts     = 1
+[THERMO] ThermoNASA7Layer initialized (39 species).
+[validate] autonomous temperature enabled; thermo_closure=internal_energy/cv; trust_region=0.000
+[validate] active split manifest: nuig_2024_validation_sample_ids.csv (filtered to 3 trajectories)
+
+[Metadata]
+  mechanism = nuig_2024
+  rows      = 4800
+  success   = 30
+  failed    = 0
+  parts     = 1
+
+[validate]:   0%|          | 0/1 [00:00<?, ?it/s]
+[validate]:   0%|          | 0/1 [00:10<?, ?it/s, windows=3]
+[validate]: 100%|██████████| 1/1 [00:10<00:00, 10.31s/it, windows=3]
+[validate]: 100%|██████████| 1/1 [00:10<00:00, 10.32s/it, windows=3]
+[validate] metrics: C:\Users\123\Desktop\2STest\second chapter\009\xl1\sc17\repair_20261016\window_validation_verified\metrics.json
