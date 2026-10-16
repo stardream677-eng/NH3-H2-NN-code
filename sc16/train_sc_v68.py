@@ -5190,9 +5190,13 @@ def update_temperature_autonomous(
         if reactor_type == "IdealGasConstPressureReactor":
             _, _, h_old, _ = layer.compute_mixture_properties(current_T, old_Y)
             T_solved = layer.solve_temperature_hp(h_old, next_Y, current_T)
+            target_energy = h_old
+            energy_index, capacity_index = 2, 0
         elif reactor_type == "IdealGasReactor":
             _, _, _, u_old = layer.compute_mixture_properties(current_T, old_Y)
             T_solved = layer.solve_temperature_uv(u_old, next_Y, current_T)
+            target_energy = u_old
+            energy_index, capacity_index = 3, 1
         else:
             raise ValueError(f"Unsupported autonomous reactor type: {reactor_type!r}")
 
@@ -5204,7 +5208,23 @@ def update_temperature_autonomous(
                 "Autonomous energy-closed temperature exceeds the configured "
                 "max_delta_temperature; reduce dt or use smaller integration substeps"
             )
-        return T_solved.to(dtype=temperature.dtype)
+        returned_T = T_solved.to(dtype=temperature.dtype)
+        # Check the actual feedback dtype as well as the Newton work dtype.
+        end_properties = layer.compute_mixture_properties(returned_T.to(work_dtype), next_Y)
+        end_energy = end_properties[energy_index]
+        heat_capacity_final = end_properties[capacity_index].abs()
+        energy_residual = (end_energy - target_energy).abs()
+        rounding_K = 2.0 * torch.finfo(returned_T.dtype).eps * returned_T.to(work_dtype).abs()
+        residual_tol = torch.maximum(
+            0.1 + 1e-8 * torch.maximum(end_energy.abs(), target_energy.abs()),
+            heat_capacity_final * (1e-4 + rounding_K),
+        )
+        if not torch.isfinite(energy_residual).all() or bool((energy_residual > residual_tol).any()):
+            raise RuntimeError(
+                "Autonomous temperature feedback violates the NASA7 energy residual "
+                "tolerance after dtype conversion"
+            )
+        return returned_T
 
     # Explicit legacy approximation, not the NASA7 autonomous mode.
     if energy_coeff is None or heat_capacity is None:
