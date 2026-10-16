@@ -259,6 +259,27 @@ def test_recorded_mode_retains_teacher_T_and_P(cantera_tools):
     assert out[0, 1] == teacher[0, 1]
 
 
+def test_autonomous_rejects_post_closure_species_clipping(cantera_tools):
+    tools, closure = cantera_tools
+    current = torch.tensor([[1150., 12., .75, .04, .20, .01, -20., -6.]])
+    macro = torch.tensor([[.039, .199, .012]])
+    # Tiny artificial scaled-feedback limit would alter the mass fractions
+    # *after* the energy/EOS solve: refuse the inconsistency instead.
+    with pytest.raises(RuntimeError, match="clipping would change the species"):
+        tools.state_to_input_scaled(
+            current, macro, torch.tensor([[-20.]]),
+            temperature_mode="autonomous", thermo_closure=closure,
+            current_X_scaled=current, feedback_input_limit=0.01,
+        )
+
+
+def test_new_pressure_module_is_in_experiment_manifest_source_hashes():
+    import experiment_manifest as em
+    hashes = em.compute_source_hashes(ROOT)
+    assert "autonomous_pressure.py" in hashes
+    assert len(hashes["autonomous_pressure.py"]) == 64
+
+
 def test_autonomous_closure_rejects_missing_inert_species(cantera_tools):
     tools, closure = cantera_tools
     corrupted = {**closure, "species_order": ["H2", "O2", "H2O", "OH"]}
