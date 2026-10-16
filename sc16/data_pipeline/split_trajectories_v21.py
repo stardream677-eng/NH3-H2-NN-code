@@ -286,7 +286,7 @@ def _select_extrapolation(metadata: pd.DataFrame, fraction: float, axes: tuple[s
 
 def _split_ids(ids: np.ndarray, rng: np.random.Generator, train: float, val: float,
                metadata: pd.DataFrame | None = None, strata_bins: int = 4,
-                stratify: bool = True) -> dict[str, np.ndarray]:
+               stratify: bool = True) -> dict[str, np.ndarray]:
     ids = np.asarray(ids, dtype=object).copy()
     if metadata is None:
         rng.shuffle(ids)
