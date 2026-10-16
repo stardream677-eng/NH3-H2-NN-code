@@ -134,6 +134,7 @@ def projection_residuals(
     return {"valid": good, "mass": mass, "element": element, "negativity": negativity}
 
 
+@torch.no_grad()
 def recover_nonnegative_affine(
     candidate: torch.Tensor,
     element_matrix: torch.Tensor,
