@@ -259,9 +259,17 @@ def test_legacy_autonomous_checkpoint_rejected_by_validator():
         "training_config": {
             "temperature_mode": "autonomous",
             "pressure_feedback_contract": PRESSURE_FEEDBACK_CONTRACT,
+            "autonomous_input_contract": "autonomous_tpy_inert_current_v1",
         }
     })
     assert valid["temperature_mode"] == "autonomous"
+    with pytest.raises(ValueError, match="teacher-dependent inert-species feedback"):
+        validator.checkpoint_rollout_config({
+            "training_config": {
+                "temperature_mode": "autonomous",
+                "pressure_feedback_contract": PRESSURE_FEEDBACK_CONTRACT,
+            }
+        })
     recorded = validator.checkpoint_rollout_config({
         "training_config": {"temperature_mode": "recorded"}
     })
