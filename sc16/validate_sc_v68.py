@@ -174,6 +174,21 @@ def load_checkpoint(path: Path, mechanism: str | None = None):
 def checkpoint_rollout_config(checkpoint: dict) -> dict:
     """Return rollout settings saved with a V3.x checkpoint."""
     config = checkpoint.get("training_config") or {}
+    requires_projection = (
+        config.get("state_loss_source") == "constrained"
+        or config.get("feedback_state_source") == "constrained"
+        or config.get("state_update_mode") == "task8_conservative_state"
+    )
+    if (
+        requires_projection
+        and config.get("projection_validation_contract")
+        != tr.ppc.PROJECTION_VALIDATION_CONTRACT
+    ):
+        raise ValueError(
+            "Legacy constrained projection checkpoint lacks the fail-closed "
+            "element/mass validation contract; evaluate with its original "
+            "projection version or start a new experiment"
+        )
     mode = config.get("effective_temperature_mode", config.get("temperature_mode", "recorded"))
     if (
         mode == "autonomous"
@@ -192,6 +207,9 @@ def checkpoint_rollout_config(checkpoint: dict) -> dict:
         "temperature_mode": mode,
         "pressure_feedback_contract": config.get(
             "pressure_feedback_contract", "recorded_p_v1"
+        ),
+        "projection_validation_contract": config.get(
+            "projection_validation_contract", "legacy_unverified"
         ),
         "max_delta_temperature": float(config.get("max_delta_temperature", 1000.0) or 1000.0),
         "feedback_blend_start": float(config.get("feedback_blend_start", 1.0) or 1.0),
