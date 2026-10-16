@@ -3818,6 +3818,11 @@ class CoarseOperatorTools:
                     "inert + macro + micro features; never omit inert gas from EOS"
                 )
             Y_inert = current_X[:, self.inert_idx]
+            # Inerts are constant in this adiabatic closed-reactor model.
+            # The base_next input is allowed to supply only the *future dt*:
+            # never copy next-time reference inert concentrations into an
+            # otherwise autonomous T/P/Y feedback state.
+            current_unscaled[:, self.inert_idx] = Y_inert
             Y_old_full = torch.cat([Y_inert, Y_macro_old, Y_micro_old], dim=1)
             Y_next_full = torch.cat(
                 [Y_inert, Y_macro_next, torch.pow(
@@ -6084,6 +6089,10 @@ def train_model_v68(
         ap.PRESSURE_FEEDBACK_CONTRACT if effective_temperature_mode == "autonomous"
         else "recorded_p_v1"
     )
+    training_config["autonomous_input_contract"] = (
+        ap.AUTONOMOUS_INPUT_CONTRACT if effective_temperature_mode == "autonomous"
+        else "recorded_tpy_v1"
+    )
 
     print(
         "\nSpecies summary:"
@@ -6572,6 +6581,7 @@ def train_model_v68(
                 # Old autonomous runs used *recorded* P even when T was predicted.
                 # Their optimizer history must not be reused under new EOS semantics.
                 resume_config_keys["pressure_feedback_contract"] = ap.PRESSURE_FEEDBACK_CONTRACT
+                resume_config_keys["autonomous_input_contract"] = ap.AUTONOMOUS_INPUT_CONTRACT
             if not checkpoint_compatible(
                 ckpt,
                 VERSION,

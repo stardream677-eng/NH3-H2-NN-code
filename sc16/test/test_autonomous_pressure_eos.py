@@ -259,13 +259,43 @@ def test_legacy_autonomous_checkpoint_rejected_by_validator():
         "training_config": {
             "temperature_mode": "autonomous",
             "pressure_feedback_contract": PRESSURE_FEEDBACK_CONTRACT,
+            "autonomous_input_contract": "autonomous_tpy_inert_current_v1",
         }
     })
     assert valid["temperature_mode"] == "autonomous"
+    with pytest.raises(ValueError, match="teacher-dependent inert-species feedback"):
+        validator.checkpoint_rollout_config({
+            "training_config": {
+                "temperature_mode": "autonomous",
+                "pressure_feedback_contract": PRESSURE_FEEDBACK_CONTRACT,
+            }
+        })
     recorded = validator.checkpoint_rollout_config({
         "training_config": {"temperature_mode": "recorded"}
     })
     assert recorded["temperature_mode"] == "recorded"
+
+
+def test_autonomous_feedback_never_reads_future_reference_inert_species(cantera_tools):
+    tools, closure = cantera_tools
+    current = torch.tensor([[1150., 12., .75, .04, .20, .01, -20., -6.]])
+    future_a = torch.tensor([[1600., 15., .75, .02, .21, .02, -10., -5.5]])
+    future_b = future_a.clone()
+    # A future recorded inert fraction is deliberately corrupted; it must not
+    # influence even the next *scaled* input in fully autonomous mode.
+    future_b[0, 2] = 0.03
+    macro = torch.tensor([[.039, .199, .012]])
+    micro_log = torch.tensor([[-20.]])
+    a = tools.state_to_input_scaled(
+        future_a, macro, micro_log, temperature_mode="autonomous",
+        thermo_closure=closure, current_X_scaled=current,
+    )
+    b = tools.state_to_input_scaled(
+        future_b, macro, micro_log, temperature_mode="autonomous",
+        thermo_closure=closure, current_X_scaled=current,
+    )
+    torch.testing.assert_close(a, b, atol=0, rtol=0)
+    assert a[0, tools.inert_idx[0]] == current[0, tools.inert_idx[0]]
 
 
 def test_recorded_mode_retains_teacher_T_and_P(cantera_tools):

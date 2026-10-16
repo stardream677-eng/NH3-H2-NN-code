@@ -19,6 +19,10 @@ import torch
 
 
 PRESSURE_FEEDBACK_CONTRACT = "eos_uv_constant_hp_v1"
+# Version the *complete* autonomous next-state feature semantics separately
+# from the pressure formula. Earlier experiments incorrectly copied the next
+# teacher input's inert species into an otherwise autonomous T/P/Y state.
+AUTONOMOUS_INPUT_CONTRACT = "autonomous_tpy_inert_current_v1"
 
 
 def autonomous_pressure_next(

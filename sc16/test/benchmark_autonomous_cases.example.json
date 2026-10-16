@@ -1,0 +1,46 @@
+{
+  "protocol": "autonomous_h128_trajectories_v1",
+  "purpose": "Exploratory demonstration only; verify independent condition groups before reporting generalization",
+  "cases": [
+    {
+      "name": "uv_1187K_37atm_phi093_h2_27",
+      "reactor_type": "IdealGasReactor",
+      "T0_K": 1187,
+      "P0_atm": 37,
+      "phi": 0.93,
+      "h2_fraction": 0.27,
+      "dt_s": 0.000012,
+      "steps": 128
+    },
+    {
+      "name": "uv_1473K_14atm_phi111_h2_16",
+      "reactor_type": "IdealGasReactor",
+      "T0_K": 1473,
+      "P0_atm": 14,
+      "phi": 1.11,
+      "h2_fraction": 0.16,
+      "dt_s": 0.000008,
+      "steps": 128
+    },
+    {
+      "name": "hp_1279K_7atm_phi087_h2_33",
+      "reactor_type": "IdealGasConstPressureReactor",
+      "T0_K": 1279,
+      "P0_atm": 7,
+      "phi": 0.87,
+      "h2_fraction": 0.33,
+      "dt_s": 0.00001,
+      "steps": 128
+    },
+    {
+      "name": "hp_1391K_24atm_phi121_h2_21",
+      "reactor_type": "IdealGasConstPressureReactor",
+      "T0_K": 1391,
+      "P0_atm": 24,
+      "phi": 1.21,
+      "h2_fraction": 0.21,
+      "dt_s": 0.000012,
+      "steps": 128
+    }
+  ]
+}
